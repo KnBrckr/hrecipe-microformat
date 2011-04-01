@@ -24,33 +24,59 @@ License: GPL2
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+// If the class already exists, all setup is complete
+if ( ! class_exists('hrecipe_microstate')) :
+
 define( 'RECIPE_PLUGIN_NAME', 'hrecipe-microformat' );	// Plugin name
 define( 'RECIPE_PLUGIN_DIR', WP_PLUGIN_DIR . '/' . RECIPE_PLUGIN_NAME . '/' );	// Base directory for Plugin
 define( 'RECIPE_PLUGIN_URL', WP_PLUGIN_URL . '/' . RECIPE_PLUGIN_NAME . '/');	// Base URL for plugin directory
 
-function myplugin_addbuttons() {
-   // Don't bother doing this stuff if the current user lacks permissions
-   if ( ! current_user_can('edit_posts') && ! current_user_can('edit_pages') )
-     return;
+class hrecipe_microstate {
+	
+	function __construct() {
+		// Add the buttons for TinyMCE during WP init
+		add_action('init', array(&$this, 'add_buttons'));
+		
+		// Add editor stylesheet
+		add_filter('mce_css', array(&$this, 'add_tinymce_css'));
+	}
+
+	function add_buttons() {
+	   // Don't bother doing this stuff if the current user lacks permissions
+	   if ( ! current_user_can('edit_posts') && ! current_user_can('edit_pages') )
+	     return;
  
-   // Add only in Rich Editor mode
-   if ( get_user_option('rich_editing') == 'true') {
-     add_filter("mce_external_plugins", "add_myplugin_tinymce_plugin");
-     add_filter('mce_buttons_3', 'register_myplugin_button');
-   }
+	   // Add only in Rich Editor mode
+	   if ( get_user_option('rich_editing') == 'true') {
+	     add_filter('mce_external_plugins', array(&$this, 'add_tinymce_plugins'));
+	     add_filter('mce_buttons_3', array(&$this, 'register_buttons'));
+	   }
+	}
+ 
+	function register_buttons($buttons) {
+	   array_push($buttons, 'hrecipeTitle');
+	   return $buttons;
+	}
+ 
+	// Load the TinyMCE plugins : editor_plugin.js
+	function add_tinymce_plugins($plugin_array) {
+	   $plugin_array['hrecipeTitle'] = RECIPE_PLUGIN_URL.'TinyMCE-plugins/title/editor_plugin.js';
+	   return $plugin_array;
+	}
+	
+	/**
+	 * Add plugin CSS to tinymce
+	 *
+	 * @return updated list of css files
+	 * @author Kenneth J. Brucker <ken@pumastudios.com>
+	 **/
+	function add_tinymce_css($mce_css){
+		if (! empty($mce_css)) $mce_css .= ',';
+		$mce_css .= RECIPE_PLUGIN_URL . 'editor.css';
+		return $mce_css; 
+	}
 }
- 
-function register_myplugin_button($buttons) {
-   array_push($buttons, "hrecipeTitle");
-   return $buttons;
-}
- 
-// Load the TinyMCE plugin : editor_plugin.js (wp2.5)
-function add_myplugin_tinymce_plugin($plugin_array) {
-   $plugin_array['hrecipeTitle'] = RECIPE_PLUGIN_URL.'TinyMCE-plugins/title/editor_plugin_src.js';
-   return $plugin_array;
-}
- 
-// init process for button control
-add_action('init', 'myplugin_addbuttons');
+endif; // End Class Exists
+
+$hrecipe_microstate = new hrecipe_microstate();
 ?>

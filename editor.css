@@ -1,0 +1,11 @@
+.fn:before {
+	content: "{Recipe Title}";
+	padding-right: 3px;
+	font-size: .5em;
+	color: red;
+}
+
+.fn {
+	border: 1px red solid;
+}
+
