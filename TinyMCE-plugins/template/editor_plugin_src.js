@@ -76,7 +76,7 @@
 				longname : 'Example plugin',
 				author : 'Kenneth J. Brucker',
 				authorurl : 'http://action-a-day.com',
-				infourl : 'http://action-a-day.com/Need-some-url-here', // FIXME
+				infourl : 'http://action-a-day.com/hrecipe-microformat', // FIXME
 				version : "1.0"
 			};
 		}
