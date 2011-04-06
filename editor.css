@@ -1,11 +1,69 @@
-.fn:before {
-	content: "{Recipe Title}";
+/* ================================================================ */
+/* = Provide hints in TinyMCE regarding how a recipe is formatted = */
+/* ================================================================ */
+
+/* Flag special recipe fields in the editor window */
+.hrecipe:before, .fn:before, .recipeid:before, .ingredient:before, .comment:before, .yield:before, .instructions:before, .step:before, .duration:before, .preptime:before, .cooktime:before, .summary:before, .author:before, .published:before, .category:before, .difficulty:before {
 	padding-right: 3px;
 	font-size: .5em;
-	color: red;
+	color: red;	
 }
-
-.fn {
+.hrecipe, .fn, .recipeid, .ingredient, .comment, .yield, .instructions, .step, .duration, .preptime, .cooktime, .summary, .author, .published, .category, .difficulty {
 	border: 1px red solid;
 }
 
+/* Show element type in editor window */
+.hrecipe:before {
+	content: "{Recipe}";
+}
+.fn:before {
+	content: "{Recipe Title}";
+}
+.recipeid:before {
+	content: "{Recipe ID}";
+}
+.ingredient:before {
+	content: "{Ingredient}";
+}
+.ingredient .value:before {
+	content: "{Qty}";
+}
+.ingredient .type:before {
+	content: "{Unit}";
+}
+.ingredient .comment:before {
+	content: "{Comment}";
+}
+.yield:before {
+	content: "{Yield}";
+}
+.instructions:before {
+	content: "{Instructions}";
+}
+.instructions .step:before {
+	content: "{Step}";
+}
+.duration:before {
+	content: "{Duration}";
+}
+.preptime:before {
+	content: "Prep Time";
+}
+.cooktime:before {
+	content: "Cook Time";
+}
+.summary:before {
+	content: "Summary";
+}
+.author:before {
+	content: "Author";
+}
+.published:before {
+	content: "Published";
+}
+.category:before {
+	content: "Category";
+}
+.difficulty:before {
+	content: "Difficulty";
+}
