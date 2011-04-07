@@ -22,6 +22,12 @@ License: GPL2
     You should have received a copy of the GNU General Public License
     along with this program; if not, write to the Free Software
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+
+TODO Create widget for Recipe Categories
+TODO How to have recipes show up in blog posts
+TODO Create a shortcode to place recipe content into a post
+TODO Provide mechanism to remove plugin data from database
+TODO Provide mechanism to import recipes from external sources
 */
 
 // Include the meta-box class code
@@ -35,16 +41,11 @@ class hrecipe_microformat {
 	 * some constants
 	 **/
 	const p = 'hrecipe-microformat';  // Plugin name
+	const prefix = 'hrecipe_';				// prefix for ids, names, etc.
+	const post_type = 'hrecipe_recipe';				// Post Type
 	
 	private static $dir; // Base directory for Plugin
 	private static $url; // Base URL for plugin directory
-	
-	/**
-	 * Setup prefix to use for id's to avoid name collision
-	 *
-	 * @var string
-	 **/
-	private static $_prefix = 'hrecipe_';
 	
 	/**
 	 * meta box for recipe editing
@@ -62,18 +63,31 @@ class hrecipe_microformat {
 	function __construct() {
 		self::$dir = WP_PLUGIN_DIR . '/' . self::p . '/' ;
 		self::$url =  WP_PLUGIN_URL . '/' . self::p . '/' ;
-		
-		// Add the buttons for TinyMCE during WP init
-		add_action( 'init', array( &$this, 'add_buttons' ) );
-		
-		// Add editor stylesheet
-		add_filter( 'mce_css', array( &$this, 'add_tinymce_css' ) );
-		
+
 		// Register custom taxonomies
-		add_action( 'init', array( &$this, 'register_taxonomies'), 0);
-		
+		add_action( 'init', array( &$this, 'register_taxonomies'), 0);		
+
 		// Add recipe custom post type
 		add_action( 'init', array( &$this, 'create_post_type' ) );
+		
+		// Callback to put recipes into the page stream
+		add_filter('pre_get_posts', array(&$this, 'pre_get_posts_filter'));
+
+		// If on the admin screen ...
+		if (is_admin()) {
+			// Add the buttons for TinyMCE during WP init
+			add_action( 'init', array( &$this, 'add_buttons' ) );
+		
+			// Add editor stylesheet
+			add_filter( 'mce_css', array( &$this, 'add_tinymce_css' ) );
+		
+			// Register actions to use the receipe category in admin list view
+			add_action('restrict_manage_posts', array(&$this, 'restrict_recipes_by_category'));
+			add_action('parse_query', array(&$this, 'parse_recipe_category_query'));
+			add_action('manage_hrecipe_recipe_posts_columns', array(&$this, 'add_recipe_category_to_recipe_list'));
+			add_action('manage_posts_custom_column', array(&$this, 'show_column_for_recipe_list'),10,2);
+		}
+		
 	}
 
 	function add_buttons() {
@@ -109,49 +123,144 @@ class hrecipe_microformat {
 	 * Add plugin CSS to tinymce
 	 *
 	 * @return updated list of css files
-	 * @author Kenneth J. Brucker <ken@pumastudios.com>
 	 **/
 	function add_tinymce_css($mce_css){
 		if (! empty($mce_css)) $mce_css .= ',';
 		$mce_css .= self::$url . 'editor.css';
 		return $mce_css; 
 	}
-	
+		
 	/**
 	 * Register the custom taxonomies for recipes
 	 *
 	 * @return void
-	 * @author Kenneth J. Brucker <ken@pumastudios.com>
 	 **/
 	static function register_taxonomies()
 	{
-		$post_type = self::$_prefix . 'recipe';
-		
 		// Create a taxonomy for the Recipe Difficulty
 		register_taxonomy(
-			self::$_prefix . 'difficulty',  // Internal name
-			$post_type,
+			self::prefix . 'difficulty',  // Internal name
+			self::post_type,
 			array(
 				'hierarchical' => true,
 				'label' => __('Level of Difficulty', self::p),
-				'query_var' => true,
-				'rewrite' => true
+				'query_var' => self::prefix . 'difficulty',
+				'rewrite' => true,
+				'show_ui' => false,
+				'show_in_nav_menus' => false,
 			)
 		);
 		
 		// Create a taxonomy for the Recipe Category
 		register_taxonomy(
-			self::$_prefix . 'category',
-			$post_type,
+			self::prefix . 'category',
+			self::post_type,
 			array(
 				'hierarchical' => true,
 				'label' => __('Recipe Category', self::p),
-				'query_var' => true,
-				'rewrite' => true
+				'query_var' => self::prefix . 'category',
+				'rewrite' => true,
+				'show_ui' => true,
 			)
 		);
 	}
 	
+	/**
+	 * Hook to add pull-down menu to restrict recipe list by category
+	 *
+	 * @return void
+	 **/
+	function restrict_recipes_by_category()
+	{
+		global $typenow;
+		global $wp_query;
+		
+		// Make sure we're working with a listing
+		if ($typenow='listing') {
+			$taxonomy = self::prefix . 'category';
+			$category_taxonomy = get_taxonomy($taxonomy);
+			wp_dropdown_categories(array(
+				'show_option_all' => __("Show all {$category_taxonomy->label}", self::p),
+				'taxonomy' => $taxonomy,
+				'name' => $taxonomy,
+				'orderby' => 'name',
+				'selected' => $wp_query->query[$taxonomy],
+				'hierarchical' => true,
+				'depth' => 2,
+				'show_count' => true, // Show count of recipes in the category
+				'hide_empty' => true // Don't show categories with no recipes
+			));
+		}
+	}
+	
+	/**
+	 * Hook to filter query results based on recipe category.  Turns query based on id to query based on name.
+	 *
+	 * @return object query
+	 **/
+	function parse_recipe_category_query($query)
+	{
+		global $pagenow;
+		
+		$taxonomy = self::prefix . "category";
+		if ('edit.php' == $pagenow && $query->get('post_type') == self::post_type && is_numeric($query->get($taxonomy))) {
+			$term = get_term_by('id', $query->get($taxonomy), $taxonomy);
+			$query->set($taxonomy, $term->slug);
+		}
+		
+		return $query;
+	}
+	
+	/**
+	 * Add the recipe category to the post listings column
+	 *
+	 * @param array $list_columns Array of columns for listing
+	 * @return array Updated array of columns
+	 **/
+	function add_recipe_category_to_recipe_list($list_columns)
+	{
+		$taxonomy = self::prefix . 'category';
+		if (!isset($list_columns['author'])) {
+			$new_list_columns = $list_columns;
+		} else {
+			$new_list_columns = array();
+			foreach($list_columns as $key => $list_column) {
+				if ('author' == $key) {
+					$new_list_columns[$taxonomy] = '';
+				}
+				$new_list_columns[$key] = $list_column;
+			}			
+		}
+		$new_list_columns[$taxonomy] = 'Recipe Category';
+		return $new_list_columns;
+	}
+	
+	/**
+	 * Display the recipe categories in the custom list column
+	 *
+	 * @return void Emits HTML
+	 **/
+	function show_column_for_recipe_list($column_name, $post_id)
+	{
+		global $typenow;
+		
+		if ('listing' == $typenow) {
+			$taxonomy = self::prefix . 'category';
+			switch ($column_name) {
+			case $taxonomy:
+				$categories = get_the_terms($post_id, $taxonomy);
+				if (is_array($categories)) {
+					foreach ($categories as $key => $category) {
+						$edit_link = get_term_link($category, $taxonomy);
+						$categories[$key] = '<a href="'. $edit_link . '">' . $category->name . '</a>';
+					}
+					echo implode (' | ', $categories);
+				}
+				break; // End of 
+			}
+		}
+	}
+
 	/**
 	 * Create recipe post type and associated panels in the edit screen
 	 *
@@ -159,40 +268,38 @@ class hrecipe_microformat {
 	 **/
 	function create_post_type()
 	{		
-		$post_type = self::$_prefix . 'recipe';
-		
 		$meta_box = array(
-			'id' => self::$_prefix . 'meta-box',
+			'id' => self::prefix . 'meta-box',
 			'title' => __('Recipe Information', self::p),
-			'pages' => array($post_type), // Only display for post type recipe
+			'pages' => array(self::post_type), // Only display for post type recipe
 			'context' => 'normal',
 			'priority' => 'high',
 			'fields' => array(
 				array(
 					'name' => __('Recipe Title', self::p),
-					'id' => self::$_prefix . 'fn',
+					'id' => self::prefix . 'fn',
 					'type' => 'text'
 				),
 				array(
 					'name' => __( 'Yield', self::p),
-					'id' => self::$_prefix . 'yield',
+					'id' => self::prefix . 'yield',
 					'type' => 'text',
 				),
 				array(
 					'name' => __( 'Duration', self::p),
-					'id' => self::$_prefix . 'duration',
+					'id' => self::prefix . 'duration',
 					'type' => 'text',
 					'desc' => 'Total time required to complete this recipe'
 				),
 				array(
 					'name' => __( 'Prep Time', self::p),
-					'id' => self::$_prefix . 'preptime',
+					'id' => self::prefix . 'preptime',
 					'type' => 'text',
 					'desc' => __( 'Time required for prep work', self::p)
 				),
 				array(
 					'name' => __( 'Cook Time', self::p ),
-					'id' => self::$_prefix . 'cooktime',
+					'id' => self::prefix . 'cooktime',
 					'type' => 'text',
 					'desc' => __( 'Time required to cook', self::p )
 				),
@@ -202,7 +309,7 @@ class hrecipe_microformat {
 		$this->_meta_box = new RW_Meta_Box($meta_box);
 		
 		// Register the Recipe post type
-		register_post_type($post_type,
+		register_post_type(self::post_type,
 			array(
 				'labels' => array (
 					'name' => _x('Recipes', 'post type general name', self::p),
@@ -219,7 +326,7 @@ class hrecipe_microformat {
 				),
 				'public' => true,
 				'has_archive' => true,
-				'rewrite' => array('slug' => 'recipes'),
+				'rewrite' => array('slug' => 'Recipes'),
 				'menu_position' => 7,
 				'supports' => array('title', 'editor', 'author', 'thumbnail', 'trackbacks', 'comments', 'revisions'),
 				'taxonomies' => array('post_tag'),
@@ -228,7 +335,31 @@ class hrecipe_microformat {
 	}
 	
 	/**
+	 * Update the WP query to include additional post types as needed
+	 *
+	 * @param object $query WP query
+	 * @return object Updated WP query
+	 **/
+	function pre_get_posts_filter($query)
+	{
+		// Add plugin post type only on main query
+		if ((!$query->query_vars['suppress_filters']) && (is_home() || is_feed())) {
+			$query_post_type = $query->get('post_type');
+			if (is_array($query_post_type)) {
+				$query_post_type[] = self::post_type;
+			} else {
+				if ('' == $query_post_type) $query_post_type = 'post';
+				$query_post_type = array($query_post_type, self::post_type);
+			}
+			$query->set('post_type', $query_post_type);
+		} 
+error_log(var_export($query->get('post_type'),true));
+		return $query;
+	}
+	
+	/**
 	 * Perform Plugin Activation handling
+	 *	 * Populate the plugin taxonomies with defaults
 	 *
 	 * @return void
 	 **/
@@ -237,16 +368,16 @@ class hrecipe_microformat {
 		self::register_taxonomies();  // Register the needed taxonomies so they can be populated
 		
 		// Create the difficulty taxonomy
-		wp_insert_term(__('Easy', self::p), self::$_prefix . 'difficulty');
-		wp_insert_term(__('Medium', self::p), self::$_prefix . 'difficulty');
-		wp_insert_term(__('Hard', self::p), self::$_prefix . 'difficulty');
+		wp_insert_term(__('Easy', self::p), self::prefix . 'difficulty');
+		wp_insert_term(__('Medium', self::p), self::prefix . 'difficulty');
+		wp_insert_term(__('Hard', self::p), self::prefix . 'difficulty');
 		
 		// Create the Recipe Category taxonomy
-		wp_insert_term(__('Dessert', self::p), self::$_prefix . 'category');
-		wp_insert_term(__('Entrée', self::p), self::$_prefix . 'category');
-		wp_insert_term(__('Main', self::p), self::$_prefix . 'category');
-		wp_insert_term(__('Meat', self::p), self::$_prefix . 'category');
-		wp_insert_term(__('Soup', self::p), self::$_prefix . 'category');
+		wp_insert_term(__('Dessert', self::p), self::prefix . 'category');
+		wp_insert_term(__('Entrée', self::p), self::prefix . 'category');
+		wp_insert_term(__('Main', self::p), self::prefix . 'category');
+		wp_insert_term(__('Meat', self::p), self::prefix . 'category');
+		wp_insert_term(__('Soup', self::p), self::prefix . 'category');
 	}
 	
 }
