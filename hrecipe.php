@@ -30,6 +30,15 @@ TODO Provide mechanism to remove plugin data from database
 TODO Provide mechanism to import recipes from external sources
 */
 
+// Protect from direct execution
+if (!defined(WP_PLUGIN_DIR)) {
+	header('Status: 403 Forbidden');
+  header('HTTP/1.1 403 Forbidden');
+  exit();
+}
+
+global $hrecipe_microformat;
+
 // If the class already exists, all setup is complete
 if ( ! class_exists('hrecipe_microformat')) :
 /**
@@ -38,7 +47,7 @@ if ( ! class_exists('hrecipe_microformat')) :
  *		Plugin options class
  **/		
 {
-	$required_libs = array('lib/meta-box-3.1/meta-box.php', 'admin/options.php');
+	$required_libs = array('lib/meta-box-3.1/meta-box.php', 'admin/options-class.php');
 	foreach ($required_libs as $lib) {
 		if (!include_once($lib)) {
 			hrecipe_microformat_error_log('Unable to load required library:  "' . $lib . '"');
@@ -77,7 +86,7 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 	 */
 	
 	function __construct() {
-		parent::__construct();
+		parent::setup();
 
 		self::$dir = WP_PLUGIN_DIR . '/' . self::p . '/' ;
 		self::$url =  WP_PLUGIN_URL . '/' . self::p . '/' ;
@@ -87,67 +96,11 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 
 		// Add recipe custom post type
 		add_action( 'init', array( &$this, 'create_post_type' ) );
-		
+
 		// Callback to put recipes into the page stream
 		add_filter('pre_get_posts', array(&$this, 'pre_get_posts_filter'));
-
-		// If on the admin screen ...
-		if (is_admin()) {
-			// Add the buttons for TinyMCE during WP init
-			add_action( 'init', array( &$this, 'add_buttons' ) );
-		
-			// Add editor stylesheet
-			add_filter( 'mce_css', array( &$this, 'add_tinymce_css' ) );
-		
-			// Register actions to use the receipe category in admin list view
-			add_action('restrict_manage_posts', array(&$this, 'restrict_recipes_by_category'));
-			add_action('parse_query', array(&$this, 'parse_recipe_category_query'));
-			add_action('manage_hrecipe_recipe_posts_columns', array(&$this, 'add_recipe_category_to_recipe_list'));
-			add_action('manage_posts_custom_column', array(&$this, 'show_column_for_recipe_list'),10,2);
-		}
-		
 	}
 
-	function add_buttons() {
-	   // Don't bother doing this stuff if the current user lacks permissions
-	   if ( ! current_user_can('edit_posts') && ! current_user_can('edit_pages') )
-	     return;
- 
-	   // Add only in Rich Editor mode
-	   if ( get_user_option('rich_editing') == 'true') {
-	     add_filter('mce_external_plugins', array(&$this, 'add_tinymce_plugins'));
-	     add_filter('mce_buttons_3', array(&$this, 'register_buttons'));
-	   }
-	}
- 
-	function register_buttons($buttons) {
-	   array_push($buttons, 'hrecipeTitle', 'hrecipeYield', 'hrecipeDuration', 'hrecipePreptime', 'hrecipeCooktime',  'hrecipeAuthor', 'hrecipePublished', 'hrecipeCategory', 'hrecipeDifficulty' );
-	// 'hrecipeIngredientList', 'hrecipeIngredient', 'hrecipeInstructions', 'hrecipeStep', 'hrecipeSummary',
-	   return $buttons;
-	}
- 
-	// Load the TinyMCE plugins : editor_plugin.js
-	function add_tinymce_plugins($plugin_array) {
-		$plugin_array['hrecipeTitle'] = self::$url.'TinyMCE-plugins/info/editor_plugin.js';
-		// $plugin_array['hrecipeTitle'] = self::$url.'TinyMCE-plugins/ingredients/editor_plugin.js';
-		// $plugin_array['hrecipeTitle'] = self::$url.'TinyMCE-plugins/instructions/editor_plugin.js';
-		// $plugin_array['hrecipeTitle'] = self::$url.'TinyMCE-plugins/step/editor_plugin.js';
-		// $plugin_array['hrecipeTitle'] = self::$url.'TinyMCE-plugins/summary/editor_plugin.js';
-	
-		return $plugin_array;
-	}
-	
-	/**
-	 * Add plugin CSS to tinymce
-	 *
-	 * @return updated list of css files
-	 **/
-	function add_tinymce_css($mce_css){
-		if (! empty($mce_css)) $mce_css .= ',';
-		$mce_css .= self::$url . 'editor.css';
-		return $mce_css; 
-	}
-		
 	/**
 	 * Register the custom taxonomies for recipes
 	 *
@@ -183,102 +136,6 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 		);
 	}
 	
-	/**
-	 * Hook to add pull-down menu to restrict recipe list by category
-	 *
-	 * @return void
-	 **/
-	function restrict_recipes_by_category()
-	{
-		global $typenow;
-		global $wp_query;
-		
-		// Make sure we're working with a listing
-		if ($typenow='listing') {
-			$taxonomy = self::prefix . 'category';
-			$category_taxonomy = get_taxonomy($taxonomy);
-			wp_dropdown_categories(array(
-				'show_option_all' => __("Show all {$category_taxonomy->label}", self::p),
-				'taxonomy' => $taxonomy,
-				'name' => $taxonomy,
-				'orderby' => 'name',
-				'selected' => $wp_query->query[$taxonomy],
-				'hierarchical' => true,
-				'depth' => 2,
-				'show_count' => true, // Show count of recipes in the category
-				'hide_empty' => true // Don't show categories with no recipes
-			));
-		}
-	}
-	
-	/**
-	 * Hook to filter query results based on recipe category.  Turns query based on id to query based on name.
-	 *
-	 * @return object query
-	 **/
-	function parse_recipe_category_query($query)
-	{
-		global $pagenow;
-		
-		$taxonomy = self::prefix . "category";
-		if ('edit.php' == $pagenow && $query->get('post_type') == self::post_type && is_numeric($query->get($taxonomy))) {
-			$term = get_term_by('id', $query->get($taxonomy), $taxonomy);
-			$query->set($taxonomy, $term->slug);
-		}
-		
-		return $query;
-	}
-	
-	/**
-	 * Add the recipe category to the post listings column
-	 *
-	 * @param array $list_columns Array of columns for listing
-	 * @return array Updated array of columns
-	 **/
-	function add_recipe_category_to_recipe_list($list_columns)
-	{
-		$taxonomy = self::prefix . 'category';
-		if (!isset($list_columns['author'])) {
-			$new_list_columns = $list_columns;
-		} else {
-			$new_list_columns = array();
-			foreach($list_columns as $key => $list_column) {
-				if ('author' == $key) {
-					$new_list_columns[$taxonomy] = '';
-				}
-				$new_list_columns[$key] = $list_column;
-			}			
-		}
-		$new_list_columns[$taxonomy] = 'Recipe Category';
-		return $new_list_columns;
-	}
-	
-	/**
-	 * Display the recipe categories in the custom list column
-	 *
-	 * @return void Emits HTML
-	 **/
-	function show_column_for_recipe_list($column_name, $post_id)
-	{
-		global $typenow;
-		
-		if ('listing' == $typenow) {
-			$taxonomy = self::prefix . 'category';
-			switch ($column_name) {
-			case $taxonomy:
-				$categories = get_the_terms($post_id, $taxonomy);
-				if (is_array($categories)) {
-					foreach ($categories as $key => $category) {
-						$edit_link = get_term_link($category, $taxonomy);
-						$categories[$key] = '<a href="'. $edit_link . '">' . $category->name . '</a>';
-					}
-					echo implode (' | ', $categories);
-				}
-				break; // End of 
-			}
-		}
-	}
-
 	/**
 	 * Create recipe post type and associated panels in the edit screen
 	 *
@@ -361,7 +218,7 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 	function pre_get_posts_filter($query)
 	{
 		// Add plugin post type only on main query - don't add if filters should be suppressed
-		if ((!$query->query_vars['suppress_filters']) 
+		if ((!array_key_exists('suppress_filters', $query->query_vars) || !$query->query_vars['suppress_filters']) 
 		&& ((is_home() && $this->display_in_home) || (is_feed() && $this->display_in_feed))) {
 			$query_post_type = $query->get('post_type');
 			if (is_array($query_post_type)) {
@@ -398,7 +255,19 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 		wp_insert_term(__('Soup', self::p), self::prefix . 'category');
 	}
 	
+	/**
+	 * Perform Plugin deactivation handling
+	 *
+	 * @return void
+	 **/
+	function ()
+	{
+		// Nothing right now...
+	}
 }
+
+$hrecipe_microformat = new hrecipe_microformat();
+
 endif; // End Class Exists
 
 function hrecipe_microformat_error_log($msg) {
@@ -423,10 +292,10 @@ function hrecipe_microformat_error_log_display() {
 	echo "</p></div>";
 }
 
-
-if (! defined($hrecipe_microformat)) $hrecipe_microformat = new hrecipe_microformat();
-
 // Setup plugin activation function to populate the taxonomies
 register_activation_hook( __FILE__, array('hrecipe_microformat', 'plugin_activation'));
+
+// Setup plugin deactivation function for cleanup
+register_deactivation_hook( __FILE__, array('hrecipe_microformat', 'plugin_deactivation'));
 
 ?>

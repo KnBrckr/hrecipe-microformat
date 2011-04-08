@@ -24,6 +24,13 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  **/
 
+// Protect from direct execution
+if (!defined(WP_PLUGIN_DIR)) {
+	header('Status: 403 Forbidden');
+  header('HTTP/1.1 403 Forbidden');
+  exit();
+}
+
 class hrecipe_microformat_options
 {
 	/**
@@ -31,7 +38,7 @@ class hrecipe_microformat_options
 	 */
 	const p = 'hrecipe-microformat';  // Plugin name
 	const prefix = 'hrecipe_';				// prefix for ids, names, etc.
-	const post_type = 'hrecipe_recipe';				// Post Type
+	const post_type = 'hrecipe_recipe';				// Applied to entry as a class
 	const settings = 'hrecipe_microformat_settings';
 	const settings_page = 'hrecipe_microformat_settings_page';
 
@@ -60,11 +67,9 @@ class hrecipe_microformat_options
 	protected $display_in_feed;
 
 	/**
-	 * Class Constructor function
-	 *
 	 * Setup plugin defaults and register with WordPress for use in Admin screens
 	 **/
-	function __construct()
+	function setup()
 	{
 		
 		// Retrieve Plugin Options
@@ -87,15 +92,27 @@ class hrecipe_microformat_options
 			add_action('admin_init', array( &$this, 'admin_init'));
 			add_action('admin_menu', array(&$this, 'admin_menu'));
 
-		// 	// Add section for reporting configuration errors
-		// 	add_action('admin_footer', array( &$this, 'admin_notice'));			
+			// Add section for reporting configuration errors and notices
+			add_action('admin_footer', array( &$this, 'admin_notice'));			
+
+			// Add the buttons for TinyMCE during WP init
+			add_action( 'init', array( &$this, 'add_buttons' ) );
+
+			// Add editor stylesheet
+			add_filter( 'mce_css', array( &$this, 'add_tinymce_css' ) );
+
+			// Register actions to use the receipe category in admin list view
+			add_action('restrict_manage_posts', array(&$this, 'restrict_recipes_by_category'));
+			add_action('parse_query', array(&$this, 'parse_recipe_category_query'));
+			add_action('manage_hrecipe_recipe_posts_columns', array(&$this, 'add_recipe_category_to_recipe_list'));
+			add_action('manage_posts_custom_column', array(&$this, 'show_column_for_recipe_list'),10,2);
 		}
 
-		// // If logging is enabled, setup save in the footers.
-		// if ($this->debug_log_enabled) {
-		// 	add_action('admin_footer', array( &$this, 'save_debug_log'));
-		// 	add_action('wp_footer', array( &$this, 'save_debug_log'));				
-		// }
+		// If logging is enabled, setup save in the footers.
+		if ($this->debug_log_enabled) {
+			add_action('admin_footer', array( &$this, 'save_debug_log'));
+			add_action('wp_footer', array( &$this, 'save_debug_log'));				
+		}
 	}
 	
 	/**
@@ -111,8 +128,7 @@ class hrecipe_microformat_options
 			__('hRecipe Microformat', self::p), 
 			'manage_options', 
 			self::settings, 
-			array(&$this, 'options_page_html'));	
-			
+			array(&$this, 'options_page_html'));			
 	}
 
 	/**
@@ -184,7 +200,7 @@ class hrecipe_microformat_options
 	{
 		if ( $this->debug_log_enabled ) {
 			echo '<div class="error"><p>';
-			printf(__('%s logging is enabled.  If left enabled, this can affect database performance.', self::p),'<a href="options.php?page=' . self::settings . '">' . self::p . '</a>');
+			printf(__('%s logging is enabled.  If left enabled, this can affect database performance.', self::p),'<a href="options.php?page=' . self::settings_page . '">' . self::p . '</a>');
 			echo '</p></div>';
 		}
 	}
@@ -215,6 +231,7 @@ class hrecipe_microformat_options
 		if (!current_user_can('manage_options')) {
 			wp_die(__('You do not have sufficient permissions to access this page.'));
 		}
+		echo '<div class="wrap">';
 		echo '<h2>';
 		_e('hRecipe Microformat Plugin Settings',self::p);
 		echo '</h2>';
@@ -258,6 +275,8 @@ class hrecipe_microformat_options
 	{
 		self::checkbox_html('display_in_feed', $this->display_in_feed);
 		_e('Include Recipes in the main feed.', self::p);
+		echo ' ';
+		_e('This change might not take effect for a client until a new post or recipe is added.', self::p);
 	}
 	
 	/**
@@ -281,7 +300,7 @@ class hrecipe_microformat_options
 			echo '<dl class=hmf-debug-log>';
 			echo '<dt>Log:';
 			foreach ($this->debug_log as $line) {
-				echo '<dd>' . esc_attr($line);
+				echo '<dd></dd>' . esc_attr($line);
 			}
 			echo '</dl>';
 		}
@@ -299,7 +318,165 @@ class hrecipe_microformat_options
 		$checked = $checked ? " checked" : "";
 		echo '<input type="checkbox" name="' . self::settings . '['. $field . ']" value="1"' . $checked . '>';
 	}
+	
+	function add_buttons() {
+	   // Don't bother doing this stuff if the current user lacks permissions
+	   if ( ! current_user_can('edit_posts') && ! current_user_can('edit_pages') )
+	     return;
+ 
+	   // Add only in Rich Editor mode
+	   if ( get_user_option('rich_editing') == 'true') {
+	     add_filter('mce_external_plugins', array(&$this, 'add_tinymce_plugins'));
+	     add_filter('mce_buttons_3', array(&$this, 'register_buttons'));
+	   }
+	}
+ 
+	function register_buttons($buttons) {
+	   array_push($buttons, 'hrecipeTitle', 'hrecipeYield', 'hrecipeDuration', 'hrecipePreptime', 'hrecipeCooktime',  'hrecipeAuthor', 'hrecipePublished', 'hrecipeCategory', 'hrecipeDifficulty' );
+	// 'hrecipeIngredientList', 'hrecipeIngredient', 'hrecipeInstructions', 'hrecipeStep', 'hrecipeSummary',
+	   return $buttons;
+	}
+ 
+	// Load the TinyMCE plugins : editor_plugin.js
+	function add_tinymce_plugins($plugin_array) {
+		$plugin_array['hrecipeTitle'] = self::$url.'TinyMCE-plugins/info/editor_plugin.js';
+		// $plugin_array['hrecipeTitle'] = self::$url.'TinyMCE-plugins/ingredients/editor_plugin.js';
+		// $plugin_array['hrecipeTitle'] = self::$url.'TinyMCE-plugins/instructions/editor_plugin.js';
+		// $plugin_array['hrecipeTitle'] = self::$url.'TinyMCE-plugins/step/editor_plugin.js';
+		// $plugin_array['hrecipeTitle'] = self::$url.'TinyMCE-plugins/summary/editor_plugin.js';
+	
+		return $plugin_array;
+	}
+	
+	/**
+	 * Add plugin CSS to tinymce
+	 *
+	 * @return updated list of css files
+	 **/
+	function add_tinymce_css($mce_css){
+		if (! empty($mce_css)) $mce_css .= ',';
+		$mce_css .= self::$url . 'editor.css';
+		return $mce_css; 
+	}
 		
+	/**
+	 * Hook to add pull-down menu to restrict recipe list by category
+	 *
+	 * @return void
+	 **/
+	function restrict_recipes_by_category()
+	{
+		global $typenow;
+		global $wp_query;
+		
+		// Make sure we're working with a listing
+		if ($typenow='listing') {
+			$taxonomy = self::prefix . 'category';
+			$category_taxonomy = get_taxonomy($taxonomy);
+			$selected = array_key_exists($taxonomy, $wp_query->query) ? $wp_query->query[$taxonomy] : '';
+			wp_dropdown_categories(array(
+				'show_option_all' => __("Show all {$category_taxonomy->label}", self::p),
+				'taxonomy' => $taxonomy,
+				'name' => $taxonomy,
+				'orderby' => 'name',
+				'selected' => $selected,
+				'hierarchical' => true,
+				'depth' => 2,
+				'show_count' => true, // Show count of recipes in the category
+				'hide_empty' => true // Don't show categories with no recipes
+			));
+		}
+	}
+	
+	/**
+	 * Hook to filter query results based on recipe category.  Turns query based on id to query based on name.
+	 *
+	 * @return object query
+	 **/
+	function parse_recipe_category_query($query)
+	{
+		global $pagenow;
+		
+		$taxonomy = self::prefix . "category";
+		if ('edit.php' == $pagenow && $query->get('post_type') == self::post_type && is_numeric($query->get($taxonomy))) {
+			$term = get_term_by('id', $query->get($taxonomy), $taxonomy);
+			$query->set($taxonomy, $term->slug);
+		}
+		
+		return $query;
+	}
+	
+	/**
+	 * Add the recipe category to the post listings column
+	 *
+	 * @param array $list_columns Array of columns for listing
+	 * @return array Updated array of columns
+	 **/
+	function add_recipe_category_to_recipe_list($list_columns)
+	{
+		$taxonomy = self::prefix . 'category';
+		if (!isset($list_columns['author'])) {
+			$new_list_columns = $list_columns;
+		} else {
+			$new_list_columns = array();
+			foreach($list_columns as $key => $list_column) {
+				if ('author' == $key) {
+					$new_list_columns[$taxonomy] = '';
+				}
+				$new_list_columns[$key] = $list_column;
+			}			
+		}
+		$new_list_columns[$taxonomy] = 'Recipe Category';
+		return $new_list_columns;
+	}
+	
+	/**
+	 * Display the recipe categories in the custom list column
+	 *
+	 * @return void Emits HTML
+	 **/
+	function show_column_for_recipe_list($column_name, $post_id)
+	{
+		global $typenow;
+		
+		if ('listing' == $typenow) {
+			$taxonomy = self::prefix . 'category';
+			switch ($column_name) {
+			case $taxonomy:
+				$categories = get_the_terms($post_id, $taxonomy);
+				if (is_array($categories)) {
+					foreach ($categories as $key => $category) {
+						$edit_link = get_term_link($category, $taxonomy);
+						$categories[$key] = '<a href="'. $edit_link . '">' . $category->name . '</a>';
+					}
+					echo implode (' | ', $categories);
+				}
+				break; // End of 
+			}
+		}
+	}
+	
+	/**
+	 * Cleanup database if uninstall is requested
+	 *
+	 * @return void
+	 * @author Kenneth J. Brucker <ken@pumastudios.com>
+	 **/
+	function uninstall()
+	{
+//		delete_option(self::settings); // Remove the plugin settings
+		
+		/** Delete the recipe posts **/
+		$recipes = new WP_Query(array('post_type' => self::post_type)) 
+		foreach ($recipes->posts as $recipe){
+			error_log('Will delete postid '.$recipe->ID);
+//			wp_delete_post($postid, false); // Allow the posts to go into the trash, just in case...
+		}
+		
+		/** Delete taxonomies **/
+		
+	}
+	
 	/**
 	 * Log an error message for display
 	 **/
