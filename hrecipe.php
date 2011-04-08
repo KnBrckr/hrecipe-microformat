@@ -31,7 +31,7 @@ TODO Provide mechanism to import recipes from external sources
 */
 
 // Protect from direct execution
-if (!defined(WP_PLUGIN_DIR)) {
+if (!defined('WP_PLUGIN_DIR')) {
 	header('Status: 403 Forbidden');
   header('HTTP/1.1 403 Forbidden');
   exit();
@@ -254,16 +254,6 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 		wp_insert_term(__('Meat', self::p), self::prefix . 'category');
 		wp_insert_term(__('Soup', self::p), self::prefix . 'category');
 	}
-	
-	/**
-	 * Perform Plugin deactivation handling
-	 *
-	 * @return void
-	 **/
-	function ()
-	{
-		// Nothing right now...
-	}
 }
 
 $hrecipe_microformat = new hrecipe_microformat();
@@ -294,8 +284,5 @@ function hrecipe_microformat_error_log_display() {
 
 // Setup plugin activation function to populate the taxonomies
 register_activation_hook( __FILE__, array('hrecipe_microformat', 'plugin_activation'));
-
-// Setup plugin deactivation function for cleanup
-register_deactivation_hook( __FILE__, array('hrecipe_microformat', 'plugin_deactivation'));
 
 ?>

@@ -25,7 +25,7 @@
  **/
 
 // Protect from direct execution
-if (!defined(WP_PLUGIN_DIR)) {
+if (!defined('WP_PLUGIN_DIR')) {
 	header('Status: 403 Forbidden');
   header('HTTP/1.1 403 Forbidden');
   exit();
@@ -73,9 +73,7 @@ class hrecipe_microformat_options
 	{
 		
 		// Retrieve Plugin Options
-		$options = get_option(self::settings);
-		if (! is_array($options)) $options = array();
-		
+		$options = (array) get_option(self::settings);		
 		
 		// Display Recipes on home page? -- Default to true
 		$this->display_in_home = array_key_exists('display_in_home', $options) ? $options['display_in_home'] : false;
@@ -467,7 +465,7 @@ class hrecipe_microformat_options
 //		delete_option(self::settings); // Remove the plugin settings
 		
 		/** Delete the recipe posts **/
-		$recipes = new WP_Query(array('post_type' => self::post_type)) 
+		$recipes = new WP_Query(array('post_type' => self::post_type));
 		foreach ($recipes->posts as $recipe){
 			error_log('Will delete postid '.$recipe->ID);
 //			wp_delete_post($postid, false); // Allow the posts to go into the trash, just in case...
