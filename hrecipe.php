@@ -77,9 +77,11 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 	 */
 	
 	function __construct() {
+		parent::__construct();
+
 		self::$dir = WP_PLUGIN_DIR . '/' . self::p . '/' ;
 		self::$url =  WP_PLUGIN_URL . '/' . self::p . '/' ;
-		
+				
 		// Register custom taxonomies
 		add_action( 'init', array( &$this, 'register_taxonomies'), 0);		
 
@@ -359,7 +361,8 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 	function pre_get_posts_filter($query)
 	{
 		// Add plugin post type only on main query - don't add if filters should be suppressed
-		if ((!$query->query_vars['suppress_filters']) && (is_home() || is_feed())) {
+		if ((!$query->query_vars['suppress_filters']) 
+		&& ((is_home() && $this->display_in_home) || (is_feed() && $this->display_in_feed))) {
 			$query_post_type = $query->get('post_type');
 			if (is_array($query_post_type)) {
 				$query_post_type[] = self::post_type;

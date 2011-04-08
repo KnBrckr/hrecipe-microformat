@@ -33,6 +33,7 @@ class hrecipe_microformat_options
 	const prefix = 'hrecipe_';				// prefix for ids, names, etc.
 	const post_type = 'hrecipe_recipe';				// Post Type
 	const settings = 'hrecipe_microformat_settings';
+	const settings_page = 'hrecipe_microformat_settings_page';
 
 	/**
 	 * When errors are detected in the module, this variable will contain a text description
@@ -63,28 +64,32 @@ class hrecipe_microformat_options
 	 *
 	 * Setup plugin defaults and register with WordPress for use in Admin screens
 	 **/
-	function __constructor()
+	function __construct()
 	{
+		
 		// Retrieve Plugin Options
 		$options = get_option(self::settings);
+		if (! is_array($options)) $options = array();
+		
 		
 		// Display Recipes on home page? -- Default to true
-		$this->display_in_home = array_key_exists('display_in_home', $options) ? $options['display_in_home'] : true;
+		$this->display_in_home = array_key_exists('display_in_home', $options) ? $options['display_in_home'] : false;
 		
 		// Display Recipes in main feed?  -- Default to true
-		$this->display_in_feed = array_key_exists('display_in_feed', $options) ? $options['display_in_feed'] : true;
+		$this->display_in_feed = array_key_exists('display_in_feed', $options) ? $options['display_in_feed'] : false;
 		
-		// // Init value for debug log
-		// $this->debug_log_enabled = $options['debug_log_enabled'] ? $options['debug_log_enabled'] : 0;
-		// $this->debug_log = $options['debug_log'] ? $options['debug_log'] : array();
+		// Init value for debug log
+		$this->debug_log_enabled = array_key_exists('debug_log_enabled', $options) ? $options['debug_log_enabled'] : false;
+		$this->debug_log = array_key_exists('debug_log',$options) ? $options['debug_log'] : array();
 		
 		// When displaying admin screens ...
-		// if ( is_admin() ) {
-		// 	add_action( 'admin_init', array( &$this, 'admin_init' ) );
-		// 	
+		if ( is_admin() ) {
+			add_action('admin_init', array( &$this, 'admin_init'));
+			add_action('admin_menu', array(&$this, 'admin_menu'));
+
 		// 	// Add section for reporting configuration errors
 		// 	add_action('admin_footer', array( &$this, 'admin_notice'));			
-		//}
+		}
 
 		// // If logging is enabled, setup save in the footers.
 		// if ($this->debug_log_enabled) {
@@ -92,12 +97,14 @@ class hrecipe_microformat_options
 		// 	add_action('wp_footer', array( &$this, 'save_debug_log'));				
 		// }
 	}
-		
+	
 	/**
-	 * Register the plugin settings options when running admin_screen
+	 * Create admin menu object
+	 *
+	 * @return void
 	 **/
-	function admin_init ()
-	{
+	function admin_menu()
+	{	
 		// Create the sub-menu item in the Settings section
 		add_options_page(
 			__('hRecipe Microformat Plugin Settings', self::p), 
@@ -106,36 +113,64 @@ class hrecipe_microformat_options
 			self::settings, 
 			array(&$this, 'options_page_html'));	
 			
-		// Add section controlling where recipes are displayed
+	}
+
+	/**
+	 * Register the plugin settings options when running admin_screen
+	 **/
+	function admin_init ()
+	{
+		/**
+		 * Add section controlling where recipes are displayed
+		 **/
+		$settings_section = self::settings . '-display';
 		add_settings_section( 
-				self::settings . '_section', 
-				'Hrecipe Microformat Settings', 
-				array( &$this, 'settings_section_html'), 
-				'plugins' );
+			$settings_section, 
+			__('Recipe Display Settings', self::p), 
+			array( &$this, 'display_section_html'), 
+			self::settings_page 
+		);
+
+		// Add Display in Home field to the plugin admin settings section
+		add_settings_field( 
+			self::settings . '[display_in_home]', 
+			__('Display In Home', self::p), 
+			array( &$this, 'display_in_home_html' ), 
+			self::settings_page, 
+			$settings_section 
+		);
 		
-		// // Add slug name field to the plugin admin settings section
-		// add_settings_field( 
-		// 		'pau_plugin_settings[slug]', 
-		// 		'Slug', 
-		// 		array( &$this, 'slug_html' ), 
-		// 		'media', 
-		// 		'pau_settings_section' );
-		// 
-		// // Add Plugin Error Logging
-		// add_settings_field( 
-		// 		'pau_plugin_settings[debug_log_enabled]', 
-		// 		'Enable Debug Log', 
-		// 		array( &$this, 'debug_log_enabled_html'), 
-		// 		'media', 
-		// 		'pau_settings_section' );
-		// add_settings_field(
-		// 		'pau_plugin_settings[debug_log]',
-		// 		array( &$this, 'debug_log_html'),
-		// 		'media',
-		// 		'pau_settings_section' );
-		// 
-		// // Register the slug name setting;
-		// register_setting( 'media', 'pau_plugin_settings', array (&$this, 'sanitize_settings') );
+		// Add Display in Feed field to the plugin admin settings section
+		add_settings_field( 
+			self::settings . '[display_in_feed]', 
+			__('Display In Feed', self::p), 
+			array( &$this, 'display_in_feed_html' ), 
+			self::settings_page, 
+			$settings_section 
+		);
+
+		/**
+		 * Add section for debug logging
+		 **/
+		$settings_section = self::settings . '-debug';
+		add_settings_section(
+			$settings_section,
+			__('Debug Logging', self::p),
+			array(&$this, 'debug_section_html'),
+			self::settings_page
+		);
+		
+		// Add Plugin Error Logging
+		add_settings_field( 
+			self::settings . '[debug_log_enabled]', 
+			__('Enable Debug Log', self::p), 
+			array( &$this, 'debug_log_enabled_html'), 
+			self::settings_page, 
+			$settings_section 
+		);
+		
+		// Register the settings name
+		register_setting( self::settings_page, self::settings, array (&$this, 'sanitize_settings') );
 		
 		// TODO Need an unregister_setting routine for de-install of plugin
 	}
@@ -172,33 +207,66 @@ class hrecipe_microformat_options
 	/**
 	 * Emit HTML to create the Plugin settings page
 	 *
+	 * @access public
 	 * @return void
 	 **/
-	function options_page_html()
+	public function options_page_html()
 	{
-		echo '<h2>' . self::$p . ' Settings</h2>';
+		if (!current_user_can('manage_options')) {
+			wp_die(__('You do not have sufficient permissions to access this page.'));
+		}
+		echo '<h2>';
+		_e('hRecipe Microformat Plugin Settings',self::p);
+		echo '</h2>';
+		echo '<form method="post" action="options.php">';
+		settings_fields(self::settings_page);
+		do_settings_sections(self::settings_page);
+		echo '<p class=submit>';
+		echo '<input type="submit" class="button-primary" value="' . __('Save Changes') . '" />';
+		echo '</p>';
+		echo '</form>';
+		echo '</div>';
 	}
 	
 	/**
-	 * Emit HTML to create a settings section for the plugin in admin screen.
+	 * Emit HTML to create the Display section for the plugin in admin screen.
 	 **/
-	function settings_section_html()
+	function display_section_html()
 	{	
 		echo '<p>';
-			echo 'Settings go here';
+			_e('Configure how Recipes are included in the blog and feeds', self::p);
 		echo '</p>';
 	}
 	
 	/**
-	 * Emit HTML to create form field for slug name
+	 * Emit HTML for plugin field
+	 *
+	 * @return void
 	 **/
-	function slug_html()
-	{ 
-		echo '<input type="text" name="pau_plugin_settings[slug]" value="' . $this->slug . '" />';
+	function display_in_home_html()
+	{
+		self::checkbox_html('display_in_home', $this->display_in_home);
+		_e('Display Recipes on the home (blog) page.', self::p);
+	}
+	
+	/**
+	 * Emit HTML for plugin field
+	 *
+	 * @return void
+	 **/
+	function display_in_feed_html()
+	{
+		self::checkbox_html('display_in_feed', $this->display_in_feed);
+		_e('Include Recipes in the main feed.', self::p);
+	}
+	
+	/**
+	 * Emit HTML to create the Debug section for the plugin in admin screen.
+	 **/
+	function debug_section_html()
+	{	
 		echo '<p>';
-		_e('Set the slug used by the plugin.  Only alphanumeric, dash (-) and underscore (_) characters are allowed.  White space will be converted to dash, illegal characters will be removed.', 'picasa-album-uploader');
-		echo '<br />';
-		_e('When the slug name is changed, a new button must be installed in Picasa to match the new setting.', 'picasa-album-uploader');
+			_e('Configure debug settings.', self::p);
 		echo '</p>';
 	}
 	
@@ -207,20 +275,10 @@ class hrecipe_microformat_options
 	 **/
 	function debug_log_enabled_html()
 	{ 
-		global $pau_versions;
-		
-		$checked = $this->debug_log_enabled ? "checked" : "" ;
-		echo '<input type="checkbox" name="pau_plugin_settings[debug_log_enabled]" value="1" ' . $checked . '>';
-		_e('Enable Plugin Debug Logging. When enabled, log will display below.', 'picasa-album-uploader');
+		self::checkbox_html('debug_log_enabled', $this->debug_log_enabled);
+		_e('Enable Plugin Debug Logging. When enabled, log will display below.', self::p);
 		if ( $this-> debug_log_enabled ) {
-			echo '<dl class=pau-debug-log>';
-			echo '<dt>Versions: ';
-			foreach ($pau_versions as $line) {
-				echo '<dd>' . esc_attr($line);
-			}
-			echo '<dt>Plugin Slug: <dd>' . $this->slug;
-			echo '<dt>Permalink Structure: <dd>' . get_option('permalink_structure');
-			echo '<dt>Button HTML: <dd>' . esc_attr( do_shortcode( "[picasa_album_uploader_button]" ) );
+			echo '<dl class=hmf-debug-log>';
 			echo '<dt>Log:';
 			foreach ($this->debug_log as $line) {
 				echo '<dd>' . esc_attr($line);
@@ -229,6 +287,19 @@ class hrecipe_microformat_options
 		}
 	}
 	
+	/**
+	 * Emit HTML for a checkbox
+	 *
+	 * @param string $field Name of field in the settings array
+	 * @param string $checked True if the checkbox should be checked
+	 * @return void
+	 **/
+	function checkbox_html($field, $checked)
+	{
+		$checked = $checked ? " checked" : "";
+		echo '<input type="checkbox" name="' . self::settings . '['. $field . ']" value="1"' . $checked . '>';
+	}
+		
 	/**
 	 * Log an error message for display
 	 **/
@@ -256,7 +327,7 @@ class hrecipe_microformat_options
 	 * @return void
 	 * @author Kenneth J. Brucker <ken@pumastudios.com>
 	 **/
-	function p_error_log($msg)
+	function log_err($msg)
 	{
 		error_log(self::p . ": " . $msg);
 		$this->debug_log($msg);
