@@ -30,29 +30,45 @@ TODO Provide mechanism to remove plugin data from database
 TODO Provide mechanism to import recipes from external sources
 */
 
-// Include the meta-box class code
-include_once ('lib/meta-box-3.1/meta-box.php');
-
 // If the class already exists, all setup is complete
 if ( ! class_exists('hrecipe_microformat')) :
+/**
+ * Load the required libraries - use a sub-scope to protect global variables
+ *		meta-box class used to create new post type
+ *		Plugin options class
+ **/		
+{
+	$required_libs = array('lib/meta-box-3.1/meta-box.php', 'admin/options.php');
+	foreach ($required_libs as $lib) {
+		if (!include_once($lib)) {
+			hrecipe_microformat_error_log('Unable to load required library:  "' . $lib . '"');
+			return;  // A required module is not available
+		}
+	}
+}
 
-class hrecipe_microformat {
+class hrecipe_microformat extends hrecipe_microformat_options {
 	/**
 	 * some constants
 	 **/
-	const p = 'hrecipe-microformat';  // Plugin name
-	const prefix = 'hrecipe_';				// prefix for ids, names, etc.
-	const post_type = 'hrecipe_recipe';				// Post Type
-	
 	private static $dir; // Base directory for Plugin
 	private static $url; // Base URL for plugin directory
 	
 	/**
 	 * meta box for recipe editing
 	 *
+	 * @access private
 	 * @var object
 	 **/
-	private $_meta_box;
+	private $meta_box;
+	
+	/**
+	 * Plugin Options Array
+	 *
+	 * @access private
+	 * @var array
+	 **/
+	private $options;
 	
 	/**
 	 * undocumented function
@@ -63,7 +79,7 @@ class hrecipe_microformat {
 	function __construct() {
 		self::$dir = WP_PLUGIN_DIR . '/' . self::p . '/' ;
 		self::$url =  WP_PLUGIN_URL . '/' . self::p . '/' ;
-
+		
 		// Register custom taxonomies
 		add_action( 'init', array( &$this, 'register_taxonomies'), 0);		
 
@@ -306,7 +322,7 @@ class hrecipe_microformat {
 			)
 		);
 		// Create the editor metaboxes
-		$this->_meta_box = new RW_Meta_Box($meta_box);
+		$this->meta_box = new RW_Meta_Box($meta_box);
 		
 		// Register the Recipe post type
 		register_post_type(self::post_type,
@@ -342,7 +358,7 @@ class hrecipe_microformat {
 	 **/
 	function pre_get_posts_filter($query)
 	{
-		// Add plugin post type only on main query
+		// Add plugin post type only on main query - don't add if filters should be suppressed
 		if ((!$query->query_vars['suppress_filters']) && (is_home() || is_feed())) {
 			$query_post_type = $query->get('post_type');
 			if (is_array($query_post_type)) {
@@ -353,7 +369,6 @@ class hrecipe_microformat {
 			}
 			$query->set('post_type', $query_post_type);
 		} 
-error_log(var_export($query->get('post_type'),true));
 		return $query;
 	}
 	
@@ -382,6 +397,29 @@ error_log(var_export($query->get('post_type'),true));
 	
 }
 endif; // End Class Exists
+
+function hrecipe_microformat_error_log($msg) {
+	global $hrecipe_microformat_errors;
+
+	if ( ! is_array( $hrecipe_microformat_errors ) ) {
+		add_action('admin_footer', 'hrecipe_microformat_error_log_display');
+		$hrecipe_microformat_errors = array();
+	}
+	
+	array_push($hrecipe_microformat_errors, $msg);
+}
+
+// Display errors logged when the plugin options module is not available.
+function hrecipe_microformat_error_log_display() {
+	global $hrecipe_microformat_errors;
+	
+	echo "<div class='error'><p><a href='plugins.php'>hrecipe-microformat</a> unable to initialize correctly.  Error(s):<br />";
+	foreach ($hrecipe_microformat_errors as $line) {
+		echo "$line<br/>\n";
+	}
+	echo "</p></div>";
+}
+
 
 if (! defined($hrecipe_microformat)) $hrecipe_microformat = new hrecipe_microformat();
 
