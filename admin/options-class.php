@@ -78,14 +78,6 @@ class hrecipe_microformat_options
 	protected static $taxonomies;
 
 	/**
-	 * meta box for recipe editing
-	 *
-	 * @access private
-	 * @var object
-	 **/
-	private $meta_box;
-	
-	/**
 	 * Setup plugin defaults and register with WordPress for use in Admin screens
 	 **/
 	function setup()
@@ -234,7 +226,7 @@ class hrecipe_microformat_options
 			)
 		);
 		// Create the editor metaboxes
-		$this->meta_box = new RW_Meta_Box($meta_box);
+		$meta_box = new RW_Meta_Box($meta_box);
 		
 		// Register the Recipe post type
 		register_post_type(self::post_type,
@@ -567,7 +559,9 @@ class hrecipe_microformat_options
 		$taxonomy = self::prefix . "category";
 		if ('edit.php' == $pagenow && $query->get('post_type') == self::post_type && is_numeric($query->get($taxonomy))) {
 			$term = get_term_by('id', $query->get($taxonomy), $taxonomy);
-			$query->set($taxonomy, $term->slug);
+			if ($term) {
+				$query->set($taxonomy, $term->slug);		
+			}
 		}
 		
 		return $query;
@@ -579,6 +573,7 @@ class hrecipe_microformat_options
 	 * @param array $list_columns Array of columns for listing
 	 * @return array Updated array of columns
 	 **/
+	// FIXME column not showing up
 	function add_recipe_category_to_recipe_list($list_columns)
 	{
 		$taxonomy = self::prefix . 'category';

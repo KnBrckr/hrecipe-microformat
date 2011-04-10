@@ -119,13 +119,18 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 	
 	/**
 	 * Perform Plugin Activation handling
-	 *	 * Populate the plugin taxonomies with defaults
+	 *	* Start fresh with re-write rules 
+	 *	* Populate the plugin taxonomies with defaults
 	 *
 	 * @return void
 	 **/
 	public static function plugin_activation()
 	{
 		parent::register_taxonomies();  // Register the needed taxonomies so they can be populated
+		parent::create_post_type();			// Create the hrecipe post type so that rewrite rules can be flushed.
+		
+		// On activation, flush rewrite rules to make sure plugin is setup correctly. 
+		flush_rewrite_rules();
 		
 		// Create the difficulty taxonomy
 		wp_insert_term(__('Easy', self::p), self::prefix . 'difficulty');
@@ -138,6 +143,18 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 		wp_insert_term(__('Main', self::p), self::prefix . 'category');
 		wp_insert_term(__('Meat', self::p), self::prefix . 'category');
 		wp_insert_term(__('Soup', self::p), self::prefix . 'category');
+	}
+	
+	/**
+	 * Perform Plugin Deactivation handling
+	 *	* Remove the rewrite rules related to the plugin
+	 *
+	 * @return void
+	 **/
+	function plugin_deactivation()
+	{
+		// On deactivation, flush rewrite rules to cleanup from the plugin
+		flush_rewrite_rules();  // FIXME Need page_type removed for this to work
 	}
 }
 
@@ -169,5 +186,8 @@ function hrecipe_microformat_error_log_display() {
 
 // Setup plugin activation function to populate the taxonomies
 register_activation_hook( __FILE__, array('hrecipe_microformat', 'plugin_activation'));
+
+// Setup plugin de-activation function to cleanup rewrite rules
+register_activation_hook(__FILE__, array('hrecipe_microformat', 'plugin_deactivation'));
 
 ?>
