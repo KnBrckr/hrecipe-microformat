@@ -38,10 +38,13 @@ class hrecipe_microformat_options
 	 */
 	const p = 'hrecipe-microformat';  // Plugin name
 	const prefix = 'hrecipe_';				// prefix for ids, names, etc.
-	const post_type = 'hrecipe_recipe';				// Applied to entry as a class
+	const post_type = 'hrecipe';				// Applied to entry as a class
 	const settings = 'hrecipe_microformat_settings';
 	const settings_page = 'hrecipe_microformat_settings_page';
 
+	protected static $dir; // Base directory for Plugin
+	protected static $url; // Base URL for plugin directory
+	
 	/**
 	 * When errors are detected in the module, this variable will contain a text description
 	 *
@@ -75,11 +78,21 @@ class hrecipe_microformat_options
 	protected static $taxonomies;
 
 	/**
+	 * meta box for recipe editing
+	 *
+	 * @access private
+	 * @var object
+	 **/
+	private $meta_box;
+	
+	/**
 	 * Setup plugin defaults and register with WordPress for use in Admin screens
 	 **/
 	function setup()
 	{
-		
+		self::$dir = WP_PLUGIN_DIR . '/' . self::p . '/' ;
+		self::$url =  WP_PLUGIN_URL . '/' . self::p . '/' ;
+						
 		// Retrieve Plugin Options
 		$options = (array) get_option(self::settings);		
 		
@@ -88,6 +101,9 @@ class hrecipe_microformat_options
 		
 		// Display Recipes in main feed?  -- Default to true
 		$this->display_in_feed = array_key_exists('display_in_feed', $options) ? $options['display_in_feed'] : false;
+		
+		// Add post class to recipes?
+		$this->add_post_class = array_key_exists('add_post_class', $options) ? $options['add_post_class'] : false;
 		
 		// Init value for debug log
 		$this->debug_log_enabled = array_key_exists('debug_log_enabled', $options) ? $options['debug_log_enabled'] : false;
@@ -147,7 +163,12 @@ class hrecipe_microformat_options
 					'label' => __('Level of Difficulty', self::p),
 					'query_var' => self::prefix . 'difficulty',
 					'rewrite' => true,
-					'show_ui' => false,
+					'show_ui' => true,
+					'capabilities' => array(
+						'manage_terms' => 'none',
+						'edit_terms' => 'none',
+						'delete_terms' => 'none',
+						'assign_terms' => 'edit_posts'),
 					'show_in_nav_menus' => false,
 				)
 			);
@@ -273,7 +294,7 @@ class hrecipe_microformat_options
 			self::settings_page 
 		);
 
-		// Add Display in Home field to the plugin admin settings section
+		// Display in Home field
 		add_settings_field( 
 			self::settings . '[display_in_home]', 
 			__('Display In Home', self::p), 
@@ -282,13 +303,22 @@ class hrecipe_microformat_options
 			$settings_section 
 		);
 		
-		// Add Display in Feed field to the plugin admin settings section
+		// Display in Feed field
 		add_settings_field( 
 			self::settings . '[display_in_feed]', 
 			__('Display In Feed', self::p), 
 			array( &$this, 'display_in_feed_html' ), 
 			self::settings_page, 
 			$settings_section 
+		);
+		
+		// Add post class field
+		add_settings_field(
+			self::settings . '[add_post_class]',
+			__('Add Post Class', self::p),
+			array(&$this, 'add_post_class_html'),
+			self::settings_page,
+			$settings_section
 		);
 
 		/**
@@ -339,7 +369,7 @@ class hrecipe_microformat_options
 	function sanitize_settings($options)
 	{
 		// Cleanup error log if it's disabled
-		if ( ! $options['debug_log_enabled'] ) {
+		if ( ! (array_key_exists('debug_log_enabled', $options) && $options['debug_log_enabled']) ) {
 			$options['debug_log'] = array();
 		}
 
@@ -403,6 +433,17 @@ class hrecipe_microformat_options
 		_e('Include Recipes in the main feed.', self::p);
 		echo ' ';
 		_e('This change might not take effect for a client until a new post or recipe is added.', self::p);
+	}
+	
+	/**
+	 * Emit HTML for plugin field
+	 *
+	 * @return void
+	 **/
+	function add_post_class_html()
+	{
+		self::checkbox_html('add_post_class', $this->add_post_class);
+		_e('Add the post class to recipe posts.', self::p);
 	}
 	
 	/**

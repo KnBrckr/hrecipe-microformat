@@ -58,20 +58,6 @@ if ( ! class_exists('hrecipe_microformat')) :
 
 class hrecipe_microformat extends hrecipe_microformat_options {
 	/**
-	 * some constants
-	 **/
-	private static $dir; // Base directory for Plugin
-	private static $url; // Base URL for plugin directory
-	
-	/**
-	 * meta box for recipe editing
-	 *
-	 * @access private
-	 * @var object
-	 **/
-	private $meta_box;
-	
-	/**
 	 * Plugin Options Array
 	 *
 	 * @access private
@@ -88,11 +74,11 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 	function __construct() {
 		parent::setup();
 
-		self::$dir = WP_PLUGIN_DIR . '/' . self::p . '/' ;
-		self::$url =  WP_PLUGIN_URL . '/' . self::p . '/' ;
-				
-		// Callback to put recipes into the page stream
+		// Put recipes into the stream if requested in configuration
 		add_filter('pre_get_posts', array(&$this, 'pre_get_posts_filter'));
+		
+		// Update the post class as required
+		add_filter('post_class', array(&$this, 'post_class'));
 	}
 
 	/**
@@ -116,6 +102,19 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 			$query->set('post_type', $query_post_type);
 		} 
 		return $query;
+	}
+	
+	/**
+	 * Update the classes assigned to a post if required
+	 *
+	 * @return array list of post classes
+	 **/
+	function post_class($classes)
+	{
+		if ($this->add_post_class) {
+			$classes[] = "post";
+		}
+		return $classes;
 	}
 	
 	/**
