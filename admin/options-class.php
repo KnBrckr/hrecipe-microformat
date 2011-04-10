@@ -65,6 +65,14 @@ class hrecipe_microformat_options
 	 * @access public
 	 **/
 	protected $display_in_feed;
+	
+	/**
+	 * Array of taxonomy names registered by the plugin
+	 *
+	 * @var Array
+	 * @access protected
+	 **/
+	protected static $taxonomies;
 
 	/**
 	 * Setup plugin defaults and register with WordPress for use in Admin screens
@@ -85,6 +93,12 @@ class hrecipe_microformat_options
 		$this->debug_log_enabled = array_key_exists('debug_log_enabled', $options) ? $options['debug_log_enabled'] : false;
 		$this->debug_log = array_key_exists('debug_log',$options) ? $options['debug_log'] : array();
 		
+		// Register custom taxonomies
+		add_action( 'init', array( &$this, 'register_taxonomies'), 0);		
+
+		// Add recipe custom post type
+		add_action( 'init', array( &$this, 'create_post_type' ) );
+
 		// When displaying admin screens ...
 		if ( is_admin() ) {
 			add_action('admin_init', array( &$this, 'admin_init'));
@@ -111,6 +125,120 @@ class hrecipe_microformat_options
 			add_action('admin_footer', array( &$this, 'save_debug_log'));
 			add_action('wp_footer', array( &$this, 'save_debug_log'));				
 		}
+	}
+	
+	/**
+	 * Register the custom taxonomies for recipes
+	 *
+	 * @return void
+	 **/
+	static function register_taxonomies()
+	{
+		if (!isset(self::$taxonomies)) {
+			self::$taxonomies = array();
+			
+			// Create a taxonomy for the Recipe Difficulty
+			self::$taxonomies[] = self::prefix . 'difficulty';
+			register_taxonomy(
+				self::prefix . 'difficulty',  // Internal name
+				self::post_type,
+				array(
+					'hierarchical' => true,
+					'label' => __('Level of Difficulty', self::p),
+					'query_var' => self::prefix . 'difficulty',
+					'rewrite' => true,
+					'show_ui' => false,
+					'show_in_nav_menus' => false,
+				)
+			);
+
+			// Create a taxonomy for the Recipe Category
+			self::$taxonomies[] = self::prefix . 'category';
+			register_taxonomy(
+				self::prefix . 'category',
+				self::post_type,
+				array(
+					'hierarchical' => true,
+					'label' => __('Recipe Category', self::p),
+					'query_var' => self::prefix . 'category',
+					'rewrite' => true,
+					'show_ui' => true,
+				)
+			);			
+		}
+	}
+	
+	/**
+	 * Create recipe post type and associated panels in the edit screen
+	 *
+	 * @return void
+	 **/
+	function create_post_type()
+	{		
+		$meta_box = array(
+			'id' => self::prefix . 'meta-box',
+			'title' => __('Recipe Information', self::p),
+			'pages' => array(self::post_type), // Only display for post type recipe
+			'context' => 'normal',
+			'priority' => 'high',
+			'fields' => array(
+				array(
+					'name' => __('Recipe Title', self::p),
+					'id' => self::prefix . 'fn',
+					'type' => 'text'
+				),
+				array(
+					'name' => __( 'Yield', self::p),
+					'id' => self::prefix . 'yield',
+					'type' => 'text',
+				),
+				array(
+					'name' => __( 'Duration', self::p),
+					'id' => self::prefix . 'duration',
+					'type' => 'text',
+					'desc' => 'Total time required to complete this recipe'
+				),
+				array(
+					'name' => __( 'Prep Time', self::p),
+					'id' => self::prefix . 'preptime',
+					'type' => 'text',
+					'desc' => __( 'Time required for prep work', self::p)
+				),
+				array(
+					'name' => __( 'Cook Time', self::p ),
+					'id' => self::prefix . 'cooktime',
+					'type' => 'text',
+					'desc' => __( 'Time required to cook', self::p )
+				),
+			)
+		);
+		// Create the editor metaboxes
+		$this->meta_box = new RW_Meta_Box($meta_box);
+		
+		// Register the Recipe post type
+		register_post_type(self::post_type,
+			array(
+				'labels' => array (
+					'name' => _x('Recipes', 'post type general name', self::p),
+					'singular_name' => _x('Recipe', 'post type singular name', self::p),
+					'add_new' => _x('Add Recipe', 'recipe', self::p),
+					'add_new_item' => __('Add New Recipe', self::p),
+					'edit_item' => __('Edit Recipe', self::p),
+					'new_item' => __('New Recipe', self::p),
+					'view_item' => __('View Recipe', self::p),
+					'search_items' => __('Search Recipes', self::p),
+					'not_found' => __('No recipes found', self::p),
+					'not_found_in_trash' => __('No recipes found in Trash', self::p),
+					'menu_name' => __('Recipes', self::p),
+				),
+				'public' => true,
+				'has_archive' => true,
+				'rewrite' => array('slug' => 'Recipes'),
+				'menu_position' => 7,
+				'supports' => array('title', 'editor', 'author', 'thumbnail', 'trackbacks', 'comments', 'revisions'),
+				'taxonomies' => array('post_tag'),
+			)
+		);
 	}
 	
 	/**
@@ -460,19 +588,32 @@ class hrecipe_microformat_options
 	 * @return void
 	 * @author Kenneth J. Brucker <ken@pumastudios.com>
 	 **/
-	function uninstall()
-	{
-//		delete_option(self::settings); // Remove the plugin settings
+	function uninstall() {
+		delete_option(self::settings); // Remove the plugin settings
 		
-		/** Delete the recipe posts **/
-		$recipes = new WP_Query(array('post_type' => self::post_type));
+		/** Delete the recipe posts, including all draft and unpublished versions **/
+		$arg=array(
+			'post_type' => self::post_type,
+			'post_status' => 'publish,pending,draft,auto-draft,future,private,inherit,trash',
+			'nopaging' => true,
+		);
+		$recipes = new WP_Query($arg);
 		foreach ($recipes->posts as $recipe){
-			error_log('Will delete postid '.$recipe->ID);
-//			wp_delete_post($postid, false); // Allow the posts to go into the trash, just in case...
+			wp_delete_post($recipe->ID, false); // Allow the posts to go into the trash, just in case...
 		}
 		
 		/** Delete taxonomies **/
-		
+		self::register_taxonomies();  // Need to register the taxonmies so the uninstall can find them to remove
+		foreach (self::$taxonomies as $taxonomy) {
+			global $wp_taxonomies;
+			$terms = get_terms($taxonomy, array('hide_empty'=>false)); // Get all terms for the taxonomy to remove
+			if (is_array($terms)) {
+				foreach ($terms as $term) {
+					wp_delete_term( $term->term_id, $taxonomy );
+				}				
+			} 
+			unset($wp_taxonomies[$taxonomy]);
+		}		
 	}
 	
 	/**

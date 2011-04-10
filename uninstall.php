@@ -14,6 +14,8 @@ if (!defined('WP_UNINSTALL_PLUGIN')) {
   exit();
 }
 
+error_log('************** Running the uninstall!! **************');
+
 if (is_admin() && current_user_can('manage_options') && current_user_can('install_plugins')) {
 	require_once(WP_PLUGIN_DIR . '/hrecipe-microformat/admin/options-class.php');
 	

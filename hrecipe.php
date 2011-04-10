@@ -91,124 +91,10 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 		self::$dir = WP_PLUGIN_DIR . '/' . self::p . '/' ;
 		self::$url =  WP_PLUGIN_URL . '/' . self::p . '/' ;
 				
-		// Register custom taxonomies
-		add_action( 'init', array( &$this, 'register_taxonomies'), 0);		
-
-		// Add recipe custom post type
-		add_action( 'init', array( &$this, 'create_post_type' ) );
-
 		// Callback to put recipes into the page stream
 		add_filter('pre_get_posts', array(&$this, 'pre_get_posts_filter'));
 	}
 
-	/**
-	 * Register the custom taxonomies for recipes
-	 *
-	 * @return void
-	 **/
-	static function register_taxonomies()
-	{
-		// Create a taxonomy for the Recipe Difficulty
-		register_taxonomy(
-			self::prefix . 'difficulty',  // Internal name
-			self::post_type,
-			array(
-				'hierarchical' => true,
-				'label' => __('Level of Difficulty', self::p),
-				'query_var' => self::prefix . 'difficulty',
-				'rewrite' => true,
-				'show_ui' => false,
-				'show_in_nav_menus' => false,
-			)
-		);
-		
-		// Create a taxonomy for the Recipe Category
-		register_taxonomy(
-			self::prefix . 'category',
-			self::post_type,
-			array(
-				'hierarchical' => true,
-				'label' => __('Recipe Category', self::p),
-				'query_var' => self::prefix . 'category',
-				'rewrite' => true,
-				'show_ui' => true,
-			)
-		);
-	}
-	
-	/**
-	 * Create recipe post type and associated panels in the edit screen
-	 *
-	 * @return void
-	 **/
-	function create_post_type()
-	{		
-		$meta_box = array(
-			'id' => self::prefix . 'meta-box',
-			'title' => __('Recipe Information', self::p),
-			'pages' => array(self::post_type), // Only display for post type recipe
-			'context' => 'normal',
-			'priority' => 'high',
-			'fields' => array(
-				array(
-					'name' => __('Recipe Title', self::p),
-					'id' => self::prefix . 'fn',
-					'type' => 'text'
-				),
-				array(
-					'name' => __( 'Yield', self::p),
-					'id' => self::prefix . 'yield',
-					'type' => 'text',
-				),
-				array(
-					'name' => __( 'Duration', self::p),
-					'id' => self::prefix . 'duration',
-					'type' => 'text',
-					'desc' => 'Total time required to complete this recipe'
-				),
-				array(
-					'name' => __( 'Prep Time', self::p),
-					'id' => self::prefix . 'preptime',
-					'type' => 'text',
-					'desc' => __( 'Time required for prep work', self::p)
-				),
-				array(
-					'name' => __( 'Cook Time', self::p ),
-					'id' => self::prefix . 'cooktime',
-					'type' => 'text',
-					'desc' => __( 'Time required to cook', self::p )
-				),
-			)
-		);
-		// Create the editor metaboxes
-		$this->meta_box = new RW_Meta_Box($meta_box);
-		
-		// Register the Recipe post type
-		register_post_type(self::post_type,
-			array(
-				'labels' => array (
-					'name' => _x('Recipes', 'post type general name', self::p),
-					'singular_name' => _x('Recipe', 'post type singular name', self::p),
-					'add_new' => _x('Add Recipe', 'recipe', self::p),
-					'add_new_item' => __('Add New Recipe', self::p),
-					'edit_item' => __('Edit Recipe', self::p),
-					'new_item' => __('New Recipe', self::p),
-					'view_item' => __('View Recipe', self::p),
-					'search_items' => __('Search Recipes', self::p),
-					'not_found' => __('No recipes found', self::p),
-					'not_found_in_trash' => __('No recipes found in Trash', self::p),
-					'menu_name' => __('Recipes', self::p),
-				),
-				'public' => true,
-				'has_archive' => true,
-				'rewrite' => array('slug' => 'Recipes'),
-				'menu_position' => 7,
-				'supports' => array('title', 'editor', 'author', 'thumbnail', 'trackbacks', 'comments', 'revisions'),
-				'taxonomies' => array('post_tag'),
-			)
-		);
-	}
-	
 	/**
 	 * Update the WP query to include additional post types as needed
 	 *
@@ -240,7 +126,7 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 	 **/
 	public static function plugin_activation()
 	{
-		self::register_taxonomies();  // Register the needed taxonomies so they can be populated
+		parent::register_taxonomies();  // Register the needed taxonomies so they can be populated
 		
 		// Create the difficulty taxonomy
 		wp_insert_term(__('Easy', self::p), self::prefix . 'difficulty');
