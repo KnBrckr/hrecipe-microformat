@@ -41,6 +41,7 @@ class hrecipe_microformat_options
 	const post_type = 'hrecipe';				// Applied to entry as a class
 	const settings = 'hrecipe_microformat_settings';
 	const settings_page = 'hrecipe_microformat_settings_page';
+	const required_db_ver = 1;
 
 	protected static $dir; // Base directory for Plugin
 	protected static $url; // Base URL for plugin directory
@@ -76,6 +77,20 @@ class hrecipe_microformat_options
 	 * @access protected
 	 **/
 	protected static $taxonomies;
+	
+	/**
+	 * Database version in use - Used to upgrade old versions to new format as required
+	 *
+	 * @var int
+	 **/
+	protected $database_ver;
+	
+	/**
+	 * Errors and warnings to display on admin screens
+	 *
+	 * @var array 
+	 **/
+	protected static $admin_notices;
 
 	/**
 	 * Setup plugin defaults and register with WordPress for use in Admin screens
@@ -84,6 +99,7 @@ class hrecipe_microformat_options
 	{
 		self::$dir = WP_PLUGIN_DIR . '/' . self::p . '/' ;
 		self::$url =  WP_PLUGIN_URL . '/' . self::p . '/' ;
+		self::$admin_notices = array();
 						
 		// Retrieve Plugin Options
 		$options = (array) get_option(self::settings);		
@@ -100,6 +116,16 @@ class hrecipe_microformat_options
 		// Init value for debug log
 		$this->debug_log_enabled = array_key_exists('debug_log_enabled', $options) ? $options['debug_log_enabled'] : false;
 		$this->debug_log = array_key_exists('debug_log',$options) ? $options['debug_log'] : array();
+		if ($this->debug_log_enabled) {
+			self::$admin_notices[] = sprintf(__('%s logging is enabled.  If left enabled, this can affect database performance.', self::p),'<a href="options.php?page=' . self::settings_page . '">' . self::p . '</a>');
+		}
+		
+		
+		// Init value for the database version
+		$this->database_ver = array_key_exists('database_ver', $options) ? $options['database_ver'] : self::required_db_ver;
+		if (self::required_db_ver != $this->database_ver) {
+			self::$admin_notices[] = sprintf(__('Recipe database version mismatch; using v%1$d, required v%2$d', self::p), $this->database_ver, self::required_db_ver);
+		}
 		
 		// Register custom taxonomies
 		add_action( 'init', array( &$this, 'register_taxonomies'), 0);		
@@ -124,7 +150,7 @@ class hrecipe_microformat_options
 			// Register actions to use the receipe category in admin list view
 			add_action('restrict_manage_posts', array(&$this, 'restrict_recipes_by_category'));
 			add_action('parse_query', array(&$this, 'parse_recipe_category_query'));
-			add_action('manage_hrecipe_recipe_posts_columns', array(&$this, 'add_recipe_category_to_recipe_list'));
+			add_action('manage_' . self::post_type . '_posts_columns', array(&$this, 'add_recipe_category_to_recipe_list'));
 			add_action('manage_posts_custom_column', array(&$this, 'show_column_for_recipe_list'),10,2);
 		}
 
@@ -145,26 +171,6 @@ class hrecipe_microformat_options
 		if (!isset(self::$taxonomies)) {
 			self::$taxonomies = array();
 			
-			// Create a taxonomy for the Recipe Difficulty
-			self::$taxonomies[] = self::prefix . 'difficulty';
-			register_taxonomy(
-				self::prefix . 'difficulty',  // Internal name
-				self::post_type,
-				array(
-					'hierarchical' => true,
-					'label' => __('Level of Difficulty', self::p),
-					'query_var' => self::prefix . 'difficulty',
-					'rewrite' => true,
-					'show_ui' => true,
-					'capabilities' => array(
-						'manage_terms' => 'none',
-						'edit_terms' => 'none',
-						'delete_terms' => 'none',
-						'assign_terms' => 'edit_posts'),
-					'show_in_nav_menus' => false,
-				)
-			);
-
 			// Create a taxonomy for the Recipe Category
 			self::$taxonomies[] = self::prefix . 'category';
 			register_taxonomy(
@@ -222,6 +228,17 @@ class hrecipe_microformat_options
 					'id' => self::prefix . 'cooktime',
 					'type' => 'text',
 					'desc' => __( 'Time required to cook', self::p )
+				),
+				array(
+					'name' => __('Difficulty', self::p),
+					'id' => self::prefix . 'difficulty',
+					'type' => 'radio',
+					'desc' => __('Recipe level of difficulty', self::p),
+					'options' => array(
+												'1' => 'Easy',
+												'3' => 'Medium',
+												'5' => 'Hard',
+					            ),
 				),
 			)
 		);
@@ -346,10 +363,12 @@ class hrecipe_microformat_options
 	 **/
 	function admin_notice()
 	{
-		if ( $this->debug_log_enabled ) {
-			echo '<div class="error"><p>';
-			printf(__('%s logging is enabled.  If left enabled, this can affect database performance.', self::p),'<a href="options.php?page=' . self::settings_page . '">' . self::p . '</a>');
-			echo '</p></div>';
+		if (count(self::$admin_notices)) {
+			echo '<div class="error">';
+			foreach (self::$admin_notices as $notice) {
+				echo '<p>' . $notice . '</p>';
+			}
+			echo '</div>';			
 		}
 	}
 	
@@ -363,6 +382,11 @@ class hrecipe_microformat_options
 		// Cleanup error log if it's disabled
 		if ( ! (array_key_exists('debug_log_enabled', $options) && $options['debug_log_enabled']) ) {
 			$options['debug_log'] = array();
+		}
+		
+		// Make sure the database version is available in the options
+		if (! array_key_exists('database_ver', $options)) {
+			$options['database_ver'] = self::required_db_ver;
 		}
 
 		return $options;
@@ -491,7 +515,7 @@ class hrecipe_microformat_options
 	}
  
 	function register_buttons($buttons) {
-	   array_push($buttons, 'hrecipeTitle', 'hrecipeYield', 'hrecipeDuration', 'hrecipePreptime', 'hrecipeCooktime',  'hrecipeAuthor', 'hrecipePublished', 'hrecipeCategory', 'hrecipeDifficulty' );
+	   array_push($buttons, 'hrecipeTitle', 'hrecipeYield', 'hrecipeDuration', 'hrecipePreptime', 'hrecipeCooktime',  'hrecipeAuthor', 'hrecipePublished', 'hrecipeCategory');
 	// 'hrecipeIngredientList', 'hrecipeIngredient', 'hrecipeInstructions', 'hrecipeStep', 'hrecipeSummary',
 	   return $buttons;
 	}
@@ -573,7 +597,6 @@ class hrecipe_microformat_options
 	 * @param array $list_columns Array of columns for listing
 	 * @return array Updated array of columns
 	 **/
-	// FIXME column not showing up
 	function add_recipe_category_to_recipe_list($list_columns)
 	{
 		$taxonomy = self::prefix . 'category';
