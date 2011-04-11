@@ -124,7 +124,7 @@ class hrecipe_microformat_options
 		// Init value for the database version
 		$this->database_ver = array_key_exists('database_ver', $options) ? $options['database_ver'] : self::required_db_ver;
 		if (self::required_db_ver != $this->database_ver) {
-			self::$admin_notices[] = sprintf(__('Recipe database version mismatch; using v%1$d, required v%2$d', self::p), $this->database_ver, self::required_db_ver);
+			self::handle_database_ver($this->database_ver);
 		}
 		
 		// Register custom taxonomies
@@ -639,6 +639,16 @@ class hrecipe_microformat_options
 				break; // End of 
 			}
 		}
+	}
+	
+	/**
+	 * Update recipe database on version mismatches
+	 *
+	 * @return void
+	 **/
+	function handle_database_ver()
+	{
+		self::$admin_notices[] = sprintf(__('Recipe database version mismatch; using v%1$d, required v%2$d', self::p), $this->database_ver, self::required_db_ver);
 	}
 	
 	/**
