@@ -79,6 +79,9 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 		
 		// Update the post class as required
 		add_filter('post_class', array(&$this, 'post_class'));
+		
+		// Catch any posts that have a plugin supplied default template
+		add_action('template_redirect', array(&$this, 'template_redirect'));
 	}
 
 	/**
@@ -117,6 +120,33 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 		return $classes;
 	}
 	
+	/**
+	 * Use template from the plugin if one isn't available in the theme
+	 *
+	 * @return void | Does not return if a matching template is located
+	 **/
+	function template_redirect()
+	{
+		global $post;
+		if (self::is_hrecipe()) {
+			if (is_single()) {
+				$template_name = 'single-';
+			} elseif (is_archive()) {
+				$template_name = 'archive-';
+			} else {
+				return;
+			}
+			$template_name .= $post->post_type . '.php';
+			
+			// Look for available template
+			$template = locate_template(array($template_name), true);
+			if (empty($template)) {
+				include(self::$dir . 'lib/template/' . $template_name);
+			}
+			exit();
+		}
+	}
+
 	/**
 	 * Perform Plugin Activation handling
 	 *	* Start fresh with re-write rules 
