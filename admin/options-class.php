@@ -533,11 +533,11 @@ class hrecipe_microformat_options
  
 	// Load the TinyMCE plugins : editor_plugin.js
 	function add_tinymce_plugins($plugin_array) {
-		$plugin_array['hrecipeTitle'] = self::$url.'TinyMCE-plugins/info/editor_plugin.js';
-		// $plugin_array['hrecipeTitle'] = self::$url.'TinyMCE-plugins/ingredients/editor_plugin.js';
-		// $plugin_array['hrecipeTitle'] = self::$url.'TinyMCE-plugins/instructions/editor_plugin.js';
-		// $plugin_array['hrecipeTitle'] = self::$url.'TinyMCE-plugins/step/editor_plugin.js';
-		// $plugin_array['hrecipeTitle'] = self::$url.'TinyMCE-plugins/summary/editor_plugin.js';
+		$plugin_array['hrecipeTitle'] = self::$url.'lib/TinyMCE-plugins/info/editor_plugin.js';
+		// $plugin_array['hrecipeTitle'] = self::$url.'lib/TinyMCE-plugins/ingredients/editor_plugin.js';
+		// $plugin_array['hrecipeTitle'] = self::$url.'lib/TinyMCE-plugins/instructions/editor_plugin.js';
+		// $plugin_array['hrecipeTitle'] = self::$url.'lib/TinyMCE-plugins/step/editor_plugin.js';
+		// $plugin_array['hrecipeTitle'] = self::$url.'lib/TinyMCE-plugins/summary/editor_plugin.js';
 	
 		return $plugin_array;
 	}
@@ -549,7 +549,7 @@ class hrecipe_microformat_options
 	 **/
 	function add_tinymce_css($mce_css){
 		if (! empty($mce_css)) $mce_css .= ',';
-		$mce_css .= self::$url . 'editor.css';
+		$mce_css .= self::$url . 'tinymce-editor.css';
 		return $mce_css; 
 	}
 		
