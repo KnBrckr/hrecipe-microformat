@@ -154,6 +154,9 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 	 **/
 	function recipe_head()
 	{
+		// Determine fields to place in header
+		// Allow filtering of list ? Or use a config panel to select placement
+		// Emit list
 		echo "Recipe Header";
 	}
 	
@@ -164,6 +167,9 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 	 **/
 	function recipe_footer()
 	{
+		// Determine fields to place in footer
+		// Allow filtering of list ? or use config panel to select placement
+		// Emit list
 		echo "Recipe Footer";
 	}
 
