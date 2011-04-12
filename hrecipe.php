@@ -146,6 +146,26 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 			exit();
 		}
 	}
+	
+	/**
+	 * Emit Recipe Header HTML
+	 *
+	 * @return void
+	 **/
+	function recipe_head()
+	{
+		echo "Recipe Header";
+	}
+	
+	/**
+	 * Emit Recipe Footer HTML
+	 *
+	 * @return void
+	 **/
+	function recipe_footer()
+	{
+		echo "Recipe Footer";
+	}
 
 	/**
 	 * Perform Plugin Activation handling

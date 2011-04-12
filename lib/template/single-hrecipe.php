@@ -16,11 +16,16 @@ get_header(); ?>
 									<div class="entry-meta">
 										<?php /* FIXME */ twentyten_posted_on(); ?>
 									</div><!-- .entry-meta -->
-
+									
+									<div class="hrecipe-head">
+										<?php hrecipe_microformat::recipe_head(); ?>
+									</div>
 									<div class="entry-content">
 										<?php the_content(); ?>
 									</div><!-- .entry-content -->
-
+									<div class="recipe-footer">
+										<?php hrecipe_microformat::recipe_footer();?>
+									</div>
 									<div class="entry-utility">
 										<?php /* FIXME */ twentyten_posted_in(); ?>
 										<?php edit_post_link( __( 'Edit'), '<span class="edit-link">', '</span>' ); ?>
