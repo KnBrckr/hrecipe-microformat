@@ -151,6 +151,8 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 	/**
 	 * Prints HTML with meta information for the current post recipe (date/time and author.)
 	 *
+	 * Called during The Loop
+	 *
 	 * @return void
 	 */
 	function posted_on()
@@ -173,6 +175,9 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 	/**
 	 * Prints HTML with meta information for the current recipe (category, tags and permalink).
 	 *
+	 * Called during The Loop
+	 *
+	 * @uses $post Uses Post ID to locate recipe category assisgned to the post
 	 * @return void
 	 */
 	function posted_in() {
@@ -240,9 +245,9 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 	 **/
 	function recipe_head()
 	{
-		// Determine fields to place in header
-		// Allow filtering of list ? Or use a config panel to select placement
-		// Emit list
+		// TODO Determine fields to place in header
+		// TODO Allow filtering of list ? Or use a config panel to select placement
+		// TODO Emit list
 		echo "Recipe Header";
 	}
 	
@@ -253,9 +258,9 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 	 **/
 	function recipe_footer()
 	{
-		// Determine fields to place in footer
-		// Allow filtering of list ? or use config panel to select placement
-		// Emit list
+		// TODO Determine fields to place in footer
+		// TODO Allow filtering of list ? or use config panel to select placement
+		// TODO Emit list
 		echo "Recipe Footer";
 	}
 
