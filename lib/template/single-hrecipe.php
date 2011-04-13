@@ -24,7 +24,7 @@ get_header(); ?>
 										<?php hrecipe_microformat::recipe_footer();?>
 									</div><!-- .hrecipe-footer -->
 									<div class="entry-utility">
-										<?php /* FIXME */ twentyten_posted_in(); ?>
+										<?php hrecipe_microformat::posted_in(); ?>
 										<?php edit_post_link( __( 'Edit'), '<span class="edit-link">', '</span>' ); ?>
 									</div><!-- .entry-utility -->
 								</div><!-- #post-## -->

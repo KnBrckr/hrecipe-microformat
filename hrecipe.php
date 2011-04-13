@@ -24,9 +24,7 @@ License: GPL2
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 TODO Create widget for Recipe Categories
-TODO How to have recipes show up in blog posts
-TODO Create a shortcode to place recipe content into a post
-TODO Provide mechanism to remove plugin data from database
+TODO Create shortcodes to place recipe content into a post
 TODO Provide mechanism to import recipes from external sources
 */
 
@@ -151,7 +149,7 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 	}
 	
 	/**
-	 * Prints HTML with meta information for the current post-date/time and author.
+	 * Prints HTML with meta information for the current post recipe (date/time and author.)
 	 *
 	 * @return void
 	 */
@@ -169,6 +167,34 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 				sprintf( esc_attr__( 'View all recipes by %s', hrecipe_microformat::p ), get_the_author() ),
 				get_the_author()
 			)
+		);
+	}
+	
+	/**
+	 * Prints HTML with meta information for the current recipe (category, tags and permalink).
+	 *
+	 * @return void
+	 */
+	function posted_in() {
+		global $post;
+		
+		// Retrieves tag list of current post, separated by commas.
+		$tag_list = get_the_tag_list( '', ', ' );
+		$recipe_category = get_the_term_list( $post->ID, self::prefix . 'category', '', ', ', '' );
+		if ( $tag_list ) {
+			$posted_in = __( 'This recipe is posted in %1$s and tagged %2$s. Bookmark the <a href="%3$s" title="Permalink to %4$s" rel="bookmark">permalink</a>.', self::p );
+		} elseif (!empty($recipe_category)) {
+			$posted_in = __( 'This recipe is posted in %1$s. Bookmark the <a href="%3$s" title="Permalink to %4$s" rel="bookmark">permalink</a>.', self::p );
+		} else {
+			$posted_in = __( 'Bookmark the <a href="%3$s" title="Permalink to %4$s" rel="bookmark">permalink</a>.', self::p );
+		}
+		// Prints the string, replacing the placeholders.
+		printf(
+			$posted_in,
+			$recipe_category,
+			$tag_list,
+			get_permalink(),
+			the_title_attribute( 'echo=0' )
 		);
 	}
 	
