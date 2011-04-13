@@ -82,6 +82,10 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 		
 		// Catch any posts that have a plugin supplied default template
 		add_action('template_redirect', array(&$this, 'template_redirect'));
+		
+		// Register CSS and enqueue
+		wp_register_style(self::prefix . '-style', self::$url . 'hrecipe.css');
+		wp_enqueue_style(self::prefix . '-style');
 	}
 
 	/**
@@ -144,6 +148,63 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 			include(self::$dir . 'lib/template/' . $template_name);
 		}
 		exit();
+	}
+	
+	/**
+	 * Prints HTML with meta information for the current post-date/time and author.
+	 *
+	 * @return void
+	 */
+	function posted_on()
+	{ // TODO Confirm microformat of Author field
+		printf( __( '<span class="%1$s">Posted on</span> %2$s <span class="meta-sep">by</span> %3$s', hrecipe_microformat::p ),
+			'meta-prep meta-prep-author',
+			sprintf( '<a href="%1$s" title="%2$s" rel="bookmark"><span class="entry-date">%3$s</span></a>',
+				get_permalink(),
+				esc_attr( get_the_time() ),
+				get_the_date()
+			),
+			sprintf( '<span class="author vcard"><a class="url fn n" href="%1$s" title="%2$s">%3$s</a></span>',
+				hrecipe_microformat::get_author_recipes_url( get_the_author_meta( 'ID' ) ),
+				sprintf( esc_attr__( 'View all recipes by %s', hrecipe_microformat::p ), get_the_author() ),
+				get_the_author()
+			)
+		);
+	}
+	
+	/**
+	 * Retrieve the URL to the recipe author page for the user with the ID provided.
+	 *
+	 * Lifted from wp-includes/author-template.php get_author_posts_url()
+	 *
+	 * @return string The URL to the author's recipe page.
+	 */
+	function get_author_recipes_url($author_id, $author_nicename = '') {
+		global $wp_rewrite;
+		$auth_ID = (int) $author_id;
+		$link = $wp_rewrite->get_author_permastruct();
+
+		if ( empty($link) ) {
+			$file = home_url( '/' );
+			$link = $file . '?author=' . $auth_ID;
+			$token = '&';
+		} else {
+			if ( '' == $author_nicename ) {
+				$user = get_userdata($author_id);
+				if ( !empty($user->user_nicename) )
+					$author_nicename = $user->user_nicename;
+			}
+			$link = str_replace('%author%', $author_nicename, $link);
+			$link = home_url( user_trailingslashit( $link ) );
+			$token = '?';
+		}
+		
+		// Add post_type to the query
+		$link .= $token . 'post_type=' . self::post_type;
+
+		$link = apply_filters('author_recipes_link', $link, $author_id, $author_nicename);
+
+		return $link;
 	}
 	
 	/**
