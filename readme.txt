@@ -13,6 +13,8 @@ Provides TinyMCE editing for the hRecipe microformat
 
 == Installation ==
 
+Requires PHP5
+
 == Frequently Asked Questions ==
 
 = A question that someone might have =

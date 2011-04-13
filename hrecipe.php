@@ -128,23 +128,22 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 	function template_redirect()
 	{
 		global $post;
-		if (self::is_hrecipe()) {
-			if (is_single()) {
-				$template_name = 'single-';
-			} elseif (is_archive()) {
-				$template_name = 'archive-';
-			} else {
-				return;
-			}
-			$template_name .= $post->post_type . '.php';
-			
-			// Look for available template
-			$template = locate_template(array($template_name), true);
-			if (empty($template)) {
-				include(self::$dir . 'lib/template/' . $template_name);
-			}
-			exit();
+		
+		if (is_singular(self::post_type)) {
+			$template_name = 'single-';
+		} elseif (is_post_type_archive(self::post_type)) {
+			$template_name = 'archive-';
+		} else {
+			return;
 		}
+		$template_name .= get_post_type($post) . '.php';
+			
+		// Look for available template
+		$template = locate_template(array($template_name), true);
+		if (empty($template)) {
+			include(self::$dir . 'lib/template/' . $template_name);
+		}
+		exit();
 	}
 	
 	/**

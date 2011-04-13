@@ -272,17 +272,6 @@ class hrecipe_microformat_options
 	}
 	
 	/**
-	 * undocumented function
-	 *
-	 * @return true if post type is hrecipe
-	 **/
-	function is_hrecipe()
-	{
-    $post_type = get_query_var('post_type');
-		return self::post_type == $post_type ? true : false;
-	}
-	
-	/**
 	 * Create admin menu object
 	 *
 	 * @return void
@@ -363,8 +352,6 @@ class hrecipe_microformat_options
 		
 		// Register the settings name
 		register_setting( self::settings_page, self::settings, array (&$this, 'sanitize_settings') );
-		
-		// TODO Need an unregister_setting routine for de-install of plugin
 	}
 	
 	/**
