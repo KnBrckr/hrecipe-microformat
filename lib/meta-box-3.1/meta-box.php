@@ -30,7 +30,7 @@ class RW_Meta_Box {
 		$this->_fields = & $this->_meta_box['fields'];
 		$this->add_missed_values();
 
-		add_action('admin_menu', array(&$this, 'add'));	// add meta box
+		add_action('add_meta_boxes', array(&$this, 'add'));	// add meta box
 		add_action('save_post', array(&$this, 'save'));	// save meta box's data
 
 		// check for some special fields and add needed actions for them

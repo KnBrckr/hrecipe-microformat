@@ -42,23 +42,15 @@ class hrecipe_microformat_options
 	const settings = 'hrecipe_microformat_settings';
 	const settings_page = 'hrecipe_microformat_settings_page';
 	const required_db_ver = 1;
-
+	
 	protected static $dir; // Base directory for Plugin
 	protected static $url; // Base URL for plugin directory
-	
-	/**
-	 * When errors are detected in the module, this variable will contain a text description
-	 *
-	 * @var string Error Message
-	 * @access public
-	 **/
-	protected $error;
 	
 	/**
 	 * Indicate whether or not recipes should be included in the home page
 	 *
 	 * @var boolean True if recipes should be displayed in the home page
-	 * @access public
+	 * @access protected
 	 **/
 	protected $display_in_home;
 	
@@ -90,8 +82,22 @@ class hrecipe_microformat_options
 	 *
 	 * @var array 
 	 **/
-	protected static $admin_notices;
-
+	protected $admin_notices;
+	
+	/**
+	 * Default ordered list of fields to include in the recipe header
+	 *
+	 * @var array
+	 **/
+	protected $recipe_head_fields_default;
+	
+	/**
+	 * Default ordered list of fields to include in the recipe footer
+	 *
+	 * @var array
+	 **/
+	protected $recipe_footer_fields_default;
+	
 	/**
 	 * Setup plugin defaults and register with WordPress for use in Admin screens
 	 **/
@@ -99,7 +105,23 @@ class hrecipe_microformat_options
 	{
 		self::$dir = WP_PLUGIN_DIR . '/' . self::p . '/' ;
 		self::$url =  WP_PLUGIN_URL . '/' . self::p . '/' ;
-		self::$admin_notices = array();
+		$this->admin_notices = array();
+		
+		// Defaults for recipe head and footer display
+		$this->recipe_head_fields_default = array(
+			'Yield',
+			'Difficulty',
+			'Rating',
+			'Category',
+			'Duration',
+			'Prep Time',
+			'Cook Time',
+		);
+		$this->recipe_footer_fields_default = array(
+			'Published',
+			'Author',
+			'Nutrition'
+		);
 						
 		// Retrieve Plugin Options
 		$options = (array) get_option(self::settings);		
@@ -113,52 +135,190 @@ class hrecipe_microformat_options
 		// Add post class to recipes?
 		$this->add_post_class = array_key_exists('add_post_class', $options) ? $options['add_post_class'] : false;
 		
+		// Recipe Header content (ordered list)
+		$this->recipe_head_fields = 
+			array_key_exists('recipe_head_fields', $options) ? $options['recipe_head_fields'] : $this->recipe_head_fields_default;
+		
+		// Recipe Footer content (ordered list)
+		$this->recipe_footer_fields = 
+			array_key_exists('recipe_footer_fields', $options) ? $options['recipe_footer_fields'] : $this->recipe_footer_fields_default;
+			
+		// Unused recipe fields
+		$this->recipe_unused_fields =
+			array_key_exists('recipe_unused_fields', $options) ? $options['recipe_unused_fields'] : array();
+		
 		// Init value for debug log
 		$this->debug_log_enabled = array_key_exists('debug_log_enabled', $options) ? $options['debug_log_enabled'] : false;
 		$this->debug_log = array_key_exists('debug_log',$options) ? $options['debug_log'] : array();
 		if ($this->debug_log_enabled) {
-			self::$admin_notices[] = sprintf(__('%s logging is enabled.  If left enabled, this can affect database performance.', self::p),'<a href="options.php?page=' . self::settings_page . '">' . self::p . '</a>');
+			$this->admin_notices[] = sprintf(__('%s logging is enabled.  If left enabled, this can affect database performance.', self::p),'<a href="options.php?page=' . self::settings_page . '">' . self::p . '</a>');
 		}
-		
 		
 		// Init value for the database version
 		$this->database_ver = array_key_exists('database_ver', $options) ? $options['database_ver'] : self::required_db_ver;
 		if (self::required_db_ver != $this->database_ver) {
-			self::handle_database_ver($this->database_ver);
+			$this->handle_database_ver($this->database_ver);
 		}
 		
-		// Register custom taxonomies
-		add_action( 'init', array( &$this, 'register_taxonomies'), 0);		
-
-		// Add recipe custom post type
-		add_action( 'init', array( &$this, 'create_post_type' ) );
-
+		// Perform plugin actions needed during WP init
+		add_action('init', array(&$this, 'plugin_init'));
+		
 		// When displaying admin screens ...
 		if ( is_admin() ) {
-			add_action('admin_init', array( &$this, 'admin_init'));
+			// Add menu item for plugin options page
 			add_action('admin_menu', array(&$this, 'admin_menu'));
 
-			// Add section for reporting configuration errors and notices
-			add_action('admin_footer', array( &$this, 'admin_notice'));			
-
-			// Add the buttons for TinyMCE during WP init
-			add_action( 'init', array( &$this, 'add_buttons' ) );
-
-			// Add editor stylesheet
-			add_filter( 'mce_css', array( &$this, 'add_tinymce_css' ) );
-
-			// Register actions to use the receipe category in admin list view
-			add_action('restrict_manage_posts', array(&$this, 'restrict_recipes_by_category'));
-			add_action('parse_query', array(&$this, 'parse_recipe_category_query'));
-			add_action('manage_' . self::post_type . '_posts_columns', array(&$this, 'add_recipe_category_to_recipe_list'));
-			add_action('manage_posts_custom_column', array(&$this, 'show_column_for_recipe_list'),10,2);
+			add_action('admin_init', array( &$this, 'admin_init'));
 		}
-
+		
+		
 		// If logging is enabled, setup save in the footers.
 		if ($this->debug_log_enabled) {
 			add_action('admin_footer', array( &$this, 'save_debug_log'));
 			add_action('wp_footer', array( &$this, 'save_debug_log'));				
 		}
+	}
+
+	/**
+	 * Run during WP init phase
+	 *
+	 * @return void
+	 **/
+	function plugin_init()
+	{
+		// Register custom taxonomies
+		self::register_taxonomies();
+
+		// Add recipe custom post type
+		self::create_post_type();
+	}
+
+	/**
+	 * Create admin menu item and fields of the options page
+	 *
+	 * @return void
+	 **/
+	function admin_menu()
+	{	
+		// Create the sub-menu item in the Settings section
+		$settings_page = add_options_page(
+			__('hRecipe Microformat Plugin Settings', self::p), 
+			__('hRecipe Microformat', self::p), 
+			'manage_options', 
+			self::settings_page, 
+			array(&$this, 'options_page_html')
+		);
+		
+		// Add style sheet and scripts needed in the options page
+		add_action('admin_print_scripts-' . $settings_page, array(&$this, 'options_scripts'));
+		add_action('admin_print_styles-' . $settings_page, array(&$this, 'options_styles'));
+			
+		/**
+		 * Add section controlling where recipes are displayed
+		 **/
+		$settings_section = self::settings . '-display';
+		add_settings_section( 
+			$settings_section, 
+			__('Recipe Display Settings', self::p), 
+			array( &$this, 'display_section_html'), 
+			self::settings_page 
+		);
+
+		// Display in Home field
+		add_settings_field( 
+			self::settings . '[display_in_home]', 
+			__('Display In Home', self::p), 
+			array( &$this, 'display_in_home_html' ), 
+			self::settings_page, 
+			$settings_section 
+		);
+		
+		// Display in Feed field
+		add_settings_field( 
+			self::settings . '[display_in_feed]', 
+			__('Display In Feed', self::p), 
+			array( &$this, 'display_in_feed_html' ), 
+			self::settings_page, 
+			$settings_section 
+		);
+		
+		// Add post class field
+		add_settings_field(
+			self::settings . '[add_post_class]',
+			__('Add Post Class', self::p),
+			array(&$this, 'add_post_class_html'),
+			self::settings_page,
+			$settings_section
+		);
+		
+		/**
+	   * Add section to configure recipe header and footer
+	   */
+		$settings_section = self::settings . '-headfoot';
+		add_settings_section(
+			$settings_section,
+			__('Recipe Header and Footer Contents', self::p),
+			array(&$this, 'head_foot_section_html'),
+			self::settings_page
+		);
+
+		/**
+		 * Add section for debug logging
+		 **/
+		$settings_section = self::settings . '-debug';
+		add_settings_section(
+			$settings_section,
+			__('Debug Logging', self::p),
+			array(&$this, 'debug_section_html'),
+			self::settings_page
+		);
+		
+		// Add Plugin Error Logging
+		add_settings_field( 
+			self::settings . '[debug_log_enabled]', 
+			__('Enable Debug Log', self::p), 
+			array( &$this, 'debug_log_enabled_html'), 
+			self::settings_page, 
+			$settings_section 
+		);
+	}
+	
+	/**
+	 * Setup the admin screens
+	 **/
+	function admin_init ()
+	{
+		// Add section for reporting configuration errors and notices
+		add_action('admin_footer', array( &$this, 'admin_notice'));			//TODO Change to use an admin_notices_all action?
+
+		// 		do_action('load-' . $page_hook); // Use to trigger events needed on the options screen
+			
+		// // Add plugin admin style
+		// add_action( 'admin_print_styles-post.php', array(&$this, 'admin_styles'), 1000 );
+		// add_action( 'admin_print_styles-post-new.php', array(&$this, 'admin_styles'), 1000 );
+		// 
+		// // Add plugin admin scripts
+		// add_action( 'admin_print_scripts-post.php', array(&$this, 'admin_scripts'), 1000 );
+		// add_action( 'admin_print_scripts-post-new.php', array(&$this, 'admin_scripts'), 1000 );
+
+		// Register actions to use the receipe category in admin list view
+		add_action('restrict_manage_posts', array(&$this, 'restrict_recipes_by_category'));
+		add_action('parse_query', array(&$this, 'parse_recipe_category_query'));
+		add_action('manage_' . self::post_type . '_posts_columns', array(&$this, 'add_recipe_category_to_recipe_list'));
+		add_action('manage_posts_custom_column', array(&$this, 'show_column_for_recipe_list'),10,2);
+		
+		// Register the settings name
+		register_setting( self::settings_page, self::settings, array (&$this, 'sanitize_settings') );
+		
+		// Register admin style sheet
+		wp_register_style(self::p . 'admin', self::$url . 'admin/css/admin.css');
+		
+		// Register jQuery UI stylesheet
+		wp_register_style(self::p . 'jquery-ui', self::$url . 'admin/css/jquery-ui.css');
+		
+		// Setup the Recipe Post Editing page
+		add_action('add_meta_boxes_' . self::post_type, array(&$this, 'configure_tinymce'));
+		self::setup_meta_boxes();  // Setup the plugin metaboxes
 	}
 	
 	/**
@@ -194,8 +354,41 @@ class hrecipe_microformat_options
 	 **/
 	function create_post_type()
 	{		
+		// Register the Recipe post type
+		register_post_type(self::post_type,
+			array(
+				'labels' => array (
+					'name' => _x('Recipes', 'post type general name', self::p),
+					'singular_name' => _x('Recipe', 'post type singular name', self::p),
+					'add_new' => _x('Add Recipe', 'recipe', self::p),
+					'add_new_item' => __('Add New Recipe', self::p),
+					'edit_item' => __('Edit Recipe', self::p),
+					'new_item' => __('New Recipe', self::p),
+					'view_item' => __('View Recipe', self::p),
+					'search_items' => __('Search Recipes', self::p),
+					'not_found' => __('No recipes found', self::p),
+					'not_found_in_trash' => __('No recipes found in Trash', self::p),
+					'menu_name' => __('Recipes', self::p),
+				),
+				'public' => true,
+				'has_archive' => true,
+				'rewrite' => array('slug' => 'Recipes'),
+				'menu_position' => 7,
+				'supports' => array('title', 'editor', 'author', 'thumbnail', 'trackbacks', 'comments', 'revisions'),
+				'taxonomies' => array('post_tag'),
+			)
+		);
+	}
+	
+	/**
+	 * Add the metaboxes needed in the admin screens
+	 *
+	 * @return void
+	 **/
+	function setup_meta_boxes()
+	{
 		$meta_box = array(
-			'id' => self::prefix . 'meta-box',
+			'id' => self::prefix . 'recipe-info',
 			'title' => __('Recipe Information', self::p),
 			'pages' => array(self::post_type), // Only display for post type recipe
 			'context' => 'normal',
@@ -244,116 +437,64 @@ class hrecipe_microformat_options
 		);
 		// Create the editor metaboxes
 		$meta_box = new RW_Meta_Box($meta_box);
-		
-		// Register the Recipe post type
-		register_post_type(self::post_type,
-			array(
-				'labels' => array (
-					'name' => _x('Recipes', 'post type general name', self::p),
-					'singular_name' => _x('Recipe', 'post type singular name', self::p),
-					'add_new' => _x('Add Recipe', 'recipe', self::p),
-					'add_new_item' => __('Add New Recipe', self::p),
-					'edit_item' => __('Edit Recipe', self::p),
-					'new_item' => __('New Recipe', self::p),
-					'view_item' => __('View Recipe', self::p),
-					'search_items' => __('Search Recipes', self::p),
-					'not_found' => __('No recipes found', self::p),
-					'not_found_in_trash' => __('No recipes found in Trash', self::p),
-					'menu_name' => __('Recipes', self::p),
-				),
-				'public' => true,
-				'has_archive' => true,
-				'rewrite' => array('slug' => 'Recipes'),
-				'menu_position' => 7,
-				'supports' => array('title', 'editor', 'author', 'thumbnail', 'trackbacks', 'comments', 'revisions'),
-				'taxonomies' => array('post_tag'),
-			)
-		);
 	}
 	
 	/**
-	 * Create admin menu object
+	 * Configure tinymce
 	 *
 	 * @return void
 	 **/
-	function admin_menu()
-	{	
-		// Create the sub-menu item in the Settings section
-		add_options_page(
-			__('hRecipe Microformat Plugin Settings', self::p), 
-			__('hRecipe Microformat', self::p), 
-			'manage_options', 
-			self::settings, 
-			array(&$this, 'options_page_html'));			
+	function configure_tinymce()
+	{
+		// Add editor stylesheet
+		add_filter( 'mce_css', array( &$this, 'add_tinymce_css' ) );
+		
+		// Setup the TinyMCE buttons
+		self::add_buttons();
+	}
+	
+	/**
+	 * Enqueue stylesheets used for Recipe Handling
+	 *
+	 * @return void
+	 **/
+	function admin_styles() {
+		global $post_type;
+		if (self::post_type != $post_type) return;
 	}
 
 	/**
-	 * Register the plugin settings options when running admin_screen
+	 * Enqueue scripts used in admin screens for Recipe handling
+	 *
+	 * @return void
 	 **/
-	function admin_init ()
-	{
-		/**
-		 * Add section controlling where recipes are displayed
-		 **/
-		$settings_section = self::settings . '-display';
-		add_settings_section( 
-			$settings_section, 
-			__('Recipe Display Settings', self::p), 
-			array( &$this, 'display_section_html'), 
-			self::settings_page 
-		);
-
-		// Display in Home field
-		add_settings_field( 
-			self::settings . '[display_in_home]', 
-			__('Display In Home', self::p), 
-			array( &$this, 'display_in_home_html' ), 
-			self::settings_page, 
-			$settings_section 
-		);
-		
-		// Display in Feed field
-		add_settings_field( 
-			self::settings . '[display_in_feed]', 
-			__('Display In Feed', self::p), 
-			array( &$this, 'display_in_feed_html' ), 
-			self::settings_page, 
-			$settings_section 
-		);
-		
-		// Add post class field
-		add_settings_field(
-			self::settings . '[add_post_class]',
-			__('Add Post Class', self::p),
-			array(&$this, 'add_post_class_html'),
-			self::settings_page,
-			$settings_section
-		);
-
-		/**
-		 * Add section for debug logging
-		 **/
-		$settings_section = self::settings . '-debug';
-		add_settings_section(
-			$settings_section,
-			__('Debug Logging', self::p),
-			array(&$this, 'debug_section_html'),
-			self::settings_page
-		);
-		
-		// Add Plugin Error Logging
-		add_settings_field( 
-			self::settings . '[debug_log_enabled]', 
-			__('Enable Debug Log', self::p), 
-			array( &$this, 'debug_log_enabled_html'), 
-			self::settings_page, 
-			$settings_section 
-		);
-		
-		// Register the settings name
-		register_setting( self::settings_page, self::settings, array (&$this, 'sanitize_settings') );
+	function admin_scripts() {
+		global $post_type;
+		if (self::post_type != $post_type) return;
 	}
 	
+	/**
+	 * Enqueue the stylesheets used in the plugin options page
+	 *
+	 * @return void
+	 **/
+	function options_styles()
+	{
+		wp_enqueue_style( self::p . 'admin');
+		wp_enqueue_style( self::p . 'jquery-ui' );
+	}
+	
+	/**
+	 * Enqueue scripts used in the plugin options page
+	 *
+	 * @return void
+	 **/
+	function options_scripts()
+	{
+		// Need the jquery sortable support
+		wp_enqueue_script( 'jquery-ui-sortable' );
+	}
+
 	/**
 	 * Display Notice messages at head of admin screen
 	 *
@@ -361,9 +502,9 @@ class hrecipe_microformat_options
 	 **/
 	function admin_notice()
 	{
-		if (count(self::$admin_notices)) {
+		if (count($this->admin_notices)) {
 			echo '<div class="error">';
-			foreach (self::$admin_notices as $notice) {
+			foreach ($this->admin_notices as $notice) {
 				echo '<p>' . $notice . '</p>';
 			}
 			echo '</div>';			
@@ -458,6 +599,44 @@ class hrecipe_microformat_options
 	{
 		self::checkbox_html('add_post_class', $this->add_post_class);
 		_e('Add the post class to recipe posts.', self::p);
+	}
+	
+	/**
+	 * Emit HTML section used for configuring Recipe header and footer content
+	 *
+	 * @return void
+	 **/
+	function head_foot_section_html()
+	{
+		echo '<div id="recipe_head_foot_fields">';
+			echo '<h4>Recipe Head</h4>';
+			echo '<ul id="recipe_head_fields" class="menu recipe-fields">';
+			foreach ($this->recipe_head_fields as $field) {
+				echo '<li class="menu-item-handle">'. $field .'</li>';
+			}
+			echo '</ul>';
+			echo '<h4>Recipe Footer</h4>';
+			echo '<ul id="recipe_footer_fields" class="menu recipe-fields">';
+			foreach ($this->recipe_footer_fields as $field) {
+				echo '<li class="menu-item-handle">'. $field .'</li>';
+			}
+			echo '</ul>';
+			echo '<h4>Unused</h4>';
+			echo '<ul id="recipe_unused_fields" class="menu recipe-fields">';
+			foreach ($this->recipe_unused_fields as $field) {
+				echo '<li class="menu-item-handle">'. $field .'</li>';
+			}
+			echo '</ul>';
+		echo '</div>';
+		?>
+			<script type="text/javascript">
+				//<![CDATA[
+				jQuery(document).ready( function($) {
+					$('#recipe_head_fields, #recipe_footer_fields, #recipe_unused_fields').sortable({connectWith:'.recipe-fields'});
+				});
+				//]]>
+			</script>
+		<?php
 	}
 	
 	/**
@@ -646,7 +825,7 @@ class hrecipe_microformat_options
 	 **/
 	function handle_database_ver()
 	{
-		self::$admin_notices[] = sprintf(__('Recipe database version mismatch; using v%1$d, required v%2$d', self::p), $this->database_ver, self::required_db_ver);
+		$this->admin_notices[] = sprintf(__('Recipe database version mismatch; using v%1$d, required v%2$d', self::p), $this->database_ver, self::required_db_ver);
 	}
 	
 	/**

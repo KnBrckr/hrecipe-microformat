@@ -83,7 +83,7 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 		
 		// Register CSS and enqueue
 		wp_register_style(self::prefix . '-style', self::$url . 'hrecipe.css');
-		wp_enqueue_style(self::prefix . '-style');
+		wp_enqueue_style(self::prefix . '-style'); // TODO Move so that CSS only included to format recipes
 	}
 
 	/**
