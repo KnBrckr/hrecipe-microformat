@@ -99,6 +99,13 @@ class hrecipe_microformat_options
 	protected $recipe_footer_fields_default;
 	
 	/**
+	 * Map internal field names to displayed names
+	 *
+	 * @var array
+	 **/
+	protected $recipe_field_map;
+	
+	/**
 	 * Setup plugin defaults and register with WordPress for use in Admin screens
 	 **/
 	function setup()
@@ -107,21 +114,22 @@ class hrecipe_microformat_options
 		self::$url =  WP_PLUGIN_URL . '/' . self::p . '/' ;
 		$this->admin_notices = array();
 		
+		$this->recipe_field_map = array(
+			'yield' => __('Yield', self::p),
+			'difficulty' => __('Difficulty', self::p),
+			'rating' => __('Rating', self::p),
+			'category' => __('Category', self::p),
+			'duration' => __('Duration', self::p),
+			'preptime' => __('Prep Time', self::p),
+			'cooktime' => __('Cook Time', self::p),
+			'published' => __('Published', self::p),
+			'author' => __('Author', self::p),
+			'nutrition' => __('Nutrition', self::p)			
+		);
+		
 		// Defaults for recipe head and footer display
-		$this->recipe_head_fields_default = array(
-			'Yield',
-			'Difficulty',
-			'Rating',
-			'Category',
-			'Duration',
-			'Prep Time',
-			'Cook Time',
-		);
-		$this->recipe_footer_fields_default = array(
-			'Published',
-			'Author',
-			'Nutrition'
-		);
+		$this->recipe_head_fields_default = 'yield,difficulty,rating,category,duration,preptime,cooktime';
+		$this->recipe_footer_fields_default = 'published,author,nutrition';
 						
 		// Retrieve Plugin Options
 		$options = (array) get_option(self::settings);		
@@ -145,7 +153,7 @@ class hrecipe_microformat_options
 			
 		// Unused recipe fields
 		$this->recipe_unused_fields =
-			array_key_exists('recipe_unused_fields', $options) ? $options['recipe_unused_fields'] : array();
+			array_key_exists('recipe_unused_fields', $options) ? $options['recipe_unused_fields'] : '';
 		
 		// Init value for debug log
 		$this->debug_log_enabled = array_key_exists('debug_log_enabled', $options) ? $options['debug_log_enabled'] : false;
@@ -214,7 +222,7 @@ class hrecipe_microformat_options
 		add_action('admin_print_styles-' . $settings_page, array(&$this, 'options_styles'));
 			
 		/**
-		 * Add section controlling where recipes are displayed
+		 * Add section controlling how recipes are displayed
 		 **/
 		$settings_section = self::settings . '-display';
 		add_settings_section( 
@@ -310,8 +318,9 @@ class hrecipe_microformat_options
 		// Register the settings name
 		register_setting( self::settings_page, self::settings, array (&$this, 'sanitize_settings') );
 		
-		// Register admin style sheet
+		// Register admin style sheet and javascript
 		wp_register_style(self::p . 'admin', self::$url . 'admin/css/admin.css');
+		wp_register_script(self::p . 'admin', self::$url . 'admin/js/admin.js');
 		
 		// Register jQuery UI stylesheet
 		wp_register_style(self::p . 'jquery-ui', self::$url . 'admin/css/jquery-ui.css');
@@ -491,6 +500,9 @@ class hrecipe_microformat_options
 	 **/
 	function options_scripts()
 	{
+		// Load the plugin admin scripts
+		wp_enqueue_script( self::p . 'admin');
+		
 		// Need the jquery sortable support
 		wp_enqueue_script( 'jquery-ui-sortable' );
 	}
@@ -608,32 +620,37 @@ class hrecipe_microformat_options
 	 **/
 	function head_foot_section_html()
 	{
+		$fields = array(
+			array('field' => 'recipe_head_fields', 'title' => __('Recipe Head Section', self::p)),
+			array('field' => 'recipe_footer_fields', 'title' => __('Recipe Footer Section', self::p)),
+			array('field' => 'recipe_unused_fields', 'title' => __('Unused Fields', self::p)),
+		);
+		$recipe_field_sections = '';
+		
 		echo '<div id="recipe_head_foot_fields">';
-			echo '<h4>Recipe Head</h4>';
-			echo '<ul id="recipe_head_fields" class="menu recipe-fields">';
-			foreach ($this->recipe_head_fields as $field) {
-				echo '<li class="menu-item-handle">'. $field .'</li>';
+		foreach ($fields as $row) {
+			// Collect section names for javacript
+			$comma = ('' == $recipe_field_sections ? '' : ',');
+			$recipe_field_sections .= $comma . '"#' . $row['field'] . '"';
+			
+			// Emit the HTML for each section
+			echo '<div id="' . $row['field'] . '" class="recipe-fields">';
+			echo '<h4>' . $row['title'] . '</h4>';
+			self::input_hidden_html($row['field'], $this->$row['field']);
+			echo '<ul>';
+			if ('' != $this->$row['field']) {
+				foreach (explode(',', $this->$row['field']) as $field) {
+					echo '<li class="menu-item-handle" name="' . $field . '">' . $this->recipe_field_map[$field] . '</li>';
+				}				
 			}
 			echo '</ul>';
-			echo '<h4>Recipe Footer</h4>';
-			echo '<ul id="recipe_footer_fields" class="menu recipe-fields">';
-			foreach ($this->recipe_footer_fields as $field) {
-				echo '<li class="menu-item-handle">'. $field .'</li>';
-			}
-			echo '</ul>';
-			echo '<h4>Unused</h4>';
-			echo '<ul id="recipe_unused_fields" class="menu recipe-fields">';
-			foreach ($this->recipe_unused_fields as $field) {
-				echo '<li class="menu-item-handle">'. $field .'</li>';
-			}
-			echo '</ul>';
-		echo '</div>';
+			echo '</div>'; // Close each field section
+		}
+		echo '</div>'; // Close entire section
 		?>
 			<script type="text/javascript">
 				//<![CDATA[
-				jQuery(document).ready( function($) {
-					$('#recipe_head_fields, #recipe_footer_fields, #recipe_unused_fields').sortable({connectWith:'.recipe-fields'});
-				});
+				var recipe_field_sections=new Array(<?php echo $recipe_field_sections; ?>);
 				//]]>
 			</script>
 		<?php
@@ -677,6 +694,16 @@ class hrecipe_microformat_options
 	{
 		$checked = $checked ? " checked" : "";
 		echo '<input type="checkbox" name="' . self::settings . '['. $field . ']" value="1"' . $checked . '>';
+	}
+	
+	/**
+	 * Emit HTML for a hidden field
+	 *
+	 * @return void
+	 **/
+	function input_hidden_html($field, $value)
+	{
+		echo '<input type="hidden" name="' . self::settings . '[' . $field . ']" value="' . $value . '">';
 	}
 	
 	function add_buttons() {
