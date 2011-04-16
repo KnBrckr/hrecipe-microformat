@@ -253,7 +253,7 @@ class hrecipe_microformat_options
 		// Add post class field
 		add_settings_field(
 			self::settings . '[add_post_class]',
-			__('Add Post Class', self::p),
+			__('Recipe Format', self::p),
 			array(&$this, 'add_post_class_html'),
 			self::settings_page,
 			$settings_section
@@ -610,7 +610,7 @@ class hrecipe_microformat_options
 	function add_post_class_html()
 	{
 		self::checkbox_html('add_post_class', $this->add_post_class);
-		_e('Add the post class to recipe posts.', self::p);
+		_e('Format Recipes like Posts.', self::p);
 	}
 	
 	/**
