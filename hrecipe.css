@@ -7,4 +7,26 @@
 }
 
 .fn {
+	font-size: 1.5em;
+}
+
+.hrecipe_hint:before {
+	font-family: Impact, Charcoal, sans-serif;
+	font-style: normal;
+	content: "Hint";
+	font-size: 1.4em;
+	position: absolute;
+	top: -.1em;
+	left: 7px;
+	padding: 0 5px;
+}
+
+.hrecipe_hint {
+	display: block;
+	clear: both;
+	padding: 1.5em 10px 10px 20px;
+	margin-bottom: 20px;
+	border: 1px solid #381b42;
+	font-style: italic;
+	position: relative;
 }

@@ -95,6 +95,7 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 		 * Register shortcodes
 		 */
 		add_shortcode(self::prefix . 'title', array(&$this, 'sc_title'));
+		add_shortcode(self::prefix . 'hint', array(&$this, 'sc_hint'));
 	}
 
 	/**
@@ -341,14 +342,25 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 	}
 	
 	/**
-	 * Emit HTML for the recipe title shortcode
+	 * Generate HTML for the recipe title shortcode
 	 *
-	 * @return string 
+	 * @return string HTML formatted title string
 	 **/
 	function sc_title($atts, $content = '')
 	{
 		global $post;
 		return '<div class="fn">' . get_post_meta($post->ID, self::prefix . 'fn', true). '</div>';
+	}
+	
+	/**
+	 * Wrap hint text in HTML5 aside tags
+	 *
+	 * @return string HTML formatted hint text
+	 * @author Kenneth J. Brucker <ken@pumastudios.com>
+	 **/
+	function sc_hint($atts, $content = '')
+	{
+		return '<aside class="'. self::prefix . 'hint">' . $content . '</aside>';
 	}
 
 	/**
