@@ -759,14 +759,15 @@ class hrecipe_microformat_options
 	}
  
 	function register_buttons($buttons) {
-	   array_push($buttons, 'hrecipeTitle', 'hrecipeYield', 'hrecipeDuration', 'hrecipePreptime', 'hrecipeCooktime',  'hrecipeAuthor', 'hrecipePublished', 'hrecipeCategory');
+	   array_push($buttons, 'hrecipeTitle', 'hrecipeIngredientList');
 	// 'hrecipeIngredientList', 'hrecipeIngredient', 'hrecipeInstructions', 'hrecipeStep', 'hrecipeSummary',
 	   return $buttons;
 	}
  
 	// Load the TinyMCE plugins : editor_plugin.js
 	function add_tinymce_plugins($plugin_array) {
-		$plugin_array['hrecipeTitle'] = self::$url.'lib/TinyMCE-plugins/info/editor_plugin.js';
+		$plugin_array['hrecipeTitle'] = $this->locate_tinymce_plugin('info');
+		$plugin_array['hrecipeIngredientList'] = $this->locate_tinymce_plugin('ingredients');
 		// $plugin_array['hrecipeTitle'] = self::$url.'lib/TinyMCE-plugins/ingredients/editor_plugin.js';
 		// $plugin_array['hrecipeTitle'] = self::$url.'lib/TinyMCE-plugins/instructions/editor_plugin.js';
 		// $plugin_array['hrecipeTitle'] = self::$url.'lib/TinyMCE-plugins/step/editor_plugin.js';
@@ -776,13 +777,28 @@ class hrecipe_microformat_options
 	}
 	
 	/**
+	 * Locate tinymce plugin file, use either the dev src or the minified version if available
+	 *
+	 * @return string URL path to TinyMCE javascript plugin
+	 **/
+	function locate_tinymce_plugin($plugin)
+	{
+		$plugin_dir = 'lib/TinyMCE-plugins/' . $plugin . '/';
+		if (file_exists(self::$dir . $plugin_dir . 'editor_plugin.js')) {
+			return self::$url . $plugin_dir . 'editor_plugin.js';
+		} else {
+			return self::$url . $plugin_dir . 'editor_plugin_src.js';
+		}
+		// Not reached
+	}
+	/**
 	 * Add plugin CSS to tinymce
 	 *
 	 * @return updated list of css files
 	 **/
 	function add_tinymce_css($mce_css){
 		if (! empty($mce_css)) $mce_css .= ',';
-		$mce_css .= self::$url . 'tinymce-editor.css';
+		$mce_css .= self::$url . 'admin/css/editor.css';
 		return $mce_css; 
 	}
 		

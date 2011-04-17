@@ -1,0 +1,46 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title>{#hrecipeIngredientList_dlg.title}</title>
+	<script type="text/javascript" src="../../TinyMCE-utils/tiny_mce_popup.js"></script>
+	<script type="text/javascript" src="js/dialog.js"></script>
+	<link media="all" type="text/css" href="../../css/jquery-ui.css" rel="stylesheet">
+</head>
+<body>
+	TODO - Allow re-ordering of rows
+	TODO - Add row
+	TODO - Remove Row
+<form onsubmit="hrecipeIngredientListDialog.insert();return false;" action="#">
+	Enter the list of ingredients:
+	<table>
+		<thead>
+			<tr>
+				<th></th>
+				<th>Amount</th>
+				<th>Unit</th>
+				<th>Ingredient</th>
+				<th>Comment</th>
+			</tr>
+		<tbody>
+			<tr>
+				<td><span class="ui-icon ui-icon-plusthick"></span><span class="insert"></span><span class="delete"></span></td>
+				<td><input type="text" class="amount" /></td>
+				<td><input type="text" class="unit" /></td>
+				<td><input type="text" class="ingredient" /></td>
+				<td><input type="text" class="comment"></td>
+			</tr>
+		</tbody>
+	</table>
+	
+	<p>Here is a example dialog.</p>
+	<p>Selected text: <input id="someval" name="someval" type="text" class="text" /></p>
+	<p>Custom arg: <input id="somearg" name="somearg" type="text" class="text" /></p>
+
+	<div class="mceActionPanel">
+		<input type="button" id="insert" name="insert" value="{#insert}" onclick="hrecipeIngredientListDialog.insert();" />
+		<input type="button" id="cancel" name="cancel" value="{#cancel}" onclick="tinyMCEPopup.close();" />
+	</div>
+</form>
+
+</body>
+</html>
