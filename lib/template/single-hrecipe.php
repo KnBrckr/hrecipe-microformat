@@ -14,15 +14,11 @@ get_header(); ?>
 									<div class="entry-meta">
 										<?php hrecipe_microformat::posted_on(); ?>
 									</div><!-- .entry-meta -->
-									<div class="hrecipe-head">
-										<?php hrecipe_microformat::recipe_head(); ?>
-									</div><!-- .hrecipe-head -->
+									<?php hrecipe_microformat::recipe_head(); ?>
 									<div class="entry-content">
 										<?php the_content(); ?>
 									</div><!-- .entry-content -->
-									<div class="hrecipe-footer">
-										<?php hrecipe_microformat::recipe_footer();?>
-									</div><!-- .hrecipe-footer -->
+									<?php hrecipe_microformat::recipe_footer();?>
 									<div class="entry-utility">
 										<?php hrecipe_microformat::posted_in(); ?>
 										<?php edit_post_link( __( 'Edit'), '<span class="edit-link">', '</span>' ); ?>

@@ -72,18 +72,29 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 	function __construct() {
 		parent::setup();
 
+		add_action('init', array(&$this, 'wp_init'));
+	}
+	
+	function wp_init() {
+		// Catch any posts that have a plugin supplied default template
+		add_action('template_redirect', array(&$this, 'template_redirect'));
+
 		// Put recipes into the stream if requested in configuration
 		add_filter('pre_get_posts', array(&$this, 'pre_get_posts_filter'));
 		
 		// Update the post class as required
 		add_filter('post_class', array(&$this, 'post_class'));
+				
+		// Register Plugin CSS
+		wp_register_style(self::prefix . 'style', self::$url . 'hrecipe.css');
+
+		// Include the plugin styling
+		wp_enqueue_style(self::prefix . 'style'); // TODO Move so that CSS only included to format recipes
 		
-		// Catch any posts that have a plugin supplied default template
-		add_action('template_redirect', array(&$this, 'template_redirect'));
-		
-		// Register CSS and enqueue
-		wp_register_style(self::prefix . '-style', self::$url . 'hrecipe.css');
-		wp_enqueue_style(self::prefix . '-style'); // TODO Move so that CSS only included to format recipes
+		/*
+		 * Register shortcodes
+		 */
+		add_shortcode(self::prefix . 'title', array(&$this, 'sc_title'));
 	}
 
 	/**
@@ -245,10 +256,9 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 	 **/
 	function recipe_head()
 	{
-		// TODO Determine fields to place in header
-		// TODO Allow filtering of list ? Or use a config panel to select placement
-		// TODO Emit list
-		echo "Recipe Header";
+		if ('' != $this->recipe_head_fields) {
+			$this->recipe_meta_html('head', $this->recipe_head_fields);
+		}
 	}
 	
 	/**
@@ -258,10 +268,87 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 	 **/
 	function recipe_footer()
 	{
-		// TODO Determine fields to place in footer
-		// TODO Allow filtering of list ? or use config panel to select placement
-		// TODO Emit list
-		echo "Recipe Footer";
+		if ('' != $this->recipe_footer_fields) {
+			$this->recipe_meta_html('footer', $this->recipe_footer_fields);
+		}
+	}
+	
+	/**
+	 * undocumented function
+	 *
+	 * @return void
+	 * @author Kenneth J. Brucker <ken@pumastudios.com>
+	 **/
+	function recipe_meta_html($section, $list)
+	{
+		echo '<div class="' . self::post_type . '-' . $section . '">';
+		foreach (explode(',', $list) as $field) {
+			$this->recipe_field_html($field);
+		}
+		echo '</div>';			
+	}
+
+	/**
+	 * Emit the HTML for a named recipe field
+	 *
+	 * @uses $post When called within The Loop, $post will contain the data for the active post
+	 * @return void
+	 **/
+	function recipe_field_html($field)
+	{
+		global $post;
+		if (empty($this->recipe_field_map[$field])) return;
+		
+		// Get the field value based on where is it is stored in the DB
+		$type = $this->recipe_field_map[$field]['type'];
+		switch ($type) {
+			case 'meta':  // Post Meta Data
+				$value = get_post_meta($post->ID, self::prefix . $field, true);
+				break;
+				
+			case 'tax': // Taxonomy data
+				$terms = get_the_terms($post->ID, self::prefix . $field);
+				if (is_array($terms)) {
+					foreach ($terms as $term) {
+						$names[] = $term->name;
+					}
+					$value = implode(', ', $names);	
+				} else {
+					$value = '';
+				}
+				break;
+				
+			case 'difficulty': // Recipe difficulty
+				$value = get_post_meta($post->ID, self::prefix . $field, true);	  // FIXME
+				break;
+			
+			case 'rating': // Recipe rating based on reader response
+				$value = '';  // FIXME Add rating module
+				break;
+				
+			case 'nutrition': // Recipe nutrition as calculated from ingredients
+				$value = ''; // FIXME Add nutrition calculation on save
+				break;
+				
+			default:
+				$value = '';
+		}
+
+		echo '<div class="' . self::prefix . $field . '">';
+		if (isset($value) && '' != $value)
+			echo $this->recipe_field_map[$field]['label'] . ': <span class="' . $field . '">' . $value . '</span>';
+		echo '</div>';
+	}
+	
+	/**
+	 * Emit HTML for the recipe title shortcode
+	 *
+	 * @return string 
+	 **/
+	function sc_title($atts, $content = '')
+	{
+		global $post;
+		return '<div class="fn">' . get_post_meta($post->ID, self::prefix . 'fn', true). '</div>';
 	}
 
 	/**
@@ -276,20 +363,17 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 		parent::register_taxonomies();  // Register the needed taxonomies so they can be populated
 		parent::create_post_type();			// Create the hrecipe post type so that rewrite rules can be flushed.
 		
-		// On activation, flush rewrite rules to make sure plugin is setup correctly. 
-		flush_rewrite_rules();
-		
-		// Create the difficulty taxonomy
-		wp_insert_term(__('Easy', self::p), self::prefix . 'difficulty');
-		wp_insert_term(__('Medium', self::p), self::prefix . 'difficulty');
-		wp_insert_term(__('Hard', self::p), self::prefix . 'difficulty');
-		
+		// TODO Only insert taxonomies if not already present - move this to the admin side
 		// Create the Recipe Category taxonomy
+		// TODO Populate the default Category taxonomy
 		wp_insert_term(__('Dessert', self::p), self::prefix . 'category');
 		wp_insert_term(__('Entrée', self::p), self::prefix . 'category');
 		wp_insert_term(__('Main', self::p), self::prefix . 'category');
 		wp_insert_term(__('Meat', self::p), self::prefix . 'category');
 		wp_insert_term(__('Soup', self::p), self::prefix . 'category');
+
+		// On activation, flush rewrite rules to make sure plugin is setup correctly. 
+		flush_rewrite_rules();
 	}
 	
 	/**

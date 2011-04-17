@@ -99,9 +99,16 @@ class hrecipe_microformat_options
 	protected $recipe_footer_fields_default;
 	
 	/**
-	 * Map internal field names to displayed names
+	 * Map internal field names to displayed names, description
 	 *
-	 * @var array
+	 * Index into the primary array is the hrecipe microformat field name
+	 *
+	 * Each row contains:
+	 *	label - Name to use to label the related value
+	 *  description - 1-line description of the field
+	 *  type - data storage format:  tax --> Taxonomy, meta --> Post Metadata, nutrition --> Special class of Post Meta
+	 *
+	 * @var array of arrays
 	 **/
 	protected $recipe_field_map;
 	
@@ -115,16 +122,36 @@ class hrecipe_microformat_options
 		$this->admin_notices = array();
 		
 		$this->recipe_field_map = array(
-			'yield' => __('Yield', self::p),
-			'difficulty' => __('Difficulty', self::p),
-			'rating' => __('Rating', self::p),
-			'category' => __('Category', self::p),
-			'duration' => __('Duration', self::p),
-			'preptime' => __('Prep Time', self::p),
-			'cooktime' => __('Cook Time', self::p),
-			'published' => __('Published', self::p),
-			'author' => __('Author', self::p),
-			'nutrition' => __('Nutrition', self::p)			
+			'yield'      => array( 'label' => __('Yield', self::p), # TODO Use value, unit for yield (x cookies, x servings, ...)
+														 'description' => __('Amount the recipe produces, generally the number of servings.', self::p),
+														 'type' => 'meta'),
+			'difficulty' => array( 'label' => __('Difficulty', self::p),
+														 'description' => __('Difficulty or complexity of the recipe.', self::p),
+														 'type' => 'meta'),
+			'rating'     => array( 'label' => __('Rating', self::p),
+														 'description' => __('Rating of the recipe out of five stars.', self::p),
+														 'type' => 'rating'),
+			'category'   => array( 'label' => __('Category', self::p),
+														 'description' => __('Type of recipe', self::p),
+														 'type' => 'tax'),
+			'duration'   => array( 'label' => __('Duration', self::p),
+														 'description' => __('Total time it takes to make the recipe.', self::p),
+														 'type' => 'meta'),
+			'preptime'   => array( 'label' => __('Prep Time', self::p),
+														 'description' => __('Time it takes in the preparation step of the recipe.', self::p),
+														 'type' => 'meta'),
+			'cooktime'   => array( 'label' => __('Cook Time', self::p),
+														 'description' => __('Time it takes in the cooking step of the recipe.', self::p),
+														 'type' => 'meta'),
+			'published'  => array( 'label' => __('Published', self::p),
+														 'description' => __('Date of publication of the recipe', self::p),
+														 'type' => 'meta'),
+			'author'     => array( 'label' => __('Author', self::p),
+														 'description' => __('Recipe Author, if different from person posting the recipe.', self::p),
+														 'type' => 'meta'),
+			'nutrition'  => array( 'label' => __('Nutrition', self::p),
+														 'description' => __('Recipe nutrition information', self::p),
+														 'type' => 'nutrition'),		
 		);
 		
 		// Defaults for recipe head and footer display
@@ -299,7 +326,7 @@ class hrecipe_microformat_options
 		// Add section for reporting configuration errors and notices
 		add_action('admin_footer', array( &$this, 'admin_notice'));			//TODO Change to use an admin_notices_all action?
 
-		// 		do_action('load-' . $page_hook); // Use to trigger events needed on the options screen
+		// 		add_action('load-' . $page_hook,...); // Use to trigger events needed on the options screen
 			
 		// // Add plugin admin style
 		// add_action( 'admin_print_styles-post.php', array(&$this, 'admin_styles'), 1000 );
@@ -319,11 +346,11 @@ class hrecipe_microformat_options
 		register_setting( self::settings_page, self::settings, array (&$this, 'sanitize_settings') );
 		
 		// Register admin style sheet and javascript
-		wp_register_style(self::p . 'admin', self::$url . 'admin/css/admin.css');
-		wp_register_script(self::p . 'admin', self::$url . 'admin/js/admin.js');
+		wp_register_style(self::prefix . 'admin', self::$url . 'admin/css/admin.css');
+		wp_register_script(self::prefix . 'admin', self::$url . 'admin/js/admin.js');
 		
 		// Register jQuery UI stylesheet
-		wp_register_style(self::p . 'jquery-ui', self::$url . 'admin/css/jquery-ui.css');
+		wp_register_style(self::prefix . 'jquery-ui', self::$url . 'admin/css/jquery-ui.css');
 		
 		// Setup the Recipe Post Editing page
 		add_action('add_meta_boxes_' . self::post_type, array(&$this, 'configure_tinymce'));
@@ -347,7 +374,7 @@ class hrecipe_microformat_options
 				self::post_type,
 				array(
 					'hierarchical' => true,
-					'label' => __('Recipe Category', self::p),
+					'label' => __('Recipe Category', self::p), // TODO Add label text
 					'query_var' => self::prefix . 'category',
 					'rewrite' => true,
 					'show_ui' => true,
@@ -409,6 +436,16 @@ class hrecipe_microformat_options
 					'type' => 'text'
 				),
 				array(
+					'name' => __('Author', self::p),
+					'id' => self::prefix . 'author',
+					'type' => 'text'
+				),
+				array(
+					'name' => __('Published', self::p),
+					'id' => self::prefix . 'published',
+					'type' => 'text'
+				),
+				array(
 					'name' => __( 'Yield', self::p),
 					'id' => self::prefix . 'yield',
 					'type' => 'text',
@@ -437,9 +474,9 @@ class hrecipe_microformat_options
 					'type' => 'radio',
 					'desc' => __('Recipe level of difficulty', self::p),
 					'options' => array(
-												'1' => 'Easy',
-												'3' => 'Medium',
-												'5' => 'Hard',
+												'1' => __('Easy', self::p),
+												'3' => __('Medium', self::p),
+												'5' => __('Hard', self::p),
 					            ),
 				),
 			)
@@ -489,8 +526,11 @@ class hrecipe_microformat_options
 	 **/
 	function options_styles()
 	{
-		wp_enqueue_style( self::p . 'admin');
-		wp_enqueue_style( self::p . 'jquery-ui' );
+		// Style the admin pages
+		wp_enqueue_style( self::prefix . 'admin');
+		
+		// jQuery UI style
+		wp_enqueue_style( self::prefix . 'jquery-ui' );
 	}
 	
 	/**
@@ -501,7 +541,7 @@ class hrecipe_microformat_options
 	function options_scripts()
 	{
 		// Load the plugin admin scripts
-		wp_enqueue_script( self::p . 'admin');
+		wp_enqueue_script( self::prefix . 'admin');
 		
 		// Need the jquery sortable support
 		wp_enqueue_script( 'jquery-ui-sortable' );
@@ -640,7 +680,7 @@ class hrecipe_microformat_options
 			echo '<ul>';
 			if ('' != $this->$row['field']) {
 				foreach (explode(',', $this->$row['field']) as $field) {
-					echo '<li class="menu-item-handle" name="' . $field . '">' . $this->recipe_field_map[$field] . '</li>';
+					echo '<li class="menu-item-handle" name="' . $field . '">' . $this->recipe_field_map[$field]['label'] . '</li>';
 				}				
 			}
 			echo '</ul>';
