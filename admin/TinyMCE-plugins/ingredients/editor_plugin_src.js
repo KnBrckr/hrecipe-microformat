@@ -26,8 +26,8 @@
 			ed.addCommand('mceHrecipeIngredientList', function() {
 				ed.windowManager.open({
 					file : url + '/dialog.html',
-					width : 320 + parseInt(ed.getLang('hrecipeIngredientList.delta_width', 0),10),
-					height : 120 + parseInt(ed.getLang('hrecipeIngredientList.delta_height', 0),10),
+					width : 700 + parseInt(ed.getLang('hrecipeIngredientList.delta_width', 0),10),
+					height : 450 + parseInt(ed.getLang('hrecipeIngredientList.delta_height', 0),10),
 					inline : 1
 				}, {
 					plugin_url : url, // Plugin absolute URL
