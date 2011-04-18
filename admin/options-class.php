@@ -783,7 +783,7 @@ class hrecipe_microformat_options
 	 **/
 	function locate_tinymce_plugin($plugin)
 	{
-		$plugin_dir = 'lib/TinyMCE-plugins/' . $plugin . '/';
+		$plugin_dir = 'admin/TinyMCE-plugins/' . $plugin . '/';
 		if (file_exists(self::$dir . $plugin_dir . 'editor_plugin.js')) {
 			return self::$url . $plugin_dir . 'editor_plugin.js';
 		} else {

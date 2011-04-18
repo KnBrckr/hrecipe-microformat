@@ -1,15 +1,21 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
+	<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 	<title>{#hrecipeIngredientList_dlg.title}</title>
+	<!--
 	<script type="text/javascript" src="../../TinyMCE-utils/tiny_mce_popup.js"></script>
+	-->
+	<script type="text/javascript" src="../../js/jquery.js"></script>
+	<script type="text/javascript" src="../../js/jquery-ui.js"></script>
 	<script type="text/javascript" src="js/dialog.js"></script>
-	<link media="all" type="text/css" href="../../css/jquery-ui.css" rel="stylesheet">
+	<link media="all" type="text/css" href="../../css/jquery-ui.css" rel="stylesheet" />
+	<link media="all" type="text/css" href="../../css/admin.css" rel="stylesheet" />
 </head>
 <body>
-	TODO - Allow re-ordering of rows
 	TODO - Add row
 	TODO - Remove Row
+	TODO - Autocomplete for ingredient name
 <form onsubmit="hrecipeIngredientListDialog.insert();return false;" action="#">
 	Enter the list of ingredients:
 	<table>
@@ -21,13 +27,18 @@
 				<th>Ingredient</th>
 				<th>Comment</th>
 			</tr>
+		</thead>
 		<tbody>
 			<tr>
-				<td><span class="ui-icon ui-icon-plusthick"></span><span class="insert"></span><span class="delete"></span></td>
-				<td><input type="text" class="amount" /></td>
-				<td><input type="text" class="unit" /></td>
-				<td><input type="text" class="ingredient" /></td>
-				<td><input type="text" class="comment"></td>
+				<td class="ui-buttons">
+					<span class="sort-handle ui-icon ui-icon-arrow-2-n-s ui-state-active"></span>
+					<span class="insert ui-icon ui-icon-plusthick ui-state-active"></span>
+					<span class="delete ui-icon ui-icon-minusthick ui-state-active"></span>
+				</td>
+				<td><input type="text" name="amount" class="amount" /></td>
+				<td><input type="text" name="unit" class="unit ui-widget" /></td>
+				<td><input type="text" name="ingredient" class="ingredient" /></td>
+				<td><input type="text" name="comment" class="comment" /></td>
 			</tr>
 		</tbody>
 	</table>
