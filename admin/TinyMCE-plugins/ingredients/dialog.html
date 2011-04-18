@@ -26,25 +26,20 @@
 				<th>Comment</th>
 			</tr>
 		</thead>
-		<tbody>
+		<tbody class="ingrd-list">
 			<tr>
 				<td class="ui-buttons">
 					<span class="sort-handle ui-icon ui-icon-arrow-2-n-s ui-state-active"></span>
 					<span class="insert ui-icon ui-icon-plusthick ui-state-active"></span>
 					<span class="delete ui-icon ui-icon-minusthick ui-state-active"></span>
 				</td>
-				<td><input type="text" name="amount" class="amount" /></td>
-				<td><input type="text" name="unit" class="unit ui-widget" /></td>
-				<td><input type="text" name="ingredient" class="ingredient" /></td>
-				<td><input type="text" name="comment" class="comment" /></td>
+				<td><input type="text" class="value" /></td>
+				<td><input type="text" class="type ui-widget" /></td>
+				<td><input type="text" class="ingrd" /></td>
+				<td><input type="text" class="comment" /></td>
 			</tr>
 		</tbody>
 	</table>
-	
-	<p>Here is a example dialog.</p>
-	<p>Selected text: <input id="someval" name="someval" type="text" class="text" /></p>
-	<p>Custom arg: <input id="somearg" name="somearg" type="text" class="text" /></p>
-
 	<div class="mceActionPanel">
 		<input type="button" id="insert" name="insert" value="{#insert}" onclick="hrecipeIngredientListDialog.insert();" />
 		<input type="button" id="cancel" name="cancel" value="{#cancel}" onclick="tinyMCEPopup.close();" />

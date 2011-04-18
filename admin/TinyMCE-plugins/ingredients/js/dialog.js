@@ -12,7 +12,7 @@ var availableUnits=[ // TODO make list bigger!
 
 // After document is loaded, init elements
 jQuery(document).ready( function($) {
-	$('.unit').autocomplete({source: availableUnits});
+	$('.type').autocomplete({source: availableUnits}); // FIXME auto-complete not working
 	
 	// Make table rows sortable
 	$('tbody').sortable(
@@ -23,25 +23,19 @@ jQuery(document).ready( function($) {
 	
 	// Insert a new row after the active row
 	$('.insert').live('click', function(){
-		var $btn = $(this);
-		var $clonedRow = $btn.closest('tr').clone();
-		
-		// Clean out any values
-		$clonedRow.find('input').each(function() { this.value = '';});
-		
-		// Setup autocomplete for the new row elements
-		$clonedRow.find('.unit').autocomplete({source: availableUnits});
+		var btn = $(this);
+		var clonedRow = hrecipeCloneRow(btn.closest('tr'));
 		
 		// Put new row into the table after the current one
-		$btn.closest('tr').after($clonedRow);
+		btn.closest('tr').after(clonedRow);
 	});
 	
 	// Delete active row
 	$('.delete').live('click', function() {
-		var $btn = $(this);
+		var btn = $(this);
 		
-		if ($btn.closest('tbody').find('tr').length > 1) {
-			$btn.closest('tr').remove();			
+		if (btn.closest('tbody').find('tr').length > 1) {
+			btn.closest('tr').remove();			
 		}
 	});
 });
@@ -49,31 +43,67 @@ jQuery(document).ready( function($) {
 
 var hrecipeIngredientListDialog = {
 	init : function() {
-		var f = document.forms[0];
-
-		// Get the selected contents as text and place it in the input
-		f.someval.value = tinyMCEPopup.editor.selection.getContent({format : 'text'});
-		f.somearg.value = tinyMCEPopup.getWindowArg('some_custom_arg');
+		// If editing an existing list, populate the dialog with the content
+		var n = tinyMCEPopup.editor.selection.getNode();
+		//var f = document.forms[0];
+		var emptyRow = $('.ingrd-list tr:first');
+		
+		$(n).closest('.ingredients').find('.ingredient').each(function(){
+			// For each ingredient in the document ...
+			var sourceRow = $(this);
+			var clonedRow = hrecipeCloneRow(emptyRow);
+			$.each(['.value', '.type', '.ingrd', '.comment'], function(index,attr){
+				var attrVal = sourceRow.find(attr).text();
+				clonedRow.find(attr).val(attrVal);
+			});
+			emptyRow.before(clonedRow);
+		});
 	},
 
 	insert : function() {
 		// Insert the contents from the input into the document
 		
 		// For each row in the ingredients table, generate the target ingredient tags
-		newList = '';
+		newList = '<div class="ingredients">';
 		$('tbody tr').each(function() {
 			var row = $(this);
 			var atts = new Array;
 			
-			$.each(['amount', 'unit', 'ingredient', 'comment'],function(index,attr){
-				if ((val = row.find('.'+attr).val()) != '') atts.push(attr + '="' + val + '"');				
+			$.each(['value', 'type', 'ingrd', 'comment'],function(index,attr){
+				if ('' !== (val = row.find('.' + attr).val())) {
+					val = val.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+					atts.push('<span class="' + attr + '">' + val + '</span>');
+				}				
 			});
-			newList += '[ingredient ' + atts.join(' ') + ']';
+			if (atts.length > 0) { // If at least one field specified, add to the result
+				newList += '<div class="ingredient">' + atts.join(' ') + "</div>\n";
+			}
 		});
+		newList += '</div>'; // Close out the ingredient list
+		
+		// If insert point inside an existing list, replace the list, else insert at cursor
 
-		tinyMCEPopup.editor.execCommand('mceInsertContent', false, newList);
+		var n = tinyMCEPopup.editor.selection.getNode();
+		var ingredientList = $(n).closest('.ingredients');
+		if (ingredientList.length > 0) {
+			ingredientList.replaceWith(newList);
+		} else {
+			tinyMCEPopup.editor.execCommand('mceInsertContent', false, newList);
+		}
 		tinyMCEPopup.close();
 	}
 };
 
-//tinyMCEPopup.onInit.add(hrecipeIngredientListDialog.init, hrecipeIngredientListDialog);
+function hrecipeCloneRow(row) {
+	var clonedRow = row.clone();
+
+	// Clean out any values
+	clonedRow.find('input').each(function() { this.value = '';});
+
+	// Setup autocomplete for the new row elements
+	clonedRow.find('.type').autocomplete({source: availableUnits});
+	
+	return clonedRow;
+}
+
+tinyMCEPopup.onInit.add(hrecipeIngredientListDialog.init, hrecipeIngredientListDialog);

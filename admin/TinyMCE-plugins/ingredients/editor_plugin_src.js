@@ -30,12 +30,11 @@
 					height : 450 + parseInt(ed.getLang('hrecipeIngredientList.delta_height', 0),10),
 					inline : 1
 				}, {
-					plugin_url : url, // Plugin absolute URL
-					some_custom_arg : 'custom arg' // FIXME Custom argument
+					plugin_url : url // Plugin absolute URL
 				});
 			});
 
-			// Register example button
+			// Register Ingredient List button
 			ed.addButton('hrecipeIngredientList', {
 				title : 'hrecipeIngredientList.desc',
 				cmd : 'mceHrecipeIngredientList',

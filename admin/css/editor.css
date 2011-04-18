@@ -3,12 +3,12 @@
 /* ================================================================ */
 
 /* Flag special recipe fields in the editor window */
-.hrecipe:before, .fn:before, .recipeid:before, .ingredient:before, .comment:before, .yield:before, .instructions:before, .step:before, .duration:before, .preptime:before, .cooktime:before, .summary:before, .author:before, .published:before, .category:before, .difficulty:before {
+.hrecipe:before, .fn:before, .recipeid:before, .ingredient:before, .comment:before, .yield:before, .instructions:before, .step:before, .duration:before, .preptime:before, .cooktime:before, .summary:before, .author:before, .published:before, .category:before, .difficulty:before, .value:before, .type:before, .ingrd:before {
 	padding-right: 3px;
 	font-size: .5em;
 	color: red;	
 }
-.hrecipe, .fn, .recipeid, .ingredient, .comment, .yield, .instructions, .step, .duration, .preptime, .cooktime, .summary, .author, .published, .category, .difficulty {
+.hrecipe, .fn, .recipeid, .ingredient, .yield, .instructions, .step, .duration, .preptime, .cooktime, .summary, .author, .published, .category, .difficulty {
 	border: 1px red solid;
 }
 
@@ -30,6 +30,9 @@
 }
 .ingredient .type:before {
 	content: "{Unit}";
+}
+.ingredient .ingrd:before {
+	content: "{Ingrd}";
 }
 .ingredient .comment:before {
 	content: "{Comment}";

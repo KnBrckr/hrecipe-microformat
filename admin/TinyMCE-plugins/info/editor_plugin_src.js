@@ -46,7 +46,7 @@
 				image : url + '/img/hrecipeTitle.gif'
 			});
 
-			// Add a node change handler, selects the button in the UI when a image is selected
+			// Add a node change handler, selects the button in the UI when a recipe Title is selected
 			ed.onNodeChange.add(function(ed, cm, n, co) {
 				cm.setDisabled('hrecipeTitle', co && n.nodeName != 'H1');
 				cm.setActive('hrecipeTitle', n.nodeName == 'H1' && !n.name); // FIXME - activate on class match
