@@ -12,8 +12,6 @@ var availableUnits=[ // TODO make list bigger!
 
 // After document is loaded, init elements
 jQuery(document).ready( function($) {
-	$('.type').autocomplete({source: availableUnits}); // FIXME auto-complete not working
-	
 	// Make table rows sortable
 	$('tbody').sortable(
 		{
@@ -24,7 +22,7 @@ jQuery(document).ready( function($) {
 	// Insert a new row after the active row
 	$('.insert').live('click', function(){
 		var btn = $(this);
-		var clonedRow = hrecipeCloneRow(btn.closest('tr'));
+		var clonedRow = hrecipeCloneRow(btn.closest('tr'), true);
 		
 		// Put new row into the table after the current one
 		btn.closest('tr').after(clonedRow);
@@ -47,31 +45,37 @@ var hrecipeIngredientListDialog = {
 		var n = tinyMCEPopup.editor.selection.getNode();
 		//var f = document.forms[0];
 		var emptyRow = $('.ingrd-list tr:first');
+		var ingredientList = $(n).closest('.ingredients');
 		
-		$(n).closest('.ingredients').find('.ingredient').each(function(){
+		$('#ingrd-list-name').val(ingredientList.find('.ingredients-title').text()); // Grab title for this list
+		ingredientList.find('.ingredient').each(function(){
 			// For each ingredient in the document ...
 			var sourceRow = $(this);
-			var clonedRow = hrecipeCloneRow(emptyRow);
+			var clonedRow = hrecipeCloneRow(emptyRow, false); // Don't init autocomplete on clone
 			$.each(['.value', '.type', '.ingrd', '.comment'], function(index,attr){
 				var attrVal = sourceRow.find(attr).text();
 				clonedRow.find(attr).val(attrVal);
 			});
 			emptyRow.before(clonedRow);
 		});
+		
+		// Setup autocomplete for fields in the table
+		$('.type').autocomplete({source: availableUnits});
 	},
 
 	insert : function() {
 		// Insert the contents from the input into the document
 		
 		// For each row in the ingredients table, generate the target ingredient tags
-		newList = '<div class="ingredients">';
+		// newList = '<!-- <div class="ingredients"> -->';
+		newList += '<h4 class="ingredients-title">' + $('#ingrd-list-name').val() + '</h4>';
 		$('tbody tr').each(function() {
 			var row = $(this);
 			var atts = new Array;
 			
 			$.each(['value', 'type', 'ingrd', 'comment'],function(index,attr){
 				if ('' !== (val = row.find('.' + attr).val())) {
-					val = val.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+					val = val.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); // Sanitize user text
 					atts.push('<span class="' + attr + '">' + val + '</span>');
 				}				
 			});
@@ -88,20 +92,30 @@ var hrecipeIngredientListDialog = {
 		if (ingredientList.length > 0) {
 			ingredientList.replaceWith(newList);
 		} else {
+			newList += "\n\n";
 			tinyMCEPopup.editor.execCommand('mceInsertContent', false, newList);
 		}
 		tinyMCEPopup.close();
 	}
 };
 
-function hrecipeCloneRow(row) {
+//
+// Clone an ingredient row
+//
+// row (DOM element) ingredient row to clone
+// autoinit (boolean) true if autocomplete should be setup on the row
+//
+// return cloned Row, cleaned of input values
+function hrecipeCloneRow(row, autoinit) {
 	var clonedRow = row.clone();
 
 	// Clean out any values
 	clonedRow.find('input').each(function() { this.value = '';});
 
-	// Setup autocomplete for the new row elements
-	clonedRow.find('.type').autocomplete({source: availableUnits});
+	if (autoinit) {
+		// Setup autocomplete for the new row elements
+		clonedRow.find('.type').autocomplete({source: availableUnits});		
+	}
 	
 	return clonedRow;
 }

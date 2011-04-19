@@ -8,7 +8,7 @@
 	font-size: .5em;
 	color: red;	
 }
-.hrecipe, .fn, .recipeid, .ingredient, .yield, .instructions, .step, .duration, .preptime, .cooktime, .summary, .author, .published, .category, .difficulty {
+.hrecipe, .fn, .recipeid, .ingredients, .ingredient, .yield, .instructions, .step, .duration, .preptime, .cooktime, .summary, .author, .published, .category, .difficulty {
 	border: 1px red solid;
 }
 

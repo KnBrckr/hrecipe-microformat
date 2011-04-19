@@ -11,12 +11,13 @@
 	<link media="all" type="text/css" href="../../css/admin.css" rel="stylesheet" />
 </head>
 <body>
-	TODO - Add row
-	TODO - Remove Row
 	TODO - Autocomplete for ingredient name
 <form onsubmit="hrecipeIngredientListDialog.insert();return false;" action="#">
-	Enter the list of ingredients:
+	<label for="ingrd-list-name">Recipe List Header: </label> <input type="text" id="ingrd-list-name" />
 	<table>
+		<caption>
+			List of Ingredients
+		</caption>
 		<thead>
 			<tr>
 				<th></th>
