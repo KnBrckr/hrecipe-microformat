@@ -23,8 +23,8 @@ License: GPL2
     along with this program; if not, write to the Free Software
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-TODO Create widget for Recipe Categories
-TODO Create shortcodes to place recipe content into a post
+FIXME Create widget for Recipe Categories - only allow one category to be selected
+FIXME Create shortcodes to place recipe content into a post
 TODO Provide mechanism to import recipes from external sources
 */
 
@@ -375,9 +375,9 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 		parent::register_taxonomies();  // Register the needed taxonomies so they can be populated
 		parent::create_post_type();			// Create the hrecipe post type so that rewrite rules can be flushed.
 		
-		// TODO Only insert taxonomies if not already present - move this to the admin side
+		// FIXME Only insert taxonomies if not already present - move this to the admin side
 		// Create the Recipe Category taxonomy
-		// TODO Populate the default Category taxonomy
+		// FIXME Populate the default Category taxonomy
 		wp_insert_term(__('Dessert', self::p), self::prefix . 'category');
 		wp_insert_term(__('Entrée', self::p), self::prefix . 'category');
 		wp_insert_term(__('Main', self::p), self::prefix . 'category');

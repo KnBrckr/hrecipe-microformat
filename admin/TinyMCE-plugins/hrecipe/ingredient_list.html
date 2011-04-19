@@ -6,25 +6,24 @@
 	<script type="text/javascript" src="../../TinyMCE-utils/tiny_mce_popup.js"></script>
 	<script type="text/javascript" src="../../js/jquery.js"></script>
 	<script type="text/javascript" src="../../js/jquery-ui.js"></script>
-	<script type="text/javascript" src="js/dialog.js"></script>
+	<script type="text/javascript" src="js/ingredient_list_dialog.js"></script>
 	<link media="all" type="text/css" href="../../css/jquery-ui.css" rel="stylesheet" />
 	<link media="all" type="text/css" href="../../css/admin.css" rel="stylesheet" />
 </head>
 <body>
-	TODO - Autocomplete for ingredient name
 <form onsubmit="hrecipeIngredientListDialog.insert();return false;" action="#">
-	<label for="ingrd-list-name">Recipe List Header: </label> <input type="text" id="ingrd-list-name" />
+	<label for="ingrd-list-name">{#hrecipeIngredientList_dlg.listHeader} </label> <input type="text" id="ingrd-list-name" />
 	<table>
 		<caption>
-			List of Ingredients
+			{#hrecipeIngredientList_dlg.caption}
 		</caption>
 		<thead>
 			<tr>
 				<th></th>
-				<th>Amount</th>
-				<th>Unit</th>
-				<th>Ingredient</th>
-				<th>Comment</th>
+				<th>{#hrecipeMicroformat_dlg.amount}</th>
+				<th>{#hrecipeMicroformat_dlg.unit}</th>
+				<th>{#hrecipeMicroformat_dlg.ingredient}</th>
+				<th>{#hrecipeMicroformat_dlg.comment}</th>
 			</tr>
 		</thead>
 		<tbody class="ingrd-list">

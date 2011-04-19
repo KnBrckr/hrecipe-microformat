@@ -1,7 +1,7 @@
 tinyMCEPopup.requireLangPack();
 
 // Setup autocomplete for fields
-var availableUnits=[ // TODO make list bigger!
+var availableUnits=[ // FIXME make list bigger!
 	'cup',
 	'cups',
 	'ounce',
@@ -9,6 +9,8 @@ var availableUnits=[ // TODO make list bigger!
 	'tbs',
 	'tsp'
 ];
+
+// TODO - Autocomplete for ingredient name
 
 // After document is loaded, init elements
 jQuery(document).ready( function($) {

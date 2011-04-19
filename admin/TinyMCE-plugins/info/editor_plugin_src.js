@@ -10,9 +10,9 @@
 
 (function() {
 	// Load plugin specific language pack	
-	//	tinymce.PluginManager.requireLangPack('example');
+	// FIXME	tinymce.PluginManager.requireLangPack('example');
 
-	tinymce.create('tinymce.plugins.hrecipeTitlePlugin', {
+	tinymce.create('tinymce.plugins.hrecipeMicroformatPlugin', {
 		/**
 		 * Initializes the plugin, this will be executed after the plugin has been created.
 		 * This call is done before the editor instance has finished it's initialization so use the onInit event
@@ -22,34 +22,17 @@
 		 * @param {string} url Absolute URL to where the plugin is located.
 		 */
 		init : function(ed, url) {
-			// Register the command so that it can be invoked by using tinyMCE.activeEditor.execCommand('mceExample');
+			// Register the commands so that they can be invoked by using tinyMCE.activeEditor.execCommand('mceExample');
 			ed.addCommand('mceHrecipeTitle', function() {
 				var n = ed.selection.getNode();
-
-				if ('H1' == n.nodeName) {
-					// Selector is inside an H1 so toggle Recipe Title class (fn)
-					if (ed.dom.hasClass(n, 'fn')) {
-						ed.dom.removeClass(n, 'fn');
-					} else {
-						ed.dom.addClass(n, 'fn');
-					}
-				} else {
-					// Wrap the selection in Recipe Title microformat
-					ed.execCommand('mceReplaceContent', false, '<H1 CLASS="fn">{$selection}</H1>');
-				}
+				tinyMCEPopup.editor.execCommand('mceInsertContent', false, '[hrecipe-title]');
 			});
 
-			// Register example button
+			// Register buttons
 			ed.addButton('hrecipeTitle', {
 				title : 'hrecipeTitle.desc',
 				cmd : 'mceHrecipeTitle',
 				image : url + '/img/hrecipeTitle.gif'
-			});
-
-			// Add a node change handler, selects the button in the UI when a recipe Title is selected
-			ed.onNodeChange.add(function(ed, cm, n, co) {
-				cm.setDisabled('hrecipeTitle', co && n.nodeName != 'H1');
-				cm.setActive('hrecipeTitle', n.nodeName == 'H1' && !n.name); // FIXME - activate on class match
 			});
 		},
 
@@ -75,15 +58,15 @@
 		 */
 		getInfo : function() {
 			return {
-				longname : 'Example plugin',
+				longname : 'hrecipe-microformat plugin',
 				author : 'Kenneth J. Brucker',
 				authorurl : 'http://action-a-day.com',
-				infourl : 'http://action-a-day.com/hrecipe-microformat',
+				infourl : 'http://action-a-day.com/hrecipe-microformat', #FIXME
 				version : "1.0"
 			};
 		}
 	});
 
 	// Register plugin
-	tinymce.PluginManager.add('hrecipeTitle', tinymce.plugins.hrecipeTitlePlugin);
+	tinymce.PluginManager.add('hrecipe-microformat', tinymce.plugins.hrecipeMicroformatPlugin);
 })();

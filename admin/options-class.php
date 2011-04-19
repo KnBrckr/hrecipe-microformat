@@ -122,7 +122,7 @@ class hrecipe_microformat_options
 		$this->admin_notices = array();
 		
 		$this->recipe_field_map = array(
-			'yield'      => array( 'label' => __('Yield', self::p), # TODO Use value, unit for yield (x cookies, x servings, ...)
+			'yield'      => array( 'label' => __('Yield', self::p), # TODO Use value, unit for yield (x cookies, x servings, ...)?
 														 'description' => __('Amount the recipe produces, generally the number of servings.', self::p),
 														 'type' => 'meta'),
 			'difficulty' => array( 'label' => __('Difficulty', self::p),
@@ -374,7 +374,20 @@ class hrecipe_microformat_options
 				self::post_type,
 				array(
 					'hierarchical' => true,
-					'label' => __('Recipe Category', self::p), // TODO Add label text
+					'label' => __('Recipe Category', self::p),
+					'labels' => array(
+						'name' => _x('Recipe Types', 'taxonomy general name', self::p),
+						'singular_name' => _x('Recipe Type', 'taxonomy singular name', self::p),
+						'search_items' => __('Search Recipe Types', self::p),
+						'popular_items' => __('Popular Recipe Types', self::p),
+				    'all_items' => __('All Recipe Types', self::p),
+				    'parent_item' => __('Parent Recipe Type', self::p),
+				    'parent_item_colon' => __('Parent Recipe Type:', self::p),
+				    'edit_item' => __('Edit Recipe Type', self::p),
+				    'update_item' => __('Update Recipe Type', self::p),
+				    'add_new_item' => __('Add New Recipe Type', self::p),
+				    'new_item_name' => __('New Recipe Type Name', self::p),
+					),
 					'query_var' => self::prefix . 'category',
 					'rewrite' => true,
 					'show_ui' => true,
@@ -766,12 +779,7 @@ class hrecipe_microformat_options
  
 	// Load the TinyMCE plugins : editor_plugin.js
 	function add_tinymce_plugins($plugin_array) {
-		$plugin_array['hrecipeTitle'] = $this->locate_tinymce_plugin('info');
-		$plugin_array['hrecipeIngredientList'] = $this->locate_tinymce_plugin('ingredients');
-		// $plugin_array['hrecipeTitle'] = self::$url.'lib/TinyMCE-plugins/ingredients/editor_plugin.js';
-		// $plugin_array['hrecipeTitle'] = self::$url.'lib/TinyMCE-plugins/instructions/editor_plugin.js';
-		// $plugin_array['hrecipeTitle'] = self::$url.'lib/TinyMCE-plugins/step/editor_plugin.js';
-		// $plugin_array['hrecipeTitle'] = self::$url.'lib/TinyMCE-plugins/summary/editor_plugin.js';
+		$plugin_array['hrecipeMicroformat'] = $this->locate_tinymce_plugin('hrecipe');
 	
 		return $plugin_array;
 	}
@@ -785,11 +793,12 @@ class hrecipe_microformat_options
 	{
 		$plugin_dir = 'admin/TinyMCE-plugins/' . $plugin . '/';
 		if (file_exists(self::$dir . $plugin_dir . 'editor_plugin.js')) {
-			return self::$url . $plugin_dir . 'editor_plugin.js';
+			$url = self::$url . $plugin_dir . 'editor_plugin.js';
 		} else {
-			return self::$url . $plugin_dir . 'editor_plugin_src.js';
+			$url = self::$url . $plugin_dir . 'editor_plugin_src.js';
 		}
-		// Not reached
+		
+		return $url;
 	}
 	/**
 	 * Add plugin CSS to tinymce
@@ -871,7 +880,7 @@ class hrecipe_microformat_options
 				$new_list_columns[$key] = $list_column;
 			}			
 		}
-		$new_list_columns[$taxonomy] = 'Recipe Category';
+		$new_list_columns[$taxonomy] = _x('Recipe Type', 'taxonomy singular name', self::p);
 		return $new_list_columns;
 	}
 	

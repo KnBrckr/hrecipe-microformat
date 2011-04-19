@@ -1,6 +1,8 @@
 /**
  * editor_plugin_src.js
  *
+ * Copyright 2011, Kenneth J. Brucker
+ *
  * Copyright 2009, Moxiecode Systems AB
  * Released under LGPL License.
  *
@@ -10,9 +12,9 @@
 
 (function() {
 	// Load plugin specific language pack	
-	//	tinymce.PluginManager.requireLangPack('example');
+  // FIXME tinymce.PluginManager.requireLangPack('hrecipe');
 
-	tinymce.create('tinymce.plugins.hrecipeIngredientListPlugin', {
+	tinymce.create('tinymce.plugins.hrecipeMicroformatPlugin', {
 		/**
 		 * Initializes the plugin, this will be executed after the plugin has been created.
 		 * This call is done before the editor instance has finished it's initialization so use the onInit event
@@ -22,10 +24,15 @@
 		 * @param {string} url Absolute URL to where the plugin is located.
 		 */
 		init : function(ed, url) {
+			
+			// ===================
+			// = Ingredient List =
+			// ===================
+
 			// Register the command so that it can be invoked by using tinyMCE.activeEditor.execCommand('mceExample');
 			ed.addCommand('mceHrecipeIngredientList', function() {
 				ed.windowManager.open({
-					file : url + '/dialog.html',
+					file : url + '/ingredient_list.html',
 					width : 700 + parseInt(ed.getLang('hrecipeIngredientList.delta_width', 0),10),
 					height : 450 + parseInt(ed.getLang('hrecipeIngredientList.delta_height', 0),10),
 					inline : 1
@@ -36,18 +43,31 @@
 
 			// Register Ingredient List button
 			ed.addButton('hrecipeIngredientList', {
-				title : 'hrecipeIngredientList.desc',
+				title : 'hrecipeMicroformat.ingrdListDesc',
 				cmd : 'mceHrecipeIngredientList',
 				image : url + '/img/hrecipeIngredientList.gif'
 			});
+			
+			// ================
+			// = Recipe Title =
+			// ================
 
-			// // Add a node change handler, selects the button in the UI when a image is selected
-			// ed.onNodeChange.add(function(ed, cm, n) {
-			// 	// FIXME n == node, can use n.nodeNode == "LI" to match a list element
-			// 	cm.setActive('hrecipeIngredientList', n.nodeName == 'IMG');
-			// });
-		},
+			// Register the commands so that they can be invoked by using tinyMCE.activeEditor.execCommand('mceExample');
+			ed.addCommand('mceHrecipeTitle', function() {
+				var n = ed.selection.getNode();
+				ed.execCommand('mceInsertContent', false, '[hrecipe-title]');
+			});
 
+			// Register buttons
+			ed.addButton('hrecipeTitle', {
+				title : 'hrecipeMicroformat.titleDesc',
+				cmd : 'mceHrecipeTitle',
+				image : url + '/img/hrecipeTitle.gif'
+			});
+			
+			
+		}, // End init
+		
 		/**
 		 * Creates control instances based in the incomming name. This method is normally not
 		 * needed since the addButton method of the tinymce.Editor class is a more easy way of adding buttons
@@ -70,15 +90,15 @@
 		 */
 		getInfo : function() {
 			return {
-				longname : 'Add/Edit Ingredient List',
+				longname : 'hrecipe-microformat plugin',
 				author : 'Kenneth J. Brucker',
 				authorurl : 'http://action-a-day.com',
 				infourl : 'http://action-a-day.com/hrecipe-microformat', // FIXME
-				version : "1.0"
+				version : "0.5"
 			};
 		}
 	});
 
 	// Register plugin
-	tinymce.PluginManager.add('hrecipeIngredientList', tinymce.plugins.hrecipeIngredientListPlugin);
+	tinymce.PluginManager.add('hrecipeMicroformat', tinymce.plugins.hrecipeMicroformatPlugin);
 })();
