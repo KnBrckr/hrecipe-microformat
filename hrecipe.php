@@ -24,7 +24,6 @@ License: GPL2
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 FIXME Create widget for Recipe Categories - only allow one category to be selected
-FIXME Create shortcodes to place recipe content into a post
 TODO Provide mechanism to import recipes from external sources
 */
 

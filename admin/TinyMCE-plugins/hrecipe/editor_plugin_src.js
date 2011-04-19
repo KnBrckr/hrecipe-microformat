@@ -24,6 +24,27 @@
 		 * @param {string} url Absolute URL to where the plugin is located.
 		 */
 		init : function(ed, url) {
+			// ================
+			// = Recipe Title =
+			// ================
+
+			// Register the commands so that they can be invoked by using tinyMCE.activeEditor.execCommand('mceExample');
+			ed.addCommand('mceHrecipeTitle', function() {
+				ed.execCommand('mceInsertContent', false, '[hrecipe-title]');
+			});
+
+			// Register buttons
+			ed.addButton('hrecipeTitle', {
+				title : 'hrecipeMicroformat.titleDesc',
+				cmd : 'mceHrecipeTitle',
+				image : url + '/img/hrecipeTitle.gif'
+			});
+						
+			// ==============
+			// = Ingredient =
+			// ==============
+			
+			// TODO Implement Ingredient Button
 			
 			// ===================
 			// = Ingredient List =
@@ -49,22 +70,47 @@
 			});
 			
 			// ================
-			// = Recipe Title =
+			// = Instructions =
 			// ================
-
+			
+			// FIXME Implement Instructions Button
+			
+			// ======================
+			// = Step (Instruction) =
+			// ======================
+			
+			// FIXME Implement Instruction Button
+			
+			// ===========
+			// = Summary =
+			// ===========
+			
+			// FIXME Implement Summary Button
+			
+			// ========
+			// = Hint =
+			// ========
+			
 			// Register the commands so that they can be invoked by using tinyMCE.activeEditor.execCommand('mceExample');
-			ed.addCommand('mceHrecipeTitle', function() {
+			ed.addCommand('mceHrecipeHint', function() {
 				var n = ed.selection.getNode();
-				ed.execCommand('mceInsertContent', false, '[hrecipe-title]');
+				hint = jQuery(n).closest('.hrecipe-hint');
+				if (hint.length > 0) {
+					// In a hint section... remove the aside tags
+					hint.replaceWith(hint.html());
+				} else {
+					ed.execCommand('mceReplaceContent', false, '<ASIDE CLASS="hrecipe-hint">{$selection}</ASIDE>');
+				}
 			});
 
 			// Register buttons
-			ed.addButton('hrecipeTitle', {
-				title : 'hrecipeMicroformat.titleDesc',
-				cmd : 'mceHrecipeTitle',
-				image : url + '/img/hrecipeTitle.gif'
+			ed.addButton('hrecipeHint', {
+				title : 'hrecipeMicroformat.hintDesc',
+				cmd : 'mceHrecipeHint',
+				image : url + '/img/hrecipeHint.gif'
 			});
 			
+			// TODO - Disable Hint button when no text selected and not in a Hint
 			
 		}, // End init
 		

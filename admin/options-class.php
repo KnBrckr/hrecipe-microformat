@@ -772,8 +772,8 @@ class hrecipe_microformat_options
 	}
  
 	function register_buttons($buttons) {
-	   array_push($buttons, 'hrecipeTitle', 'hrecipeIngredientList');
-	// 'hrecipeIngredientList', 'hrecipeIngredient', 'hrecipeInstructions', 'hrecipeStep', 'hrecipeSummary',
+	   array_push($buttons, 'hrecipeTitle', 'hrecipeIngredientList', 'hrecipeHint');
+	// TODO 'hrecipeIngredient', 'hrecipeInstructions', 'hrecipeStep', 'hrecipeSummary',
 	   return $buttons;
 	}
  
