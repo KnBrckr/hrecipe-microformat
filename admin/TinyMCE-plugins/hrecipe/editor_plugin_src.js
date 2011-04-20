@@ -12,7 +12,7 @@
 
 (function() {
 	// Load plugin specific language pack	
-  // FIXME tinymce.PluginManager.requireLangPack('hrecipe');
+  tinymce.PluginManager.requireLangPack('hrecipeMicroformat');
 
 	tinymce.create('tinymce.plugins.hrecipeMicroformatPlugin', {
 		/**
@@ -30,7 +30,9 @@
 
 			// Register the commands so that they can be invoked by using tinyMCE.activeEditor.execCommand('mceExample');
 			ed.addCommand('mceHrecipeTitle', function() {
-				ed.execCommand('mceInsertContent', false, '[hrecipe-title]');
+				if (jQuery(ed.dom.doc.documentElement).find('*:contains("[hrecipe_title]")').length === 0) {
+					ed.execCommand('mceInsertContent', false, '[hrecipe_title]');					
+				}
 			});
 
 			// Register buttons
@@ -39,6 +41,11 @@
 				cmd : 'mceHrecipeTitle',
 				image : url + '/img/hrecipeTitle.gif'
 			});
+			
+			// // On content change, 
+			// ed.onChange.add(function(ed, l) {
+			//               console.debug('Editor contents was modified. Contents: ' + l.content);
+			//       });
 						
 			// ==============
 			// = Ingredient =
@@ -91,6 +98,8 @@
 			// = Hint =
 			// ========
 			
+			// TODO tinymce is incorrectly adding &nbsp; around the <aside></aside> tags...  
+			
 			// Register the commands so that they can be invoked by using tinyMCE.activeEditor.execCommand('mceExample');
 			ed.addCommand('mceHrecipeHint', function() {
 				var n = ed.selection.getNode();
@@ -142,7 +151,7 @@
 				longname : 'hrecipe-microformat plugin',
 				author : 'Kenneth J. Brucker',
 				authorurl : 'http://action-a-day.com',
-				infourl : 'http://action-a-day.com/hrecipe-microformat', // FIXME
+				infourl : 'http://action-a-day.com/hrecipe-microformat', // FIXME setup home for the plugin
 				version : "0.5"
 			};
 		}

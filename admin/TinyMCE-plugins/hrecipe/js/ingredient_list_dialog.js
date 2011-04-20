@@ -1,10 +1,24 @@
 tinyMCEPopup.requireLangPack();
 
 // Setup autocomplete for fields
-var availableUnits=[ // FIXME make list bigger!
+var availableUnits=[ // TODO Setup for i18n
 	'cup',
 	'cups',
+	'g',
+	'gallon',
+	'gram',
+	'grams',
+	'kg',
+	'kilogram',
+	'kilograms',
+	'l',
+	'lb',
+	'litre',
+	'ml',
 	'ounce',
+	'oz.',
+	'pinch',
+	'pound',
 	'quart',
 	'tbs',
 	'tsp'
