@@ -78,18 +78,6 @@
 				image : url + '/img/hrecipeIngredientList.gif' // FIXME Need GIF
 			});
 			
-			// ================
-			// = Instructions =
-			// ================
-			
-			// FIXME Implement Instructions Button
-			
-			// ======================
-			// = Step (Instruction) =
-			// ======================
-			
-			// FIXME Implement Instruction Button
-			
 			// ========
 			// = Hint =
 			// ========
@@ -106,6 +94,8 @@
 					//      When the DIV is removed, also remove the closest() portion from replaceWith above
 					ed.execCommand('mceReplaceContent', false, '<DIV><ASIDE  CLASS="hrecipe-hint">{$selection}</ASIDE></DIV>');
 				}
+				
+				
 			});
 
 			// Register buttons
@@ -120,6 +110,12 @@
 				cm.setDisabled('hrecipeHint', co && n.nodeName != 'ASIDE');
 				cm.setActive('hrecipeHint', n.nodeName == 'ASIDE' && jQuery(n).hasClass('hrecipe-hint'));
 			});
+			
+			// ======================================
+			// = Next/Prev Step for fullscreen mode =
+			// ======================================
+			
+			// TODO Provide prev & next buttons for editing steps in full screen mode
 		}, // End init
 		
 		/**

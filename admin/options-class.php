@@ -467,6 +467,8 @@ class hrecipe_microformat_options
 	 **/
 	function setup_meta_boxes()
 	{
+		// FIXME Implement Ingredients as collection of sortable metaboxes -- Or use shortcodes for post-processing?
+		
 		$meta_box = array(
 			'id' => self::prefix . 'recipe-info',
 			'title' => __('Recipe Information', self::p),
@@ -821,7 +823,6 @@ class hrecipe_microformat_options
 	function register_buttons($buttons) {
 	   array_push($buttons, 'hrecipeTitle', 'hrecipeIngredientList', 'hrecipeHint');
 	// TODO 'hrecipeIngredient'
-	// FIXME 'hrecipeInstructions', 'hrecipeStep'
 	   return $buttons;
 	}
  
