@@ -82,7 +82,8 @@ class hrecipe_microformat_options
 	 *
 	 * @var array 
 	 **/
-	protected $admin_notices;
+	protected $admin_notices;  // Update level (Yellow)
+	protected $admin_notice_errors;  // Error messages (Red)
 	
 	/**
 	 * Default ordered list of fields to include in the recipe header
@@ -120,6 +121,7 @@ class hrecipe_microformat_options
 		self::$dir = WP_PLUGIN_DIR . '/' . self::p . '/' ;
 		self::$url =  WP_PLUGIN_URL . '/' . self::p . '/' ;
 		$this->admin_notices = array();
+		$this->admin_notice_errors = array();
 		
 		$this->recipe_field_map = array(
 			'yield'      => array( 'label' => __('Yield', self::p), # TODO Use value, unit for yield (x cookies, x servings, ...)?
@@ -186,7 +188,7 @@ class hrecipe_microformat_options
 		$this->debug_log_enabled = array_key_exists('debug_log_enabled', $options) ? $options['debug_log_enabled'] : false;
 		$this->debug_log = array_key_exists('debug_log',$options) ? $options['debug_log'] : array();
 		if ($this->debug_log_enabled) {
-			$this->admin_notices[] = sprintf(__('%s logging is enabled.  If left enabled, this can affect database performance.', self::p),'<a href="options.php?page=' . self::settings_page . '">' . self::p . '</a>');
+			$this->admin_notice_errors[] = sprintf(__('%s logging is enabled.  If left enabled, this can affect database performance.', self::p),'<a href="options.php?page=' . self::settings_page . '">' . self::p . '</a>');
 		}
 		
 		// Init value for the database version
@@ -324,7 +326,7 @@ class hrecipe_microformat_options
 	function admin_init ()
 	{
 		// Add section for reporting configuration errors and notices
-		add_action('admin_footer', array( &$this, 'admin_notice'));			//TODO Change to use an admin_notices_all action?
+		add_action('admin_notices', array( &$this, 'admin_notice'));
 
 		// 		add_action('load-' . $page_hook,...); // Use to trigger events needed on the options screen
 			
@@ -567,8 +569,16 @@ class hrecipe_microformat_options
 	 **/
 	function admin_notice()
 	{
-		if (count($this->admin_notices)) {
+		if (count($this->admin_notice_errors)) {
 			echo '<div class="error">';
+			foreach ($this->admin_notice_errors as $notice) {
+				echo '<p>' . $notice . '</p>';
+			}
+			echo '</div>';						
+		}
+				
+		if (count($this->admin_notices)) {
+			echo '<div class="updated fade">';
 			foreach ($this->admin_notices as $notice) {
 				echo '<p>' . $notice . '</p>';
 			}
@@ -917,7 +927,7 @@ class hrecipe_microformat_options
 	 **/
 	function handle_database_ver()
 	{
-		$this->admin_notices[] = sprintf(__('Recipe database version mismatch; using v%1$d, required v%2$d', self::p), $this->database_ver, self::required_db_ver);
+		$this->admin_notice_errors[] = sprintf(__('Recipe database version mismatch; using v%1$d, required v%2$d', self::p), $this->database_ver, self::required_db_ver);
 	}
 	
 	/**

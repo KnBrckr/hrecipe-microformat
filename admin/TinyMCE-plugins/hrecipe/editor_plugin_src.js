@@ -110,8 +110,11 @@
 				image : url + '/img/hrecipeHint.gif'
 			});
 			
-			// TODO - Disable Hint button when no text selected and not in a Hint
-			
+			// Add a node change handler, selects the button in the UI when in an aside or text is selected
+			ed.onNodeChange.add(function(ed, cm, n, co) {
+				cm.setDisabled('hrecipeHint', co && n.nodeName != 'ASIDE');
+				cm.setActive('hrecipeHint', n.nodeName == 'ASIDE' && jQuery(n).hasClass('hrecipe-hint'));
+			});
 		}, // End init
 		
 		/**
