@@ -24,6 +24,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  **/
 
+// TODO Setup Difficulty as 1-5 level - use more chef hats for harder.
 // Protect from direct execution
 if (!defined('WP_PLUGIN_DIR')) {
 	header('Status: 403 Forbidden');
@@ -214,6 +215,30 @@ class hrecipe_microformat_options
 			add_action('admin_footer', array( &$this, 'save_debug_log'));
 			add_action('wp_footer', array( &$this, 'save_debug_log'));				
 		}
+	}
+	
+	/**
+	 * When plugin is activated, populate taxonomy and flush the rewrite rules
+	 *
+	 * @return void
+	 **/
+	function on_activation()
+	{
+		self::register_taxonomies();  // Register the needed taxonomies so they can be populated
+		self::create_post_type();			// Create the hrecipe post type so that rewrite rules can be flushed.
+		
+		// Only insert terms if the category taxonomy doesn't already exist.
+		if (0 == count(get_terms(self::prefix . 'category', 'hide_empty=0&number=1'))) {
+			// FIXME Populate the default Category taxonomy
+			wp_insert_term(__('Dessert', self::p), self::prefix . 'category');
+			wp_insert_term(__('Entrée', self::p), self::prefix . 'category');
+			wp_insert_term(__('Main', self::p), self::prefix . 'category');
+			wp_insert_term(__('Meat', self::p), self::prefix . 'category');
+			wp_insert_term(__('Soup', self::p), self::prefix . 'category');			
+		}
+
+		// On activation, flush rewrite rules to make sure plugin is setup correctly. 
+		flush_rewrite_rules();
 	}
 
 	/**

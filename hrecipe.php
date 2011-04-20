@@ -326,7 +326,7 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 				break;
 				
 			case 'nutrition': // Recipe nutrition as calculated from ingredients
-				$value = ''; // FIXME Add nutrition calculation on save
+				$value = ''; // TODO Add nutrition calculation on save
 				break;
 				
 			default:
@@ -359,20 +359,7 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 	 **/
 	public static function plugin_activation()
 	{
-		parent::register_taxonomies();  // Register the needed taxonomies so they can be populated
-		parent::create_post_type();			// Create the hrecipe post type so that rewrite rules can be flushed.
-		
-		// FIXME Only insert taxonomies if not already present - move this to the admin side
-		// Create the Recipe Category taxonomy
-		// FIXME Populate the default Category taxonomy
-		wp_insert_term(__('Dessert', self::p), self::prefix . 'category');
-		wp_insert_term(__('Entrée', self::p), self::prefix . 'category');
-		wp_insert_term(__('Main', self::p), self::prefix . 'category');
-		wp_insert_term(__('Meat', self::p), self::prefix . 'category');
-		wp_insert_term(__('Soup', self::p), self::prefix . 'category');
-
-		// On activation, flush rewrite rules to make sure plugin is setup correctly. 
-		flush_rewrite_rules();
+		parent::on_activation();
 	}
 	
 	/**
@@ -384,7 +371,7 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 	function plugin_deactivation()
 	{
 		// On deactivation, flush rewrite rules to cleanup from the plugin
-		flush_rewrite_rules();  // FIXME Need page_type removed for this to work
+		flush_rewrite_rules();  // TODO Need page_type removed for this to work
 	}
 }
 
