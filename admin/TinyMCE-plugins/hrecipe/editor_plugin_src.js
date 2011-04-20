@@ -32,6 +32,8 @@
 			ed.addCommand('mceHrecipeTitle', function() {
 				if (jQuery(ed.dom.doc.documentElement).find('*:contains("[hrecipe_title]")').length === 0) {
 					ed.execCommand('mceInsertContent', false, '[hrecipe_title]');					
+				} else {
+					alert(ed.getLang('hrecipeMicroformat.titlePresent'));
 				}
 			});
 
@@ -98,17 +100,17 @@
 			// = Hint =
 			// ========
 			
-			// TODO tinymce is incorrectly adding &nbsp; around the <aside></aside> tags...  
-			
 			// Register the commands so that they can be invoked by using tinyMCE.activeEditor.execCommand('mceExample');
 			ed.addCommand('mceHrecipeHint', function() {
 				var n = ed.selection.getNode();
 				hint = jQuery(n).closest('.hrecipe-hint');
 				if (hint.length > 0) {
 					// In a hint section... remove the aside tags
-					hint.replaceWith(hint.html());
+					hint.closest('div').replaceWith(hint.html()); // closest() to work around tinymce defect
 				} else {
-					ed.execCommand('mceReplaceContent', false, '<ASIDE CLASS="hrecipe-hint">{$selection}</ASIDE>');
+					// TODO Ideally want to use only an ASIDE tag here, but tinymce is adding "&nbsp;" text around it.
+					//      When the DIV is removed, also remove the closest() portion from replaceWith above
+					ed.execCommand('mceReplaceContent', false, '<DIV><ASIDE  CLASS="hrecipe-hint">{$selection}</ASIDE></DIV>');
 				}
 			});
 
