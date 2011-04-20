@@ -41,7 +41,7 @@
 			ed.addButton('hrecipeTitle', {
 				title : 'hrecipeMicroformat.titleDesc',
 				cmd : 'mceHrecipeTitle',
-				image : url + '/img/hrecipeTitle.gif'
+				image : url + '/img/hrecipeTitle.gif' // FIXME Need GIF
 			});
 			
 			// // On content change, 
@@ -75,7 +75,7 @@
 			ed.addButton('hrecipeIngredientList', {
 				title : 'hrecipeMicroformat.ingrdListDesc',
 				cmd : 'mceHrecipeIngredientList',
-				image : url + '/img/hrecipeIngredientList.gif'
+				image : url + '/img/hrecipeIngredientList.gif' // FIXME Need GIF
 			});
 			
 			// ================
@@ -89,12 +89,6 @@
 			// ======================
 			
 			// FIXME Implement Instruction Button
-			
-			// ===========
-			// = Summary =
-			// ===========
-			
-			// FIXME Implement Summary Button
 			
 			// ========
 			// = Hint =
@@ -118,7 +112,7 @@
 			ed.addButton('hrecipeHint', {
 				title : 'hrecipeMicroformat.hintDesc',
 				cmd : 'mceHrecipeHint',
-				image : url + '/img/hrecipeHint.gif'
+				image : url + '/img/hrecipeHint.gif' //FIXME need gif
 			});
 			
 			// Add a node change handler, selects the button in the UI when in an aside or text is selected

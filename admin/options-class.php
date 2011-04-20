@@ -154,7 +154,11 @@ class hrecipe_microformat_options
 														 'type' => 'meta'),
 			'nutrition'  => array( 'label' => __('Nutrition', self::p),
 														 'description' => __('Recipe nutrition information', self::p),
-														 'type' => 'nutrition'),		
+														 'type' => 'nutrition'),
+			'summary'    => array( 'label' => __('Summary', self::p),
+														 'description' => __('Short recipe summary', self::p),
+														 'type' => 'meta'),		
+			
 		);
 		
 		// Defaults for recipe head and footer display
@@ -474,6 +478,14 @@ class hrecipe_microformat_options
 					'name' => __('Recipe Title', self::p),
 					'id' => self::prefix . 'fn',
 					'type' => 'text'
+				),
+				array(
+					'name' => __('Recipe Summary', self::p),
+					'id' => self::prefix . 'summary',
+					'type' => 'text',
+					'desc' => implode(' ', array(
+						__('Short description of the recipe.',self::p), 
+						__('(Might not display in all areas.)', self::p)))
 				),
 				array(
 					'name' => __('Author', self::p),
@@ -808,7 +820,8 @@ class hrecipe_microformat_options
  
 	function register_buttons($buttons) {
 	   array_push($buttons, 'hrecipeTitle', 'hrecipeIngredientList', 'hrecipeHint');
-	// TODO 'hrecipeIngredient', 'hrecipeInstructions', 'hrecipeStep', 'hrecipeSummary',
+	// TODO 'hrecipeIngredient'
+	// FIXME 'hrecipeInstructions', 'hrecipeStep'
 	   return $buttons;
 	}
  

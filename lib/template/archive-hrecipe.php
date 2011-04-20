@@ -12,7 +12,7 @@
  * @since Twenty Ten 1.0
  */
 
-// FIXME Format the Recipe Archive
+// FIXME Format the Recipe Archive - Use recipe summary when available
 
 get_header(); ?>
 

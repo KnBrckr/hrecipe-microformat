@@ -3,12 +3,12 @@
 /* ================================================================ */
 
 /* Flag special recipe fields in the editor window */
-.hrecipe:before, .fn:before, .recipeid:before, .ingredient:before, .comment:before, .yield:before, .instructions:before, .step:before, .duration:before, .preptime:before, .cooktime:before, .summary:before, .author:before, .published:before, .category:before, .difficulty:before, .value:before, .type:before, .ingrd:before, .hrecipe-hint:before {
+.hrecipe:before, .fn:before, .recipeid:before, .ingredient:before, .comment:before, .yield:before, .instructions:before, .step:before, .duration:before, .preptime:before, .cooktime:before, .hrecipe-summary:before, .author:before, .published:before, .category:before, .difficulty:before, .value:before, .type:before, .ingrd:before, .hrecipe-hint:before {
 	padding-right: 3px;
 	font-size: .5em;
 	color: red;	
 }
-.hrecipe, .fn, .recipeid, .ingredients, .ingredient, .yield, .instructions, .step, .duration, .preptime, .cooktime, .summary, .author, .published, .category, .difficulty, .hrecipe-hint {
+.hrecipe, .fn, .recipeid, .ingredients, .ingredient, .yield, .instructions, .step, .duration, .preptime, .cooktime, .hrecipe-summary, .author, .published, .category, .difficulty, .hrecipe-hint {
 	border: 1px red solid;
 }
 
@@ -58,7 +58,7 @@
 .cooktime:before {
 	content: "Cook Time";
 }
-.summary:before {
+.hrecipe-summary:before {
 	content: "Summary";
 }
 .author:before {
