@@ -27,16 +27,16 @@ jQuery(document).ready( function($) {
 	 * Manipulate the ingredients metabox a bit
 	 */
 	
-	var metabox = $('#hrecipe_ingredients');
+	var metabox = $('#hrecipe_instructions');
 	// Make the ingredients metabox contents sortable
 	metabox.sortable(
 		{
-			items: 'tbody tr'
+			items: '.step'
 		});
 		
 	// Action to create new row
 	metabox.find('.insert').live('click', function(){
-		var row = $(this).closest('tr');
+		var row = $(this).closest('div');
 		var clonedRow = hrecipeCloneStep(row, true);
 		
 		// Put new row into the table after the current one
@@ -46,10 +46,10 @@ jQuery(document).ready( function($) {
 	
 	// Action to delete active row
 	$('.delete').live('click', function() {
-		var btn = $(this);
+		var step = $(this).closest('.step');
 		
-		if (btn.closest('tbody').find('tr').length > 1) {
-			btn.closest('tr').remove();			
+		if (step.siblings().length > 0) {
+			step.remove();			
 			// FIXME Update step order
 		}
 	});

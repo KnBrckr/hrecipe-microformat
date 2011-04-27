@@ -44,7 +44,7 @@ if ( ! class_exists('hrecipe_microformat')) :
  *		- Plugin options class
  **/		
 {
-	$required_libs = array('lib/meta-box-3.1/meta-box.php', 'admin/options-class.php');
+	$required_libs = array('admin/options-class.php');
 	foreach ($required_libs as $lib) {
 		if (!include_once($lib)) {
 			hrecipe_microformat_error_log('Unable to load required library:  "' . $lib . '"');

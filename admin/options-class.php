@@ -384,8 +384,9 @@ class hrecipe_microformat_options
 		wp_register_style(self::prefix . 'jquery-ui', self::$url . 'admin/css/jquery-ui.css');
 		
 		// Setup the Recipe Post Editing page
-		add_action('add_meta_boxes_' . self::post_type, array(&$this, 'configure_tinymce'));
-		self::setup_meta_boxes();  // Setup the plugin metaboxes
+		add_action('add_meta_boxes_' . self::post_type, array(&$this, 'configure_tinymce')); // TODO Best place for this?
+		add_action('add_meta_boxes_' . self::post_type, array(&$this, 'setup_meta_boxes'));  // Setup plugin metaboxes
+		add_action('save_post' , array(&$this, 'save_post_meta')); // Save the post metadata
 	}
 	
 	/**
@@ -462,47 +463,62 @@ class hrecipe_microformat_options
 	
 	/**
 	 * Add the metaboxes needed in the admin screens
+	 *   Use add_meta_box( $id, $title, $callback, $page, $context, $priority, $callback_args )
 	 *
 	 * @return void
 	 **/
 	function setup_meta_boxes()
 	{
+
 		$meta_boxes = array();
 		
-		// Define HTML used for manipulating tables
+		// Add metabox for the instructions
+		add_meta_box(self::prefix . 'instructions', __('Instructions', self::p), array(&$this, 'instructions_metabox'), self::post_type, 'normal', 'high', null);
+		
+		// Add metabox for the Recipe Metadata
+		add_meta_box(self::prefix . 'info', __('Additional Recipe Information', self::p), array(&$this, 'info_metabox'), self::post_type, 'normal', 'high', null);		
+	}
+
+	/**
+	 * Emit HTML for the instructions metabox
+	 *
+	 * @return void
+	 **/
+	function instructions_metabox()
+	{
+		// Use nonce for verification
+		wp_nonce_field( plugin_basename(__FILE__), self::prefix . 'noncename' );
+		
+		echo '<div class="instructions">';
+
+		// Define HTML used for manipulating each step in the metabox
 		$handles = '<span class="sort-handle ui-icon ui-icon-arrow-2-n-s ui-state-active"></span>' .
 							 '<span class="insert ui-icon ui-icon-plusthick ui-state-active"></span>'.
 							 '<span class="delete ui-icon ui-icon-minusthick ui-state-active"></span>';
-		
-		/**
-		 * Define a Metabox for Recipe Instructions
-		 */		
-		
-		$meta_boxes[] = array(
-			'id' => self::prefix . 'ingredients',
-			'title' => __('Ingredients', self::p),
-			'pages' => array(self::post_type), // Only display for post type recipe
-			'context' => 'normal',
-			'priority' => 'high',
-			'fields' => array(
-				array(
-					'name' => $handles . __('Recipe Step', self::p),
-					'id' => self::prefix . 'step-1',
-					'type' => 'textarea' // FIXME Use wysiwyg for tinymce
-				),
-			), // End fields
-		);  // End Ingredients Metabox
 
+		// FIXME - Need loop to extract saved data
+		echo '<div id="' . self::prefix . 'step-1" class="step">';
+		echo '<label for="' . self::prefix . 'step-1">' . $handles . '</label>';
+		echo '<textarea name="' . self::prefix . 'step" id="' . self::prefix . 'step-1"></textarea>';
+		echo '</div>';
+		
+		echo '</div>'; // End steps
+	}
+	
+	/**
+	 * Emit HTML for the recipe information metabox
+	 *
+	 * @uses $post To retrieve post meta data
+	 * @return void
+	 **/
+	function info_metabox()
+	{
+		global $post;
+		
 		/**
-		 * Define a Metabox for the Recipe Infomation
+		 * Define a Metabox for the Recipe Information
 		 */
-		$meta_boxes[] = array(
-			'id' => self::prefix . 'recipe-info',
-			'title' => __('Recipe Information', self::p),
-			'pages' => array(self::post_type), // Only display for post type recipe
-			'context' => 'normal',
-			'priority' => 'high',
-			'fields' => array(
+		$meta_box_fields = array(
 				array(
 					'name' => __('Recipe Title', self::p),
 					'id' => self::prefix . 'fn',
@@ -559,16 +575,40 @@ class hrecipe_microformat_options
 												'3' => __('Medium', self::p),
 												'5' => __('Hard', self::p),
 					            ),
-				),
-			)
+				)
 		);
 		
 		// Create the editor metaboxes
-		foreach ($meta_boxes as $meta_box) {
-			$new_box = new RW_Meta_Box($meta_box);
+		// TODO Format metabox section
+		foreach ($meta_box_fields as $field) {
+			$value = get_post_meta($post->ID, $field['id'], true) | '';
+			echo '<div>';
+			switch ($field['type']) {
+				case 'text':
+					echo '<label for="' . $field['id'] . '">' . $field['name'] . '</label>';
+					self::text_html($field['id'], $value);
+					if (isset($field['desc'])) echo '<span>' . $field['desc'] . '</span>';
+					break;
+				default:
+					echo "a field<br>";
+			}
+			echo '</div>';
 		}
 	}
 	
+	/**
+	 * Save Recipe Post meta data
+	 *
+	 * @uses $post Post data
+	 * @param $postid int post id
+	 * @return void
+	 **/
+	function save_post_meta($postid)
+	{
+		global $post;
+		// FIXME Save updated post meta data
+	}
+
 	/**
 	 * Configure tinymce
 	 *
@@ -695,7 +735,7 @@ class hrecipe_microformat_options
 	 **/
 	function display_in_home_html()
 	{
-		self::checkbox_html('display_in_home', $this->display_in_home);
+		self::checkbox_html(self::settings . '[display_in_home]', $this->display_in_home);
 		_e('Display Recipes on the home (blog) page.', self::p);
 	}
 	
@@ -706,7 +746,7 @@ class hrecipe_microformat_options
 	 **/
 	function display_in_feed_html()
 	{
-		self::checkbox_html('display_in_feed', $this->display_in_feed);
+		self::checkbox_html(self::settings . '[display_in_feed]', $this->display_in_feed);
 		_e('Include Recipes in the main feed.', self::p);
 		echo ' ';
 		_e('This change might not take effect for a client until a new post or recipe is added.', self::p);
@@ -719,7 +759,7 @@ class hrecipe_microformat_options
 	 **/
 	function add_post_class_html()
 	{
-		self::checkbox_html('add_post_class', $this->add_post_class);
+		self::checkbox_html(self::settings . '[add_post_class]', $this->add_post_class);
 		_e('Format Recipes like Posts.', self::p);
 	}
 	
@@ -781,7 +821,7 @@ class hrecipe_microformat_options
 	 **/
 	function debug_log_enabled_html()
 	{ 
-		self::checkbox_html('debug_log_enabled', $this->debug_log_enabled);
+		self::checkbox_html(self::settings . '[debug_log_enabled]', $this->debug_log_enabled);
 		_e('Enable Plugin Debug Logging. When enabled, log will display below.', self::p);
 		if ( $this-> debug_log_enabled ) {
 			echo '<dl class=hmf-debug-log>';
@@ -796,14 +836,24 @@ class hrecipe_microformat_options
 	/**
 	 * Emit HTML for a checkbox
 	 *
-	 * @param string $field Name of field in the settings array
+	 * @param string $field Name of field
 	 * @param string $checked True if the checkbox should be checked
 	 * @return void
 	 **/
 	function checkbox_html($field, $checked)
 	{
 		$checked = $checked ? " checked" : "";
-		echo '<input type="checkbox" name="' . self::settings . '['. $field . ']" value="1"' . $checked . '>';
+		echo '<input type="checkbox" name="' . $field . '" value="1"' . $checked . '>';
+	}
+	
+	/**
+	 * Emit HTML for a text field
+	 *
+	 * @return void
+	 **/
+	function text_html($field, $value)
+	{
+		echo '<input type="text" name="' . $field . '" value="' . $value . '" />';
 	}
 	
 	/**
