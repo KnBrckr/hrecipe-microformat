@@ -37,11 +37,11 @@ jQuery(document).ready( function($) {
 	
 	// Insert a new row after the active row
 	$('.insert').live('click', function(){
-		var btn = $(this);
-		var clonedRow = hrecipeCloneRow(btn.closest('tr'), true);
+		var row = $(this).closest('tr');
+		var clonedRow = hrecipeCloneRow(row, true);
 		
 		// Put new row into the table after the current one
-		btn.closest('tr').after(clonedRow);
+		row.after(clonedRow);
 	});
 	
 	// Delete active row

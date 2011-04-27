@@ -276,8 +276,8 @@ class hrecipe_microformat_options
 		);
 		
 		// Add style sheet and scripts needed in the options page
-		add_action('admin_print_scripts-' . $settings_page, array(&$this, 'options_scripts'));
-		add_action('admin_print_styles-' . $settings_page, array(&$this, 'options_styles'));
+		add_action('admin_print_scripts-' . $settings_page, array(&$this, 'enqueue_admin_scripts'));
+		add_action('admin_print_styles-' . $settings_page, array(&$this, 'enqueue_admin_styles'));
 			
 		/**
 		 * Add section controlling how recipes are displayed
@@ -359,13 +359,13 @@ class hrecipe_microformat_options
 
 		// 		add_action('load-' . $page_hook,...); // Use to trigger events needed on the options screen
 			
-		// // Add plugin admin style
-		// add_action( 'admin_print_styles-post.php', array(&$this, 'admin_styles'), 1000 );
-		// add_action( 'admin_print_styles-post-new.php', array(&$this, 'admin_styles'), 1000 );
-		// 
-		// // Add plugin admin scripts
-		// add_action( 'admin_print_scripts-post.php', array(&$this, 'admin_scripts'), 1000 );
-		// add_action( 'admin_print_scripts-post-new.php', array(&$this, 'admin_scripts'), 1000 );
+		// Add plugin admin style
+		add_action( 'admin_print_styles-post.php', array(&$this, 'enqueue_admin_styles'), 1000 );
+		add_action( 'admin_print_styles-post-new.php', array(&$this, 'enqueue_admin_styles'), 1000 );
+		
+		// Add plugin admin scripts
+		add_action( 'admin_print_scripts-post.php', array(&$this, 'enqueue_admin_scripts'), 1000 );
+		add_action( 'admin_print_scripts-post-new.php', array(&$this, 'enqueue_admin_scripts'), 1000 );
 
 		// Register actions to use the receipe category in admin list view
 		add_action('restrict_manage_posts', array(&$this, 'restrict_recipes_by_category'));
@@ -467,9 +467,36 @@ class hrecipe_microformat_options
 	 **/
 	function setup_meta_boxes()
 	{
-		// FIXME Implement Ingredients as collection of sortable metaboxes -- Or use shortcodes for post-processing?
+		$meta_boxes = array();
 		
-		$meta_box = array(
+		// Define HTML used for manipulating tables
+		$handles = '<span class="sort-handle ui-icon ui-icon-arrow-2-n-s ui-state-active"></span>' .
+							 '<span class="insert ui-icon ui-icon-plusthick ui-state-active"></span>'.
+							 '<span class="delete ui-icon ui-icon-minusthick ui-state-active"></span>';
+		
+		/**
+		 * Define a Metabox for Recipe Instructions
+		 */		
+		
+		$meta_boxes[] = array(
+			'id' => self::prefix . 'ingredients',
+			'title' => __('Ingredients', self::p),
+			'pages' => array(self::post_type), // Only display for post type recipe
+			'context' => 'normal',
+			'priority' => 'high',
+			'fields' => array(
+				array(
+					'name' => $handles . __('Recipe Step', self::p),
+					'id' => self::prefix . 'step-1',
+					'type' => 'textarea' // FIXME Use wysiwyg for tinymce
+				),
+			), // End fields
+		);  // End Ingredients Metabox
+
+		/**
+		 * Define a Metabox for the Recipe Infomation
+		 */
+		$meta_boxes[] = array(
 			'id' => self::prefix . 'recipe-info',
 			'title' => __('Recipe Information', self::p),
 			'pages' => array(self::post_type), // Only display for post type recipe
@@ -535,8 +562,11 @@ class hrecipe_microformat_options
 				),
 			)
 		);
+		
 		// Create the editor metaboxes
-		$meta_box = new RW_Meta_Box($meta_box);
+		foreach ($meta_boxes as $meta_box) {
+			$new_box = new RW_Meta_Box($meta_box);
+		}
 	}
 	
 	/**
@@ -558,9 +588,12 @@ class hrecipe_microformat_options
 	 *
 	 * @return void
 	 **/
-	function admin_styles() {
-		global $post_type;
-		if (self::post_type != $post_type) return;
+	function enqueue_admin_styles() {
+		// Style the admin pages
+		wp_enqueue_style( self::prefix . 'admin');
+		
+		// jQuery UI style
+		wp_enqueue_style( self::prefix . 'jquery-ui' );
 	}
 
 	/**
@@ -568,39 +601,14 @@ class hrecipe_microformat_options
 	 *
 	 * @return void
 	 **/
-	function admin_scripts() {
-		global $post_type;
-		if (self::post_type != $post_type) return;
-	}
-	
-	/**
-	 * Enqueue the stylesheets used in the plugin options page
-	 *
-	 * @return void
-	 **/
-	function options_styles()
-	{
-		// Style the admin pages
-		wp_enqueue_style( self::prefix . 'admin');
-		
-		// jQuery UI style
-		wp_enqueue_style( self::prefix . 'jquery-ui' );
-	}
-	
-	/**
-	 * Enqueue scripts used in the plugin options page
-	 *
-	 * @return void
-	 **/
-	function options_scripts()
-	{
+	function enqueue_admin_scripts() {
 		// Load the plugin admin scripts
 		wp_enqueue_script( self::prefix . 'admin');
 		
 		// Need the jquery sortable support
 		wp_enqueue_script( 'jquery-ui-sortable' );
 	}
-
+	
 	/**
 	 * Display Notice messages at head of admin screen
 	 *

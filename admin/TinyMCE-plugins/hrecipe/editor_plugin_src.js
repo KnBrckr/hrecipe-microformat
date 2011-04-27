@@ -93,9 +93,7 @@
 					// TODO Ideally want to use only an ASIDE tag here, but tinymce is adding "&nbsp;" text around it.
 					//      When the DIV is removed, also remove the closest() portion from replaceWith above
 					ed.execCommand('mceReplaceContent', false, '<DIV><ASIDE  CLASS="hrecipe-hint">{$selection}</ASIDE></DIV>');
-				}
-				
-				
+				}				
 			});
 
 			// Register buttons

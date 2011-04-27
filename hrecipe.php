@@ -40,8 +40,8 @@ global $hrecipe_microformat;
 if ( ! class_exists('hrecipe_microformat')) :
 /**
  * Load the required libraries - use a sub-scope to protect global variables
- *		meta-box class used to create new post type
- *		Plugin options class
+ *		- meta-box class used to create new post type
+ *		- Plugin options class
  **/		
 {
 	$required_libs = array('lib/meta-box-3.1/meta-box.php', 'admin/options-class.php');
