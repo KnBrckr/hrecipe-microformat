@@ -4,7 +4,6 @@
 
 // counter to create unique ids based on 'hrecipe-tinymce' prefix
 var hrecipeTinymceId = 1;
-var hrecipeStepId = 1;  // FIXME need to start out equal to largest seen on page
 
 jQuery(document).ready( function($) {
 	// Make the recipe field sections sortable to configure head and footer contents
@@ -77,17 +76,10 @@ jQuery(document).ready( function($) {
 // return cloned Row, cleaned of input values
 function hrecipeCloneStep(row) {
 	var clonedRow = row.clone();
-	var newId = ++hrecipeStepId;
 
 	// Prep the new row for insert
 	clonedRow.find('textarea').each(function() { 
 		this.value = '';
-		this.id += '_' + newId;  // Make the row ID unique
-		
-		// Make row name unique.  Format is hrecipe_step-#
-		a = this.name.split('-');
-		a.splice(-1,1,newId); // Tear off the trailing number and replace with unique value
-		this.name = a.join('-');
 	});
 
 	return clonedRow;

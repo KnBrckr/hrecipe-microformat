@@ -25,13 +25,6 @@
  **/
 
 // TODO Setup Difficulty as 1-5 level - use more chef hats for harder.
-// Protect from direct execution
-if (!defined('WP_PLUGIN_DIR')) {
-	header('Status: 403 Forbidden');
-  header('HTTP/1.1 403 Forbidden');
-  exit();
-}
-
 class hrecipe_microformat_options
 {
 	/**
@@ -108,7 +101,8 @@ class hrecipe_microformat_options
 	 * Each row contains:
 	 *	label - Name to use to label the related value
 	 *  description - 1-line description of the field
-	 *  type - data storage format:  tax --> Taxonomy, meta --> Post Metadata, nutrition --> Special class of Post Meta
+	 *  format - data storage format:  tax --> Taxonomy, meta --> Post Metadata, nutrition --> Special class of Post Meta
+	 *  type - HTML INPUT format to use
 	 *
 	 * @var array of arrays
 	 **/
@@ -123,42 +117,83 @@ class hrecipe_microformat_options
 		self::$url =  WP_PLUGIN_URL . '/' . self::p . '/' ;
 		$this->admin_notices = array();
 		$this->admin_notice_errors = array();
-		
+
+		/**
+		 *	Define Recipe meta data fields
+		 **/
 		$this->recipe_field_map = array(
+			'fn' 				 => array( 'label' => __('Recipe Title', self::p),
+														 'description' => __('Recipe Title', self::p),
+														 'id' => self::prefix . 'fn',
+														 'metabox' => 'info',
+														 'type' => 'text'),
+			'summary'    => array( 'label' => __('Summary', self::p),
+														 'description' => implode(' ', array(
+																							__('Short description of the recipe.',self::p), 
+																							__('(Might not display in all areas.)', self::p))),
+														 'type' => 'text',
+														 'id' => self::prefix . 'summary',
+														 'metabox' => 'info',
+														 'format' => 'meta'),
 			'yield'      => array( 'label' => __('Yield', self::p), # TODO Use value, unit for yield (x cookies, x servings, ...)?
 														 'description' => __('Amount the recipe produces, generally the number of servings.', self::p),
-														 'type' => 'meta'),
+														 'type' => 'text',
+														 'id' => self::prefix . 'yield',
+														 'metabox' => 'info',
+														 'format' => 'meta'),
 			'difficulty' => array( 'label' => __('Difficulty', self::p),
 														 'description' => __('Difficulty or complexity of the recipe.', self::p),
-														 'type' => 'meta'),
+														 'type' => 'radio',
+														 'id' => self::prefix . 'difficulty',
+														 'metabox' => 'info',
+														 'options' => array(
+																'1' => __('Easy', self::p),
+																'3' => __('Medium', self::p),
+																'5' => __('Hard', self::p),
+															),
+														 'format' => 'meta'),
 			'rating'     => array( 'label' => __('Rating', self::p),
 														 'description' => __('Rating of the recipe out of five stars.', self::p),
-														 'type' => 'rating'),
+														 'metabox' => '', // TODO How is rating managed?
+														 'format' => 'rating'),
 			'category'   => array( 'label' => __('Category', self::p),
 														 'description' => __('Type of recipe', self::p),
-														 'type' => 'tax'),
+														 'metabox' => 'category',
+														 'format' => 'tax'),
 			'duration'   => array( 'label' => __('Duration', self::p),
 														 'description' => __('Total time it takes to make the recipe.', self::p),
-														 'type' => 'meta'),
+														 'type' => 'text',
+														 'id' => self::prefix . 'duration',
+														 'metabox' => 'info',
+														 'format' => 'meta'),
 			'preptime'   => array( 'label' => __('Prep Time', self::p),
 														 'description' => __('Time it takes in the preparation step of the recipe.', self::p),
-														 'type' => 'meta'),
+														 'type' => 'text',
+														 'id' => self::prefix . 'preptime',
+														 'metabox' => 'info',
+														 'format' => 'meta'),
 			'cooktime'   => array( 'label' => __('Cook Time', self::p),
 														 'description' => __('Time it takes in the cooking step of the recipe.', self::p),
-														 'type' => 'meta'),
+														 'type' => 'text',
+														 'id' => self::prefix . 'cooktime',
+														 'metabox' => 'info',
+														 'format' => 'meta'),
 			'published'  => array( 'label' => __('Published', self::p),
 														 'description' => __('Date of publication of the recipe', self::p),
-														 'type' => 'meta'),
+														 'type' => 'text',
+														 'id' => self::prefix . 'published',
+														 'metabox' => 'info',
+														 'format' => 'meta'),
 			'author'     => array( 'label' => __('Author', self::p),
 														 'description' => __('Recipe Author, if different from person posting the recipe.', self::p),
-														 'type' => 'meta'),
+														 'type' => 'text',
+														 'id' => self::prefix . 'author',
+														 'metabox' => 'info',
+														 'format' => 'meta'),
 			'nutrition'  => array( 'label' => __('Nutrition', self::p),
 														 'description' => __('Recipe nutrition information', self::p),
-														 'type' => 'nutrition'),
-			'summary'    => array( 'label' => __('Summary', self::p),
-														 'description' => __('Short recipe summary', self::p),
-														 'type' => 'meta'),		
-			
+														 'metabox' => 'nutrition', // TODO How is nutrition managed?
+														 'format' => 'nutrition'),
 		);
 		
 		// Defaults for recipe head and footer display
@@ -486,6 +521,8 @@ class hrecipe_microformat_options
 	 **/
 	function instructions_metabox()
 	{
+		global $post;
+		
 		// Use nonce for verification
 		wp_nonce_field( plugin_basename(__FILE__), self::prefix . 'noncename' );
 		
@@ -496,12 +533,18 @@ class hrecipe_microformat_options
 							 '<span class="insert ui-icon ui-icon-plusthick ui-state-active"></span>'.
 							 '<span class="delete ui-icon ui-icon-minusthick ui-state-active"></span>';
 
-		// FIXME - Need loop to extract saved data
-		echo '<div id="' . self::prefix . 'step-1" class="step">';
-		echo '<label for="' . self::prefix . 'step-1">' . $handles . '</label>';
-		echo '<textarea name="' . self::prefix . 'step" id="' . self::prefix . 'step-1"></textarea>';
-		echo '</div>';
-		
+		$steps = get_post_meta($post->ID, self::prefix . 'steps', true);
+		if (is_array($steps)) {
+			foreach ($steps as $step) {
+				echo '<label class="step">' . $handles;
+				echo '<textarea name="' . self::prefix . 'steps[]">' . $step . '</textarea>';
+				echo '</label>';				
+			}
+		} else {
+			echo '<label class="step">' . $handles;
+			echo '<textarea name="' . self::prefix . 'steps[]"></textarea>';
+			echo '</label>';
+		}
 		echo '</div>'; // End steps
 	}
 	
@@ -515,98 +558,96 @@ class hrecipe_microformat_options
 	{
 		global $post;
 		
-		/**
-		 * Define a Metabox for the Recipe Information
-		 */
-		$meta_box_fields = array(
-				array(
-					'name' => __('Recipe Title', self::p),
-					'id' => self::prefix . 'fn',
-					'type' => 'text'
-				),
-				array(
-					'name' => __('Recipe Summary', self::p),
-					'id' => self::prefix . 'summary',
-					'type' => 'text',
-					'desc' => implode(' ', array(
-						__('Short description of the recipe.',self::p), 
-						__('(Might not display in all areas.)', self::p)))
-				),
-				array(
-					'name' => __('Author', self::p),
-					'id' => self::prefix . 'author',
-					'type' => 'text'
-				),
-				array(
-					'name' => __('Published', self::p),
-					'id' => self::prefix . 'published',
-					'type' => 'text'
-				),
-				array(
-					'name' => __( 'Yield', self::p),
-					'id' => self::prefix . 'yield',
-					'type' => 'text',
-				),
-				array(
-					'name' => __( 'Duration', self::p),
-					'id' => self::prefix . 'duration',
-					'type' => 'text',
-					'desc' => 'Total time required to complete this recipe'
-				),
-				array(
-					'name' => __( 'Prep Time', self::p),
-					'id' => self::prefix . 'preptime',
-					'type' => 'text',
-					'desc' => __( 'Time required for prep work', self::p)
-				),
-				array(
-					'name' => __( 'Cook Time', self::p ),
-					'id' => self::prefix . 'cooktime',
-					'type' => 'text',
-					'desc' => __( 'Time required to cook', self::p )
-				),
-				array(
-					'name' => __('Difficulty', self::p),
-					'id' => self::prefix . 'difficulty',
-					'type' => 'radio',
-					'desc' => __('Recipe level of difficulty', self::p),
-					'options' => array(
-												'1' => __('Easy', self::p),
-												'3' => __('Medium', self::p),
-												'5' => __('Hard', self::p),
-					            ),
-				)
-		);
-		
 		// Create the editor metaboxes
 		// TODO Format metabox section
-		foreach ($meta_box_fields as $field) {
-			$value = get_post_meta($post->ID, $field['id'], true) | '';
-			echo '<div>';
-			switch ($field['type']) {
-				case 'text':
-					echo '<label for="' . $field['id'] . '">' . $field['name'] . '</label>';
-					self::text_html($field['id'], $value);
-					if (isset($field['desc'])) echo '<span>' . $field['desc'] . '</span>';
-					break;
-				default:
-					echo "a field<br>";
+		foreach ($this->recipe_field_map as $field) {
+			// Include 'info' fields in this metabox
+			if ('info' == $field['metabox']) {
+				$value = get_post_meta($post->ID, $field['id'], true) | '';
+				echo '<label>' . $field['label'];				
+				switch ($field['type']) {
+					case 'text':
+						self::text_html($field['id'], $value);
+						break;
+					
+					case 'radio':
+						self::radio_html($field['id'], $field['options'], $value);
+						break;
+						
+					default:
+						echo "a field<br>";
+				}
+				if (isset($field['description'])) echo '<span>' . $field['description'] . '</span>';
+				echo '</label>';				
 			}
-			echo '</div>';
-		}
+		} // End foreach
 	}
 	
 	/**
 	 * Save Recipe Post meta data
 	 *
 	 * @uses $post Post data
-	 * @param $postid int post id
+	 * @param $post_id int post id
 	 * @return void
 	 **/
-	function save_post_meta($postid)
+	function save_post_meta($post_id)
 	{
 		global $post;
-		// FIXME Save updated post meta data
+		
+		// FIXME Need to handle autosave! See add_metadata()
+		if ('autosave' == $_POST['action']) return $post_id;
+		
+		// Confirm nonce field
+		if ( !wp_verify_nonce( $_POST[self::prefix . 'noncename'], plugin_basename(__FILE__) )) {
+			return $post_id;
+		}
+		
+		// User allowed to edit?
+		if ( self::post_type != $_POST['post_type'] || !current_user_can( 'edit_post', $post_id) ) {
+			return $post_id;
+		}		
+		
+		$the_post = wp_is_post_revision($post_id);
+		if (! $the_post) $the_post = $post_id;
+
+		// Save meta data for the info metabox
+		foreach ($this->recipe_field_map as $field) {
+			if ('info' == $field['metabox']) {
+				$id = $field['id'];
+				$new_data = isset($_POST[$id]) ? $_POST[$id] : '';
+				$old_data = get_post_meta($the_post, $id, true);
+				if ('' == $old_data && $new_data != '') {
+					// New meta data to save
+					add_post_meta($the_post, $id, $new_data, true);
+				} elseif ('' == $new_data) {
+					// New data is empty - remove related meta data
+					delete_post_meta($the_post, $id);
+				}	elseif ($new_data != $old_data) {
+					// New and old don't match, update
+					update_post_meta($the_post, $id, $new_data);
+				}
+			} 
+		}
+		
+		// Save metadata for the instructions
+		$id = self::prefix . 'steps';
+		if (isset($_POST[$id])) {
+			$steps = array();
+			foreach ($_POST[$id] as $step) {
+				if ('' != $step) $steps[] = $step;
+			}
+			if (count($steps)) {
+				if (get_post_meta($the_post, $id)) {
+					update_post_meta($the_post, $id, $_POST[$id]);
+				} else {
+					add_post_meta($the_post, $id, $_POST[$id], true);
+				}
+			} else {
+				delete_post_meta($the_post, $id);
+			}				
+		}
+
+		return $post_id;
 	}
 
 	/**
@@ -837,7 +878,7 @@ class hrecipe_microformat_options
 	 * Emit HTML for a checkbox
 	 *
 	 * @param string $field Name of field
-	 * @param string $checked True if the checkbox should be checked
+	 * @param boolean $checked True if the checkbox should be checked
 	 * @return void
 	 **/
 	function checkbox_html($field, $checked)
@@ -849,11 +890,29 @@ class hrecipe_microformat_options
 	/**
 	 * Emit HTML for a text field
 	 *
+	 * @param string $field Name of field
+	 * @param string $value Default value for the input field
 	 * @return void
 	 **/
 	function text_html($field, $value)
 	{
 		echo '<input type="text" name="' . $field . '" value="' . $value . '" />';
+	}
+	
+	/**
+	 * Emit HTML for a radio button field
+	 *
+	 * @param string $field Name of field
+	 * @param array $options array of value=>label pairs for radio button option
+	 * @param string $value Default value for selected radio button
+	 * @return void
+	 **/
+	function radio_html($field, $options, $value)
+	{
+		foreach ($options as $key => $option) {
+			$checked = ($value == $key) ? ' checked' : '';
+			echo '<input type="radio" name="'. $field . '" value="'. $key . '"' . $checked . ' />' . $option ;			
+		}
 	}
 	
 	/**
