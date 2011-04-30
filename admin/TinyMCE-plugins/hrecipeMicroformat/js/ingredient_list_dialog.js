@@ -83,7 +83,7 @@ var hrecipeIngredientListDialog = {
 		// Insert the contents from the input into the document
 		
 		// For each row in the ingredients table, generate the target ingredient tags
-		// newList = '<!-- <div class="ingredients"> -->';
+		newList = '<div class="ingredients">';
 		newList += '<h4 class="ingredients-title">' + $('#ingrd-list-name').val() + '</h4>';
 		$('tbody tr').each(function() {
 			var row = $(this);
@@ -96,7 +96,7 @@ var hrecipeIngredientListDialog = {
 				}				
 			});
 			if (atts.length > 0) { // If at least one field specified, add to the result
-				newList += '<div class="ingredient">' + atts.join(' ') + "</div>\n";
+				newList += '<div class="ingredient mceNonEditable">' + atts.join(' ') + "</div>\n";
 			}
 		});
 		newList += '</div>'; // Close out the ingredient list

@@ -12,3 +12,8 @@
 .sort-handle {
 	cursor: move;
 }
+
+.ui-buttons li {
+	list-style-type: none;
+	float: left;
+}

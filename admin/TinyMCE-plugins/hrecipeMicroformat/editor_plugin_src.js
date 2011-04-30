@@ -10,10 +10,10 @@
  * Contributing: http://tinymce.moxiecode.com/contributing
  */
 
-(function() {
+(function() {	
 	// Load plugin specific language pack	
-  tinymce.PluginManager.requireLangPack('hrecipeMicroformat');
-
+	tinymce.PluginManager.requireLangPack('hrecipeMicroformat');
+	
 	tinymce.create('tinymce.plugins.hrecipeMicroformatPlugin', {
 		/**
 		 * Initializes the plugin, this will be executed after the plugin has been created.
@@ -78,6 +78,49 @@
 				image : url + '/img/hrecipeIngredientList.gif' // FIXME Need GIF
 			});
 			
+			// Setup dynamic handling for Ingredient lists
+			// TODO - Prevent direct editing of ingredient list and individual ingredients
+			//				See jQuery.click() to setup click handler for an element.
+			//				How to treat content as an opaque object in editor window?  Click enables special functions, cursor moves past
+			ed.onSetContent.add(function(ed, o) {
+				ingrds = ed.dom.select('.ingredients');
+				jQuery(ingrds).hover(
+					function() {
+						jQuery(this).prepend('<span>' + ed.getLang('hrecipeMicroformat.dblClick',0) + '</span>');
+					},
+					function() {
+						jQuery(this).find('span:first').remove();
+					}
+				);				
+			});
+
+			// When inside an ingredients list...
+			// ed.onNodeChange.add(function(ed, cm, n, co) {
+			// 	var ingrds = ed.dom.getParents(n, '.ingredients');
+			// 	if (ingrds.length > 0) {
+			// 		// Have an ingredients section - Is it already marked?
+			// 		var marked = ed.dom.select('.h-dblClickText', n);
+			// 		if (0 === marked.length) {
+			// 			ed.dom.remove(ed.dom.select('.h-dblClickText')); // Remove from elsewhere		
+			// 			ed.dom.add(ingrds, 'span', {'class': 'h-dblClickText'}, ed.getLang('hrecipeMicroformat.dblClick',0));
+			// 		}
+			// 	} else {
+			// 		ed.dom.remove(ed.dom.select('.h-dblClickText')); // Remove
+			// 	}
+			// });
+			
+			// TODO - Drag, drop lists as a unit. - Use jQuery?
+			// ed.onNodeChange.add(function(ed, cm, n, co) {
+			// 	jQuery(n).closest('.ingredients').each(function() {
+			// 		try {ed.selection.select(this);} catch(e) {}
+			// 	});
+			// });
+			
+			// ================
+			// = Instructions =
+			// ================
+			
+
 			// ========
 			// = Hint =
 			// ========

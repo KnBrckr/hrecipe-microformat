@@ -533,6 +533,8 @@ class hrecipe_microformat_options
 							 '<span class="insert ui-icon ui-icon-plusthick ui-state-active"></span>'.
 							 '<span class="delete ui-icon ui-icon-minusthick ui-state-active"></span>';
 
+// FIXME Enable tinymce on instruction steps
+
 		$steps = get_post_meta($post->ID, self::prefix . 'steps', true);
 		if (is_array($steps)) {
 			foreach ($steps as $step) {
@@ -594,8 +596,10 @@ class hrecipe_microformat_options
 	{
 		global $post;
 		
-		// FIXME Need to handle autosave! See add_metadata()
-		if ('autosave' == $_POST['action']) return $post_id;
+		// FIXME Need to handle autosave! See add_metadata() and http://pastebin.com/LAuBtmSZ
+		//       Should the instructions be stuffed into the post content using content filters?  Simplifies content display...
+		if ( defined('DOING_AUTOSAVE') && DOING_AUTOSAVE ) 
+			return $post_id;
 		
 		// Confirm nonce field
 		if ( !wp_verify_nonce( $_POST[self::prefix . 'noncename'], plugin_basename(__FILE__) )) {
@@ -733,7 +737,7 @@ class hrecipe_microformat_options
 
 		return $options;
 	}
-	
+		
 	/**
 	 * Emit HTML to create the Plugin settings page
 	 *
@@ -939,13 +943,18 @@ class hrecipe_microformat_options
  
 	function register_buttons($buttons) {
 	   array_push($buttons, 'hrecipeTitle', 'hrecipeIngredientList', 'hrecipeHint');
-	// TODO 'hrecipeIngredient'
+	// TODO 'hrecipeIngredient', Instruction...
 	   return $buttons;
 	}
  
-	// Load the TinyMCE plugins : editor_plugin.js
+	// Load the TinyMCE plugins
 	function add_tinymce_plugins($plugin_array) {
-		$plugin_array['hrecipeMicroformat'] = $this->locate_tinymce_plugin('hrecipe');
+		foreach(array('hrecipeMicroformat', 'noneditable') as $plugin) {
+			$url = $this->locate_tinymce_plugin($plugin);
+			if ($url) {
+				$plugin_array[$plugin] = $url;
+			}
+		}
 	
 		return $plugin_array;
 	}
@@ -957,14 +966,16 @@ class hrecipe_microformat_options
 	 **/
 	function locate_tinymce_plugin($plugin)
 	{
-		$plugin_dir = 'admin/TinyMCE-plugins/' . $plugin . '/';
-		if (file_exists(self::$dir . $plugin_dir . 'editor_plugin.js')) {
-			$url = self::$url . $plugin_dir . 'editor_plugin.js';
-		} else {
-			$url = self::$url . $plugin_dir . 'editor_plugin_src.js';
+		foreach (array('TinyMCE-plugins', 'TinyMCE-utils') as $plugin_dir) {
+			$plugin_path = 'admin/' . $plugin_dir . '/' . $plugin . '/';
+			foreach (array('editor_plugin.js', 'editor_plugin_src.js') as $js) {
+				if (file_exists(self::$dir . $plugin_path . $js)) {
+					return self::$url . $plugin_path . $js;
+				}
+			}
 		}
 		
-		return $url;
+		return false;
 	}
 	/**
 	 * Add plugin CSS to tinymce

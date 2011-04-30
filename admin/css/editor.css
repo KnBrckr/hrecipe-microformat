@@ -12,6 +12,10 @@
 	border: 1px red solid;
 }
 
+.ingredients {
+	clear: both;
+}
+
 /* Show element type in editor window */
 .ingredient:before {
 	content: "{Ingredient}";
