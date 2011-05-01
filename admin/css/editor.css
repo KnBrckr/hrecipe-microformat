@@ -3,7 +3,7 @@
 /* ================================================================ */
 
 /* Flag special recipe fields in the editor window */
-.ingredient:before, .comment:before, .value:before, .type:before, .ingrd:before, .step:before, .hrecipe-hint:before {
+.comment:before, .value:before, .type:before, .ingrd:before, .step:before, .hrecipe-hint:before {
 	padding-right: 3px;
 	font-size: .5em;
 	color: red;	
@@ -17,9 +17,6 @@
 }
 
 /* Show element type in editor window */
-.ingredient:before {
-	content: "{Ingredient}";
-}
 .ingredient .value:before {
 	content: "{Qty}";
 }
@@ -27,7 +24,7 @@
 	content: "{Unit}";
 }
 .ingredient .ingrd:before {
-	content: "{Ingrd}";
+	content: "{Ingredient}";
 }
 .ingredient .comment:before {
 	content: "{Comment}";

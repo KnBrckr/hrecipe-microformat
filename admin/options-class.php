@@ -985,6 +985,7 @@ class hrecipe_microformat_options
 	function add_tinymce_css($mce_css){
 		if (! empty($mce_css)) $mce_css .= ',';
 		$mce_css .= self::$url . 'admin/css/editor.css';
+		$mce_css .= ',' . self::$url . 'admin/css/jquery-ui.css';
 		return $mce_css; 
 	}
 		

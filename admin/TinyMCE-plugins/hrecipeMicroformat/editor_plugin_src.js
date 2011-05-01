@@ -59,7 +59,7 @@
 			// = Ingredient List =
 			// ===================
 
-			// Register the command so that it can be invoked by using tinyMCE.activeEditor.execCommand('mceExample');
+			// Register command to open dialog so that it can be invoked by using tinyMCE.activeEditor.execCommand();
 			ed.addCommand('mceHrecipeIngredientList', function() {
 				ed.windowManager.open({
 					file : url + '/ingredient_list.html',
@@ -70,6 +70,26 @@
 					plugin_url : url // Plugin absolute URL
 				});
 			});
+			
+			// Register command to init dynamic content handling on a dom element or elements
+			ed.addCommand('mceHrecipeSetupIngrdList', function(ui,n) {
+				// Highlight ingredients sections when cursor hovers
+				jQuery(n).hover(
+					function() {
+						jQuery(this).addClass('ui-state-hover');
+					},
+					function() {
+						jQuery(this).removeClass('ui-state-hover');
+					}
+				);
+				
+				// On click inside ingredients
+				jQuery(n).click(
+					function() {
+						ed.execCommand('mceHrecipeIngredientList',true);
+					}
+				);
+			});
 
 			// Register Ingredient List button
 			ed.addButton('hrecipeIngredientList', {
@@ -79,19 +99,12 @@
 			});
 			
 			// Setup dynamic handling for Ingredient lists
-			// TODO - Prevent direct editing of ingredient list and individual ingredients
-			//				See jQuery.click() to setup click handler for an element.
-			//				How to treat content as an opaque object in editor window?  Click enables special functions, cursor moves past
+			// TODO - Prevent direct editing of individual ingredients
+			//				How to treat content as an opaque object in editor window to move cursor past?
+			//				Protect content in the HTML tab - filter when switching between views?
 			ed.onSetContent.add(function(ed, o) {
-				ingrds = ed.dom.select('.ingredients');
-				jQuery(ingrds).hover(
-					function() {
-						jQuery(this).prepend('<span>' + ed.getLang('hrecipeMicroformat.dblClick',0) + '</span>');
-					},
-					function() {
-						jQuery(this).find('span:first').remove();
-					}
-				);				
+				var ingrds = ed.dom.select('.ingredients');
+				ed.execCommand('mceHrecipeSetupIngrdList', false, ingrds);
 			});
 
 			// When inside an ingredients list...

@@ -79,38 +79,68 @@ var hrecipeIngredientListDialog = {
 		$('.type').autocomplete({source: availableUnits});
 	},
 
+	// Insert the contents from the input into the document
 	insert : function() {
-		// Insert the contents from the input into the document
+		var val, ingrdList;
+		ed = tinyMCEPopup.editor;
+		
+		// Get a temp id for the new element; need to loop until it doesn't exist
+		var tmpID = ed.dom.uniqueId('_hrecipe_');
+		while (ed.getDoc().getElementById(tmpID)) {
+			tmpID = ed.dom.uniqueId('_hrecipe_');
+		}
+		
+		// Create container div for the ingredient list
+		ingrdList = ed.dom.create('div', {'class': 'ingredients mceNonEditable', 'id': tmpID});
+
+		// Add a Title if one provided
+		if ('' !== (val = jQuery('#ingrd-list-name').val())) {
+			val = val.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); // Sanitize user text
+			ingrdList.appendChild(ed.dom.create('h4', {'class': 'ingredients-title'}, val));
+		}
 		
 		// For each row in the ingredients table, generate the target ingredient tags
-		newList = '<div class="ingredients">';
-		newList += '<h4 class="ingredients-title">' + $('#ingrd-list-name').val() + '</h4>';
 		$('tbody tr').each(function() {
 			var row = $(this);
-			var atts = new Array;
-			
+			var ingrdRow = ed.dom.create('div', {'class': 'ingredient'});
 			$.each(['value', 'type', 'ingrd', 'comment'],function(index,attr){
 				if ('' !== (val = row.find('.' + attr).val())) {
 					val = val.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); // Sanitize user text
-					atts.push('<span class="' + attr + '">' + val + '</span>');
+					ingrdRow.appendChild(ed.dom.create('span', {'class': attr}, val));
 				}				
 			});
-			if (atts.length > 0) { // If at least one field specified, add to the result
-				newList += '<div class="ingredient mceNonEditable">' + atts.join(' ') + "</div>\n";
+			
+			// If at least one field specified, add to the result
+			if (ingrdRow.childElementCount > 0) {
+				ingrdList.appendChild(ingrdRow);
 			}
-		});
-		newList += '</div>'; // Close out the ingredient list
-		
-		// If insert point inside an existing list, replace the list, else insert at cursor
+		}); // End processing ingredients table
 
-		var n = tinyMCEPopup.editor.selection.getNode();
-		var ingredientList = $(n).closest('.ingredients');
-		if (ingredientList.length > 0) {
-			ingredientList.replaceWith(newList);
-		} else {
-			newList += "\n\n";
-			tinyMCEPopup.editor.execCommand('mceInsertContent', false, newList);
+		// If the new list has any content, insert at selection location
+		if (ingrdList.childElementCount > 0) { 
+			
+			var n = ed.selection.getNode();
+			var oldIngrdList = ed.dom.getParent(n, '.ingredients');
+			if (oldIngrdList) {
+				// Replace old with new - Change active selection to be the old div
+				ed.selection.select(oldIngrdList);
+			}
+
+			// Insert the new list
+			ed.selection.setNode(ingrdList);			
+			
+			// Put editing controls onto the new list
+			n = ed.getDoc().getElementById(tmpID); // Find the new item using tmpID
+			ed.execCommand('mceHrecipeSetupIngrdList', false, n);
+			n.id = ''; // Clear the tmp id
 		}
+		tinyMCEPopup.close();
+	},
+	
+	// Remove Ingredient List from content
+	'remove' : function() {
+		var n = tinyMCEPopup.editor.selection.getNode();
+		$(n).closest('.ingredients').remove(); // TODO tinymce Undo button is not updating after remove.
 		tinyMCEPopup.close();
 	}
 };

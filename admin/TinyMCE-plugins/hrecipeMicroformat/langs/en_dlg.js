@@ -4,8 +4,9 @@ tinyMCE.addI18n('en.hrecipeIngredientList_dlg',{
 	caption : 'List of Ingredients'
 });
 tinyMCE.addI18n('en.hrecipeMicroformat_dlg',{
-	amount : 'Amount',
-	unit : 'Unit',
-	ingredient : 'Ingredient',
-	comment : 'Comment'
+	'amount' : 'Amount',
+	'unit' : 'Unit',
+	'ingredient' : 'Ingredient',
+	'comment' : 'Comment',
+	'delete' : 'Delete'
 });
