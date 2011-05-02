@@ -7,20 +7,19 @@ var hrecipeTinymceId = 1;
 
 jQuery(document).ready( function($) {
 	// Make the recipe field sections sortable to configure head and footer contents
-	if (typeof recipe_field_sections === 'array') {
-		$(recipe_field_sections.join(',')).sortable(
-			{
-				items: '.menu-item-handle',
-				connectWith: '.recipe-fields', 
-				update: function(event, ui) {
-					// On update, fixup the hidden input tracking contents of head and footer
-					jQuery.each(recipe_field_sections, function(index, value) {
-						var new_list = jQuery(value + ' li').map(function(){return this.attributes['name'].value;}).get().join();
-						jQuery(value + ' input').attr('value', new_list);
-					});
-				}
-			});		
-	}
+	$('.recipe-fields').sortable(
+		{
+			items: '.menu-item-handle',
+			connectWith: '.recipe-fields', 
+			update: function(event, ui) {
+				// On update, fixup the hidden input tracking contents of head and footer
+				jQuery('.recipe-fields').each(function() {
+					var n = jQuery(this);
+					var new_list = n.find('li').map(function(){return this.attributes['name'].value;}).get().join();
+					n.find('input').attr('value', new_list);
+				});
+			}
+		});		
 
 	/**
 	 * Manipulate the ingredients metabox a bit

@@ -41,20 +41,26 @@ class hrecipe_microformat_options
 	protected static $url; // Base URL for plugin directory
 	
 	/**
-	 * Indicate whether or not recipes should be included in the home page
+	 * Array holding plugin options
+	 *	'database_ver'     :  Database Structure version in use - Used to upgrade old versions to new format as required
+	 *	'display_in_home'  :  True if recipes should be displayed in the home page
+	 *	'display_in_feed'  :  True if recipes should be displayed in the main feed
+	 *  'add_post_class' : True if the 'post' class should be added to recipe posts
+	 *	'recipe_head_fields' : Ordered list of fields to include in the recipe head
+	 *	'recipe_footer_fields' : Ordered list of fields to include in the recipe footer
+	 *	'debug_log_enabled' : True if logging plugin debug messages
+	 *	'debug_log' : Array of debug messages when debug_log_enabled is true
 	 *
-	 * @var boolean True if recipes should be displayed in the home page
-	 * @access protected
+	 * @var array of strings
 	 **/
-	protected $display_in_home;
+	protected $options;
 	
 	/**
-	 * Indicate whether or not recipes should be included in the main feed
+	 * Array of default option values
 	 *
-	 * @var boolean True if recipes should be displayed in the main feed
-	 * @access public
+	 * @var array
 	 **/
-	protected $display_in_feed;
+	var $options_defaults;
 	
 	/**
 	 * Array of taxonomy names registered by the plugin
@@ -63,14 +69,7 @@ class hrecipe_microformat_options
 	 * @access protected
 	 **/
 	protected static $taxonomies;
-	
-	/**
-	 * Database version in use - Used to upgrade old versions to new format as required
-	 *
-	 * @var int
-	 **/
-	protected $database_ver;
-	
+		
 	/**
 	 * Errors and warnings to display on admin screens
 	 *
@@ -78,20 +77,6 @@ class hrecipe_microformat_options
 	 **/
 	protected $admin_notices;  // Update level (Yellow)
 	protected $admin_notice_errors;  // Error messages (Red)
-	
-	/**
-	 * Default ordered list of fields to include in the recipe header
-	 *
-	 * @var array
-	 **/
-	protected $recipe_head_fields_default;
-	
-	/**
-	 * Default ordered list of fields to include in the recipe footer
-	 *
-	 * @var array
-	 **/
-	protected $recipe_footer_fields_default;
 	
 	/**
 	 * Map internal field names to displayed names, description
@@ -196,45 +181,34 @@ class hrecipe_microformat_options
 														 'format' => 'nutrition'),
 		);
 		
-		// Defaults for recipe head and footer display
-		$this->recipe_head_fields_default = 'yield,difficulty,rating,category,duration,preptime,cooktime';
-		$this->recipe_footer_fields_default = 'published,author,nutrition';
-						
+		$options_defaults = array(
+			'database_ver' => self::required_db_ver,
+			'display_in_home' => true,
+			'display_in_feed' => true,
+			'add_post_class' => true,
+			'recipe_head_fields' => 'yield,difficulty,rating,category,duration,preptime,cooktime',
+			'recipe_footer_fields' => 'published,author,nutrition',
+			'recipe_unused_fields' => '',
+			'debug_log_enabled' => false,
+			'debug_log' => array(),
+		);
+		
 		// Retrieve Plugin Options
-		$options = (array) get_option(self::settings);		
+		$this->options = (array) wp_parse_args(get_option(self::settings), $options_defaults);
 		
-		// Display Recipes on home page? -- Default to true
-		$this->display_in_home = array_key_exists('display_in_home', $options) ? $options['display_in_home'] : false;
-		
-		// Display Recipes in main feed?  -- Default to true
-		$this->display_in_feed = array_key_exists('display_in_feed', $options) ? $options['display_in_feed'] : false;
-		
-		// Add post class to recipes?
-		$this->add_post_class = array_key_exists('add_post_class', $options) ? $options['add_post_class'] : false;
-		
-		// Recipe Header content (ordered list)
-		$this->recipe_head_fields = 
-			array_key_exists('recipe_head_fields', $options) ? $options['recipe_head_fields'] : $this->recipe_head_fields_default;
-		
-		// Recipe Footer content (ordered list)
-		$this->recipe_footer_fields = 
-			array_key_exists('recipe_footer_fields', $options) ? $options['recipe_footer_fields'] : $this->recipe_footer_fields_default;
-			
-		// Unused recipe fields
-		$this->recipe_unused_fields =
-			array_key_exists('recipe_unused_fields', $options) ? $options['recipe_unused_fields'] : '';
-		
-		// Init value for debug log
-		$this->debug_log_enabled = array_key_exists('debug_log_enabled', $options) ? $options['debug_log_enabled'] : false;
-		$this->debug_log = array_key_exists('debug_log',$options) ? $options['debug_log'] : array();
-		if ($this->debug_log_enabled) {
-			$this->admin_notice_errors[] = sprintf(__('%s logging is enabled.  If left enabled, this can affect database performance.', self::p),'<a href="options.php?page=' . self::settings_page . '">' . self::p . '</a>');
+		// If database version does not match, an upgrade is needed
+		if (self::required_db_ver != $this->options['database_ver']) {
+			$this->handle_database_ver($this->options['database_ver']);
 		}
 		
-		// Init value for the database version
-		$this->database_ver = array_key_exists('database_ver', $options) ? $options['database_ver'] : self::required_db_ver;
-		if (self::required_db_ver != $this->database_ver) {
-			$this->handle_database_ver($this->database_ver);
+		// // Make sure the database version is available in the options
+		// if (! array_key_exists('database_ver', $options)) {
+		// 	$options['database_ver'] = self::required_db_ver;
+		// }
+		// 
+		// If logging is enabled, warn admin as it affects DB performance
+		if ($this->options['debug_log_enabled']) {
+			$this->admin_notice_errors[] = sprintf(__('%s logging is enabled.  If left enabled, this can affect database performance.', self::p),'<a href="options.php?page=' . self::settings_page . '">' . self::p . '</a>');
 		}
 		
 		// Perform plugin actions needed during WP init
@@ -246,11 +220,10 @@ class hrecipe_microformat_options
 			add_action('admin_menu', array(&$this, 'admin_menu'));
 
 			add_action('admin_init', array( &$this, 'admin_init'));
-		}
-		
+		}		
 		
 		// If logging is enabled, setup save in the footers.
-		if ($this->debug_log_enabled) {
+		if ($this->options['debug_log_enabled']) {
 			add_action('admin_footer', array( &$this, 'save_debug_log'));
 			add_action('wp_footer', array( &$this, 'save_debug_log'));				
 		}
@@ -725,17 +698,55 @@ class hrecipe_microformat_options
 	 **/
 	function sanitize_settings($options)
 	{
+		// Display Recipes on home page? -- Default to true
+		$options['display_in_home'] = self::sanitize_an_option($options, 'display_in_home', 'bool');
+		
+		// Display Recipes in main feed?  -- Default to true
+		$options['display_in_feed'] = self::sanitize_an_option($options, 'display_in_feed', 'bool');
+		
+		// Add post class to recipes?
+		$options['add_post_class'] = self::sanitize_an_option($options, 'add_post_class', 'bool');
+		
+		// Recipe Header content (ordered list)
+		$options['recipe_head_fields'] = self::sanitize_an_option($options, 'recipe_head_fields', 'text');
+		
+		// Recipe Footer content (ordered list)
+		$options['recipe_footer_fields'] = self::sanitize_an_option($options, 'recipe_footer_fields', 'text');
+		
+		// FIXME - Change to be full list so fields can be easily added in future
+		// Unused recipe fields
+		$options['recipe_unused_fields'] = self::sanitize_an_option($options, 'recipe_unused_fields', 'text');
+		
+		// Init value for debug log
+		$options['debug_log_enabled'] = self::sanitize_an_option($options, 'debug_log_enabled', 'bool');
+
 		// Cleanup error log if it's disabled
 		if ( ! (array_key_exists('debug_log_enabled', $options) && $options['debug_log_enabled']) ) {
-			$options['debug_log'] = array();
-		}
-		
-		// Make sure the database version is available in the options
-		if (! array_key_exists('database_ver', $options)) {
-			$options['database_ver'] = self::required_db_ver;
+			$options['debug_log'] = array(); // FIXME Possible attack vector to access debug_log on POST?
 		}
 
 		return $options;
+	}
+	
+	/**
+	 * Sanitize an option based on field type
+	 *
+	 * @return value to use for empty option
+	 **/
+	function sanitize_an_option($options, $key, $type)
+	{
+		switch($type) {
+			case 'bool' :
+			  return array_key_exists($key, $options) && $options[$key] ? true : false;
+			
+			case 'text' :
+				$val = array_key_exists($key, $options) && $options[$key] ? $options[$key] : '';
+				return $val;  // FIXME Encode text
+				
+			case 'int' :
+				$val = array_key_exists($key, $options) && $options[$key] ? $options[$key] : 0;
+				return $val; // FIXME Force to be a valid int
+		}
 	}
 		
 	/**
@@ -780,7 +791,7 @@ class hrecipe_microformat_options
 	 **/
 	function display_in_home_html()
 	{
-		self::checkbox_html(self::settings . '[display_in_home]', $this->display_in_home);
+		self::checkbox_html(self::settings . '[display_in_home]', $this->options['display_in_home']);
 		_e('Display Recipes on the home (blog) page.', self::p);
 	}
 	
@@ -791,7 +802,7 @@ class hrecipe_microformat_options
 	 **/
 	function display_in_feed_html()
 	{
-		self::checkbox_html(self::settings . '[display_in_feed]', $this->display_in_feed);
+		self::checkbox_html(self::settings . '[display_in_feed]', $this->options['display_in_feed']);
 		_e('Include Recipes in the main feed.', self::p);
 		echo ' ';
 		_e('This change might not take effect for a client until a new post or recipe is added.', self::p);
@@ -804,7 +815,7 @@ class hrecipe_microformat_options
 	 **/
 	function add_post_class_html()
 	{
-		self::checkbox_html(self::settings . '[add_post_class]', $this->add_post_class);
+		self::checkbox_html(self::settings . '[add_post_class]', $this->options['add_post_class']);
 		_e('Format Recipes like Posts.', self::p);
 	}
 	
@@ -820,21 +831,16 @@ class hrecipe_microformat_options
 			array('field' => 'recipe_footer_fields', 'title' => __('Recipe Footer Section', self::p)),
 			array('field' => 'recipe_unused_fields', 'title' => __('Unused Fields', self::p)),
 		);
-		$recipe_field_sections = '';
 		
 		echo '<div id="recipe_head_foot_fields">';
 		foreach ($fields as $row) {
-			// Collect section names for javacript
-			$comma = ('' == $recipe_field_sections ? '' : ',');
-			$recipe_field_sections .= $comma . '"#' . $row['field'] . '"';
-			
 			// Emit the HTML for each section
 			echo '<div id="' . $row['field'] . '" class="recipe-fields">';
 			echo '<h4>' . $row['title'] . '</h4>';
-			self::input_hidden_html($row['field'], $this->$row['field']);
+			self::input_hidden_html($row['field'], $this->options[$row['field']]);
 			echo '<ul>';
-			if ('' != $this->$row['field']) {
-				foreach (explode(',', $this->$row['field']) as $field) {
+			if ('' != $this->options[$row['field']]) {
+				foreach (explode(',', $this->options[$row['field']]) as $field) {
 					echo '<li class="menu-item-handle" name="' . $field . '">' . $this->recipe_field_map[$field]['label'] . '</li>';
 				}				
 			}
@@ -842,13 +848,6 @@ class hrecipe_microformat_options
 			echo '</div>'; // Close each field section
 		}
 		echo '</div>'; // Close entire section
-		?>
-			<script type="text/javascript">
-				//<![CDATA[
-				var recipe_field_sections=new Array(<?php echo $recipe_field_sections; ?>);
-				//]]>
-			</script>
-		<?php
 	}
 	
 	/**
@@ -866,12 +865,12 @@ class hrecipe_microformat_options
 	 **/
 	function debug_log_enabled_html()
 	{ 
-		self::checkbox_html(self::settings . '[debug_log_enabled]', $this->debug_log_enabled);
+		self::checkbox_html(self::settings . '[debug_log_enabled]', $this->options['debug_log_enabled']);
 		_e('Enable Plugin Debug Logging. When enabled, log will display below.', self::p);
-		if ( $this-> debug_log_enabled ) {
+		if ( $this->options['debug_log_enabled']) {
 			echo '<dl class=hmf-debug-log>';
 			echo '<dt>Log:';
-			foreach ($this->debug_log as $line) {
+			foreach ($this->options['debug_log'] as $line) {
 				echo '<dd></dd>' . esc_attr($line);
 			}
 			echo '</dl>';
@@ -1095,7 +1094,7 @@ class hrecipe_microformat_options
 	 **/
 	function handle_database_ver()
 	{
-		$this->admin_notice_errors[] = sprintf(__('Recipe database version mismatch; using v%1$d, required v%2$d', self::p), $this->database_ver, self::required_db_ver);
+		$this->admin_notice_errors[] = sprintf(__('Recipe database version mismatch; using v%1$d, required v%2$d', self::p), $this->options['database_ver'], self::required_db_ver);
 	}
 	
 	/**
@@ -1137,8 +1136,8 @@ class hrecipe_microformat_options
 	 **/
 	function debug_log($msg)
 	{
-		if ( $this->debug_log_enabled )
-			array_push($this->debug_log, date("Y-m-d H:i:s") . " " . $msg);
+		if ( $this->options['debug_log_enabled'] )
+			array_push($this->options['debug_log'], date("Y-m-d H:i:s") . " " . $msg);
 	}
 	
 	/**
@@ -1146,9 +1145,9 @@ class hrecipe_microformat_options
 	 **/
 	function save_debug_log()
 	{
-		if ( $this->debug_log_enabled ) {
+		if ( $this->options['debug_log_enabled'] ) {
 			$options = get_option(self::settings);
-			$options['debug_log'] = $this->debug_log;
+			$options['debug_log'] = $this->options['debug_log'];
 			update_option(self::settings, $options);
 		}
 	}
@@ -1162,7 +1161,7 @@ class hrecipe_microformat_options
 	function log_err($msg)
 	{
 		error_log(self::p . ": " . $msg);
-		$this->debug_log($msg);
+		$this->options['debug_log']($msg);
 	}
 } // END class 
 ?>

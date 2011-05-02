@@ -7,14 +7,6 @@ if (!include_once('admin/options-class.php')) {
 
 class hrecipe_microformat extends hrecipe_microformat_options {
 	/**
-	 * Plugin Options Array
-	 *
-	 * @access private
-	 * @var array
-	 **/
-	private $options;
-	
-	/**
 	 * undocumented function
 	 *
 	 * @author Kenneth J. Brucker <ken@pumastudios.com>
@@ -58,7 +50,7 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 	{
 		// Add plugin post type only on main query - don't add if filters should be suppressed
 		if ((!array_key_exists('suppress_filters', $query->query_vars) || !$query->query_vars['suppress_filters']) 
-		&& ((is_home() && $this->display_in_home) || (is_feed() && $this->display_in_feed))) {
+		&& ((is_home() && $this->options['display_in_home']) || (is_feed() && $this->options['display_in_feed']))) {
 			$query_post_type = $query->get('post_type');
 			if (is_array($query_post_type)) {
 				$query_post_type[] = self::post_type;
@@ -78,7 +70,7 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 	 **/
 	function post_class($classes)
 	{
-		if ($this->add_post_class) {
+		if ($this->options['add_post_class']) {
 			$classes[] = "post";
 		}
 		return $classes;
@@ -207,8 +199,8 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 	 **/
 	function recipe_head()
 	{
-		if ('' != $this->recipe_head_fields) {
-			$this->recipe_meta_html('head', $this->recipe_head_fields);
+		if ('' != $this->options['recipe_head_fields']) {
+			$this->recipe_meta_html('head', $this->options['recipe_head_fields']);
 		}
 	}
 	
@@ -219,8 +211,8 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 	 **/
 	function recipe_footer()
 	{
-		if ('' != $this->recipe_footer_fields) {
-			$this->recipe_meta_html('footer', $this->recipe_footer_fields);
+		if ('' != $this->options['recipe_footer_fields']) {
+			$this->recipe_meta_html('footer', $this->options['recipe_footer_fields']);
 		}
 	}
 	
