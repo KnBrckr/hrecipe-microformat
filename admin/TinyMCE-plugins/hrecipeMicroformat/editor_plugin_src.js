@@ -10,6 +10,8 @@
  * Contributing: http://tinymce.moxiecode.com/contributing
  */
 
+// TODO Syntax check for balanced shortcodes and mark any unbalanced in visual editor.
+
 (function() {	
 	// Load plugin specific language pack	
 	tinymce.PluginManager.requireLangPack('hrecipeMicroformat');
@@ -31,7 +33,8 @@
 			// Register the commands so that they can be invoked by using tinyMCE.activeEditor.execCommand('mceExample');
 			ed.addCommand('mceHrecipeTitle', function() {
 				if (jQuery(ed.dom.doc.documentElement).find('*:contains("[hrecipe_title]")').length === 0) {
-					ed.execCommand('mceInsertContent', false, '[hrecipe_title]');					
+					title = ed.dom.create('h3',{'class':'fn mceNonEditable'},'[hrecipe_title]');
+					ed.selection.setNode(title);
 				} else {
 					alert(ed.getLang('hrecipeMicroformat.titlePresent'));
 				}
@@ -43,6 +46,17 @@
 				cmd : 'mceHrecipeTitle',
 				image : url + '/img/hrecipeTitle.gif' // FIXME Need GIF
 			});
+			
+			// When switching to HTML editor, cleanup H3 content surrounding the title - only want to display the shortcode
+			jQuery('body').bind('afterPreWpautop', function(e, o){
+				o.data = o.data
+					.replace(/<h3[\s\S]+?\[hrecipe_title\]<\/h3>/g, '[hrecipe_title]');
+			}).bind('beforeWpautop', function(e, o){
+				o.data = o.data
+					.replace(/\[hrecipe_title\]/,'<h3 class="fn mceNonEditable">[hrecipe_title]</h3>');
+			});
+			
+			//FIXME Need filter on new content to setup node with <h3> formatting for visual display
 			
 			// // On content change, 
 			// ed.onChange.add(function(ed, l) {
@@ -99,13 +113,15 @@
 			});
 			
 			// Setup dynamic handling for Ingredient lists
-			// TODO - Prevent direct editing of individual ingredients
-			//				How to treat content as an opaque object in editor window to move cursor past?
+			// TODO - How to treat content as an opaque object in editor window to move cursor past?
 			//				Protect content in the HTML tab - filter when switching between views?
 			ed.onSetContent.add(function(ed, o) {
 				var ingrds = ed.dom.select('.ingredients');
 				ed.execCommand('mceHrecipeSetupIngrdList', false, ingrds);
 			});
+			
+			// TODO Add & Remove the mceNonEditable class from ingredient list`
+			// TODO Implement Ingredients as shortcodes and edit content on switching editor modes for display
 
 			// When inside an ingredients list...
 			// ed.onNodeChange.add(function(ed, cm, n, co) {
@@ -133,11 +149,12 @@
 			// = Instructions =
 			// ================
 			
-
+			
 			// ========
 			// = Hint =
 			// ========
 			
+			// TODO Implement HINT as a shortcode
 			// Register the commands so that they can be invoked by using tinyMCE.activeEditor.execCommand('mceExample');
 			ed.addCommand('mceHrecipeHint', function() {
 				var n = ed.selection.getNode();

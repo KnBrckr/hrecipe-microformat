@@ -22,7 +22,7 @@ jQuery(document).ready( function($) {
 		});		
 
 	/**
-	 * Manipulate the ingredients metabox a bit
+	 * Manipulate the instructions metabox a bit
 	 */
 	
 	var metabox = $('#hrecipe_instructions');
@@ -39,7 +39,6 @@ jQuery(document).ready( function($) {
 		
 		// Put new row into the table after the current one
 		row.after(clonedRow);
-		// FIXME Update step order
 	});
 	
 	// Action to delete active row
@@ -48,7 +47,6 @@ jQuery(document).ready( function($) {
 		
 		if (step.siblings().length > 0) {
 			step.remove();			
-			// FIXME Update step order
 		}
 	});
 	

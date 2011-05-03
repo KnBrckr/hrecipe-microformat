@@ -10,3 +10,5 @@ tinyMCE.addI18n('en.hrecipeMicroformat_dlg',{
 	'comment' : 'Comment',
 	'delete' : 'Delete'
 });
+
+/* TODO Normalize translation list */

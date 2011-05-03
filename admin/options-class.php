@@ -480,47 +480,8 @@ class hrecipe_microformat_options
 
 		$meta_boxes = array();
 		
-		// Add metabox for the instructions
-		add_meta_box(self::prefix . 'instructions', __('Instructions', self::p), array(&$this, 'instructions_metabox'), self::post_type, 'normal', 'high', null);
-		
 		// Add metabox for the Recipe Metadata
 		add_meta_box(self::prefix . 'info', __('Additional Recipe Information', self::p), array(&$this, 'info_metabox'), self::post_type, 'normal', 'high', null);		
-	}
-
-	/**
-	 * Emit HTML for the instructions metabox
-	 *
-	 * @return void
-	 **/
-	function instructions_metabox()
-	{
-		global $post;
-		
-		// Use nonce for verification
-		wp_nonce_field( plugin_basename(__FILE__), self::prefix . 'noncename' );
-		
-		echo '<div class="instructions">';
-
-		// Define HTML used for manipulating each step in the metabox
-		$handles = '<span class="sort-handle ui-icon ui-icon-arrow-2-n-s ui-state-active"></span>' .
-							 '<span class="insert ui-icon ui-icon-plusthick ui-state-active"></span>'.
-							 '<span class="delete ui-icon ui-icon-minusthick ui-state-active"></span>';
-
-// FIXME Enable tinymce on instruction steps
-
-		$steps = get_post_meta($post->ID, self::prefix . 'steps', true);
-		if (is_array($steps)) {
-			foreach ($steps as $step) {
-				echo '<label class="step">' . $handles;
-				echo '<textarea name="' . self::prefix . 'steps[]">' . $step . '</textarea>';
-				echo '</label>';				
-			}
-		} else {
-			echo '<label class="step">' . $handles;
-			echo '<textarea name="' . self::prefix . 'steps[]"></textarea>';
-			echo '</label>';
-		}
-		echo '</div>'; // End steps
 	}
 	
 	/**
@@ -569,8 +530,6 @@ class hrecipe_microformat_options
 	{
 		global $post;
 		
-		// FIXME Need to handle autosave! See add_metadata() and http://pastebin.com/LAuBtmSZ
-		//       Should the instructions be stuffed into the post content using content filters?  Simplifies content display...
 		if ( defined('DOING_AUTOSAVE') && DOING_AUTOSAVE ) 
 			return $post_id;
 		
@@ -606,24 +565,6 @@ class hrecipe_microformat_options
 			} 
 		}
 		
-		// Save metadata for the instructions
-		$id = self::prefix . 'steps';
-		if (isset($_POST[$id])) {
-			$steps = array();
-			foreach ($_POST[$id] as $step) {
-				if ('' != $step) $steps[] = $step;
-			}
-			if (count($steps)) {
-				if (get_post_meta($the_post, $id)) {
-					update_post_meta($the_post, $id, $_POST[$id]);
-				} else {
-					add_post_meta($the_post, $id, $_POST[$id], true);
-				}
-			} else {
-				delete_post_meta($the_post, $id);
-			}				
-		}
-
 		return $post_id;
 	}
 
@@ -741,11 +682,7 @@ class hrecipe_microformat_options
 			
 			case 'text' :
 				$val = array_key_exists($key, $options) && $options[$key] ? $options[$key] : '';
-				return $val;  // FIXME Encode text
-				
-			case 'int' :
-				$val = array_key_exists($key, $options) && $options[$key] ? $options[$key] : 0;
-				return $val; // FIXME Force to be a valid int
+				return wp_filter_nohtml_kses($val);  // HTML not allowed in options
 		}
 	}
 		
