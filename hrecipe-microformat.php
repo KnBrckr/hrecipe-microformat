@@ -244,7 +244,7 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 		
 		// Produce the field value based on format of the meta data
 		switch ($this->recipe_field_map[$field]['format']) {
-			case 'meta':  // default Post Meta Data
+			case 'text':  // default Post Meta Data
 				$value = get_post_meta($post->ID, self::prefix . $field, true);
 				break;
 				

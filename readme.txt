@@ -3,7 +3,7 @@ Contributors: draca
 Donate link: http://action-a-day.com
 Tags: 
 Requires at least: 3.1
-Tested up to: 
+Tested up to: 3.1.2
 Stable tag: trunk
 
 Provides TinyMCE editing for the hRecipe microformat
@@ -14,6 +14,7 @@ Provides TinyMCE editing for the hRecipe microformat
 == Installation ==
 
 Requires PHP5
+Plugin makes use of wpautop handling!  Using plugins that change the handling could alter output from this plugin.
 
 == Frequently Asked Questions ==
 
