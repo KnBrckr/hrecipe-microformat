@@ -25,6 +25,7 @@
  **/
 
 // TODO Setup Difficulty as 1-5 level - use more chef hats for harder.
+// TODO Add cuisine types - mexican, spanish, indian, etc.
 class hrecipe_microformat_options
 {
 	/**
@@ -188,7 +189,6 @@ class hrecipe_microformat_options
 			'add_post_class' => true,
 			'recipe_head_fields' => 'yield,difficulty,rating,category,duration,preptime,cooktime',
 			'recipe_footer_fields' => 'published,author,nutrition',
-			'recipe_unused_fields' => '',
 			'debug_log_enabled' => false,
 			'debug_log' => array(),
 		);
@@ -241,14 +241,23 @@ class hrecipe_microformat_options
 		
 		// Only insert terms if the category taxonomy doesn't already exist.
 		if (0 == count(get_terms(self::prefix . 'category', 'hide_empty=0&number=1'))) {
-			// FIXME Populate the default Category taxonomy
-			wp_insert_term(__('Dessert', self::p), self::prefix . 'category');
+			wp_insert_term(__('Appetizer', self::p), self::prefix . 'category');
+			wp_insert_term(__('Soup', self::p), self::prefix . 'category');
+			wp_insert_term(__('Salad', self::p), self::prefix . 'category');
+			wp_insert_term(__('Side Dish', self::p), self::prefix . 'category');
+			
 			wp_insert_term(__('Entrée', self::p), self::prefix . 'category');
-			wp_insert_term(__('Main', self::p), self::prefix . 'category');
-			wp_insert_term(__('Meat', self::p), self::prefix . 'category');
-			wp_insert_term(__('Soup', self::p), self::prefix . 'category');			
+			$entree_term = term_exists( __('Entrée', self::p), self::prefix . 'category');
+			$entree_term_id = $entree_term['term_id'];
+			wp_insert_term(__('Pasta', self::p), self::prefix . 'category', array('parent' => $entree_term_id));
+			wp_insert_term(__('Meat', self::p), self::prefix . 'category', array('parent' => $entree_term_id));
+			wp_insert_term(__('Fish', self::p), self::prefix . 'category', array('parent' => $entree_term_id));
+			wp_insert_term(__('Poultry', self::p), self::prefix . 'category', array('parent' => $entree_term_id));
+			wp_insert_term(__('Vegetarian', self::p), self::prefix . 'category', array('parent' => $entree_term_id));
+			
+			wp_insert_term(__('Dessert', self::p), self::prefix . 'category');
 		}
-
+		
 		// On activation, flush rewrite rules to make sure plugin is setup correctly. 
 		flush_rewrite_rules();
 	}
@@ -654,16 +663,12 @@ class hrecipe_microformat_options
 		// Recipe Footer content (ordered list)
 		$options['recipe_footer_fields'] = self::sanitize_an_option($options, 'recipe_footer_fields', 'text');
 		
-		// FIXME - Change to be full list so fields can be easily added in future
-		// Unused recipe fields
-		$options['recipe_unused_fields'] = self::sanitize_an_option($options, 'recipe_unused_fields', 'text');
-		
 		// Init value for debug log
 		$options['debug_log_enabled'] = self::sanitize_an_option($options, 'debug_log_enabled', 'bool');
 
 		// Cleanup error log if it's disabled
 		if ( ! (array_key_exists('debug_log_enabled', $options) && $options['debug_log_enabled']) ) {
-			$options['debug_log'] = array(); // FIXME Possible attack vector to access debug_log on POST?
+			$options['debug_log'] = array();
 		}
 
 		return $options;
@@ -763,24 +768,47 @@ class hrecipe_microformat_options
 	 **/
 	function head_foot_section_html()
 	{
-		$fields = array(
-			array('field' => 'recipe_head_fields', 'title' => __('Recipe Head Section', self::p)),
-			array('field' => 'recipe_footer_fields', 'title' => __('Recipe Footer Section', self::p)),
-			array('field' => 'recipe_unused_fields', 'title' => __('Unused Fields', self::p)),
+		$head_fields = explode(',', $this->options['recipe_head_fields']);
+		$footer_fields = explode(',', $this->options['recipe_footer_fields']);
+
+		// Build list of unused fields
+		$unused_fields = array();
+		foreach($this->recipe_field_map as $key => $row) {
+			// TODO Only allow a subset of the fields to be in header or footer
+			if (! in_array($key, $head_fields) && ! in_array($key, $footer_fields)) {
+				// Add unused fields to the list
+				array_push($unused_fields, $key); 
+			}
+		}
+		
+		$sections = array(
+			array(
+				'field-name' => 'recipe_head_fields', 
+				'title' => __('Recipe Head Section', self::p),
+				'list' => $head_fields,
+			),
+			array(
+				'field-name' => 'recipe_footer_fields', 
+				'title' => __('Recipe Footer Section', self::p),
+				'list' => $footer_fields,
+			),
+			array(
+				'field-name' => 'recipe_unused_fields', 
+				'title' => __('Unused Fields', self::p),
+				'list' => $unused_fields,
+			),
 		);
 		
 		echo '<div id="recipe_head_foot_fields">';
-		foreach ($fields as $row) {
+		foreach ($sections as $row) {
 			// Emit the HTML for each section
 			echo '<div id="' . $row['field'] . '" class="recipe-fields">';
 			echo '<h4>' . $row['title'] . '</h4>';
-			self::input_hidden_html($row['field'], $this->options[$row['field']]);
+			self::input_hidden_html($row['field-name'], join(',', $row['list']));
 			echo '<ul>';
-			if ('' != $this->options[$row['field']]) {
-				foreach (explode(',', $this->options[$row['field']]) as $field) {
-					echo '<li class="menu-item-handle" name="' . $field . '">' . $this->recipe_field_map[$field]['label'] . '</li>';
-				}				
-			}
+			foreach ($row['list'] as $field) {
+				echo '<li class="menu-item-handle" name="' . $field . '">' . $this->recipe_field_map[$field]['label'] . '</li>';
+			}				
 			echo '</ul>';
 			echo '</div>'; // Close each field section
 		}
