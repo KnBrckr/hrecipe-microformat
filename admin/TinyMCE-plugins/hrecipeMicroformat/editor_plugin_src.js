@@ -44,7 +44,7 @@
 			ed.addButton('hrecipeTitle', {
 				title : 'hrecipeMicroformat.titleDesc',
 				cmd : 'mceHrecipeTitle',
-				image : url + '/img/hrecipeTitle.gif' // FIXME Need GIF
+				image : url + '/img/hrecipeTitle.gif'
 			});
 			
 			// When switching to HTML editor, cleanup H3 content surrounding the title - only want to display the shortcode
@@ -109,7 +109,7 @@
 			ed.addButton('hrecipeIngredientList', {
 				title : 'hrecipeMicroformat.ingrdListDesc',
 				cmd : 'mceHrecipeIngredientList',
-				image : url + '/img/hrecipeIngredientList.gif' // FIXME Need GIF
+				image : url + '/img/hrecipeIngredientList.gif'
 			});
 			
 			// Setup dynamic handling for Ingredient lists
@@ -174,7 +174,7 @@
 			ed.addButton('hrecipeHint', {
 				title : 'hrecipeMicroformat.hintDesc',
 				cmd : 'mceHrecipeHint',
-				image : url + '/img/hrecipeHint.gif' //FIXME need gif
+				image : url + '/img/hrecipeHint.gif'
 			});
 			
 			// Add a node change handler, selects the button in the UI when in an aside or text is selected
