@@ -20,7 +20,10 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 	
 	function wp_init() {
 		// Catch any posts that have a plugin supplied default template
-		add_action('template_redirect', array(&$this, 'template_redirect'));
+		// FIXME - use this? -> add_action('template_redirect', array(&$this, 'template_redirect'));
+		
+		// Add recipe meta data to the post content
+		add_filter('the_content', array(&$this, 'the_content'));
 
 		// Put recipes into the stream if requested in configuration
 		add_filter('pre_get_posts', array(&$this, 'pre_get_posts_filter'));
@@ -38,6 +41,20 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 		 * Register shortcodes
 		 */
 		add_shortcode(self::prefix . 'title', array(&$this, 'sc_title'));
+	}
+	
+	/**
+	 * Add recipe head and footer to post content
+	 *
+	 * @param $content string post content
+	 * @return string Updated post content
+	 **/
+	function the_content($content)
+	{
+		$head = $this->recipe_meta_html('head', $this->options['recipe_head_fields']);
+		$footer = $this->recipe_meta_html('footer', $this->options['recipe_footer_fields']);
+		
+		return $head . $content . $footer;
 	}
 
 	/**
@@ -134,6 +151,7 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 	 * @uses $post Uses Post ID to locate recipe category assisgned to the post
 	 * @return void
 	 */
+	// Hook into category display
 	function posted_in() {
 		global $post;
 		
@@ -164,6 +182,7 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 	 *
 	 * @return string The URL to the author's recipe page.
 	 */
+	// FIXME Hook into author generation
 	function get_author_recipes_url($author_id, $author_nicename = '') {
 		global $wp_rewrite;
 		$auth_ID = (int) $author_id;
@@ -191,51 +210,28 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 
 		return $link;
 	}
-	
+		
 	/**
-	 * Emit Recipe Header HTML
+	 * Generate recipe meta data section
 	 *
-	 * @return void
-	 **/
-	function recipe_head()
-	{
-		if ('' != $this->options['recipe_head_fields']) {
-			$this->recipe_meta_html('head', $this->options['recipe_head_fields']);
-		}
-	}
-	
-	/**
-	 * Emit Recipe Footer HTML
-	 *
-	 * @return void
-	 **/
-	function recipe_footer()
-	{
-		if ('' != $this->options['recipe_footer_fields']) {
-			$this->recipe_meta_html('footer', $this->options['recipe_footer_fields']);
-		}
-	}
-	
-	/**
-	 * undocumented function
-	 *
-	 * @return void
-	 * @author Kenneth J. Brucker <ken@pumastudios.com>
+	 * @return string HTML
 	 **/
 	function recipe_meta_html($section, $list)
 	{
-		echo '<div class="' . self::post_type . '-' . $section . '">';
+		$content = '<div class="' . self::post_type . '-' . $section . '">';
 		foreach (explode(',', $list) as $field) {
-			$this->recipe_field_html($field);
+			$content .= $this->recipe_field_html($field);
 		}
-		echo '</div>';			
+		$content .= '</div>';
+		
+		return $content;
 	}
 
 	/**
-	 * Emit the HTML for a named recipe field
+	 * Provide HTML for a named recipe field
 	 *
 	 * @uses $post When called within The Loop, $post will contain the data for the active post
-	 * @return void
+	 * @return string HTML
 	 **/
 	function recipe_field_html($field)
 	{
@@ -276,10 +272,12 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 				$value = '';
 		}
 
-		echo '<div class="' . self::prefix . $field . '">';
+		$content =  '<div class="' . self::prefix . $field . '">';
 		if (isset($value) && '' != $value)
-			echo $this->recipe_field_map[$field]['label'] . ': <span class="' . $field . '">' . $value . '</span>';
-		echo '</div>';
+			$content .= $this->recipe_field_map[$field]['label'] . ': <span class="' . $field . '">' . $value . '</span>';
+		$content .= '</div>';
+		
+		return $content;
 	}
 	
 	/**
