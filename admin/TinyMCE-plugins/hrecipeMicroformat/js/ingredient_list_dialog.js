@@ -91,23 +91,24 @@ var hrecipeIngredientListDialog = {
 		}
 		
 		// Create container div for the ingredient list
-		ingrdList = ed.dom.create('div', {'class': 'ingredients mceNonEditable', 'id': tmpID});
+		ingredients = ed.dom.create('div', {'class': 'ingredients mceNonEditable', 'id': tmpID});
 
 		// Add a Title if one provided
 		if ('' !== (val = jQuery('#ingrd-list-name').val())) {
 			val = val.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); // Sanitize user text
-			ingrdList.appendChild(ed.dom.create('h4', {'class': 'ingredients-title'}, val));
+			ingredients.appendChild(ed.dom.create('h4', {'class': 'ingredients-title'}, val));
 		}
 		
+		ingrdList = ed.dom.create('ul');
 		// For each row in the ingredients table, generate the target ingredient tags
 		$('tbody tr').each(function() {
 			var row = $(this);
-			var ingrdRow = ed.dom.create('div', {'class': 'ingredient'});
+			var ingrdRow = ed.dom.create('li', {'class': 'ingredient'});
 			$.each(['value', 'type', 'ingrd', 'comment'],function(index,attr){
 				if ('' !== (val = row.find('.' + attr).val())) {
 					val = val.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); // Sanitize user text
 					ingrdRow.appendChild(ed.dom.create('span', {'class': attr}, val));
-				}				
+				}
 			});
 			
 			// If at least one field specified, add to the result
@@ -115,19 +116,24 @@ var hrecipeIngredientListDialog = {
 				ingrdList.appendChild(ingrdRow);
 			}
 		}); // End processing ingredients table
+		
+		// If there's at least one list element, insert into the ingredients section
+		if (ingrdList.childElementCount > 0) {
+			ingredients.appendChild(ingrdList);
+		}
 
-		// If the new list has any content, insert at selection location
-		if (ingrdList.childElementCount > 0) { 
+		// If the new section has any content, insert at selection location
+		if (ingredients.childElementCount > 0) { 
 			
 			var n = ed.selection.getNode();
-			var oldIngrdList = ed.dom.getParent(n, '.ingredients');
-			if (oldIngrdList) {
+			var oldIngredients = ed.dom.getParent(n, '.ingredients');
+			if (oldIngredients) {
 				// Replace old with new - Change active selection to be the old div
-				ed.selection.select(oldIngrdList);
+				ed.selection.select(oldIngredients);
 			}
 
 			// Insert the new list
-			ed.selection.setNode(ingrdList);			
+			ed.selection.setNode(ingredients);			
 			
 			// Put editing controls onto the new list
 			n = ed.getDoc().getElementById(tmpID); // Find the new item using tmpID
