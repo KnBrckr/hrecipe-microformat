@@ -51,12 +51,13 @@
 			jQuery('body').bind('afterPreWpautop', function(e, o){
 				o.data = o.data
 					.replace(/<h3[\s\S]+?\[hrecipe_title\]<\/h3>/g, '[hrecipe_title]');
-			}).bind('beforeWpautop', function(e, o){
-				o.data = o.data
-					.replace(/\[hrecipe_title\]/,'<h3 class="fn mceNonEditable">[hrecipe_title]</h3>');
 			});
 			
-			//FIXME Need filter on new content to setup node with <h3> formatting for visual display
+			// When content is inserted, wrap [hrecipe_title] shortcode with <h3>
+			ed.onBeforeSetContent.add(function(ed, o) {
+				// Replaces all a characters with b characters
+				o.content = o.content.replace(/[^<div.*?>](\[hrecipe_title\])/,'<h3 class="fn mceNonEditable">$1</h3>');
+      });
 			
 			// // On content change, 
 			// ed.onChange.add(function(ed, l) {
