@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: hRecipe Microformat
-Plugin URI: http://action-a-day/hrecipe-microformat
+Plugin URI: http://action-a-day.com/hrecipe-microformat
 Description: TinyMCE add-in to supply hRecipe Microformat editing
 Version: 0.1
 Author: Kenneth J. Brucker

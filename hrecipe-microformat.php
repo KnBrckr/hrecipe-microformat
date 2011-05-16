@@ -3,6 +3,8 @@ if ( ! class_exists('hrecipe_microformat')) :
 
 if (!include_once('admin/options-class.php')) {
 	return false;
+	
+	// FIXME Allowing scripts to run in user input
 }
 
 class hrecipe_microformat extends hrecipe_microformat_options {

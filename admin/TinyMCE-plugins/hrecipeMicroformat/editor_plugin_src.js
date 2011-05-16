@@ -11,6 +11,7 @@
  */
 
 // TODO Syntax check for balanced shortcodes and mark any unbalanced in visual editor.
+// TODO Allow editor buttons to be manipulated by TinyMCE configuration panel
 
 (function() {	
 	// Load plugin specific language pack	
@@ -216,8 +217,8 @@
 				longname : 'hrecipe-microformat plugin',
 				author : 'Kenneth J. Brucker',
 				authorurl : 'http://action-a-day.com',
-				infourl : 'http://action-a-day.com/hrecipe-microformat', // FIXME setup home for the plugin
-				version : "0.5"
+				infourl : 'http://action-a-day.com/hrecipe-microformat',
+				version : "0.1"
 			};
 		}
 	});
