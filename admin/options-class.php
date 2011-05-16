@@ -26,6 +26,8 @@
 
 // TODO Setup Difficulty as 1-5 level - use more chef hats for harder.
 // TODO Add cuisine types - mexican, spanish, indian, etc.
+// TODO Change class name to reflect general admin usage
+// TODO 
 class hrecipe_microformat_options
 {
 	/**

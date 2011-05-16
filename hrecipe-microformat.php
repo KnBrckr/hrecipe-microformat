@@ -22,15 +22,17 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 		// Catch any posts that have a plugin supplied default template
 		// FIXME - use this? -> add_action('template_redirect', array(&$this, 'template_redirect'));
 		
-		// Add recipe meta data to the post content
-		add_filter('the_content', array(&$this, 'the_content'));
-
+		add_filter('wp_head', array(&$this, 'wp_head'));
+		
 		// Put recipes into the stream if requested in configuration
 		add_filter('pre_get_posts', array(&$this, 'pre_get_posts_filter'));
 		
 		// Update the post class as required
 		add_filter('post_class', array(&$this, 'post_class'));
 				
+		// Add recipe meta data to the post content
+		add_filter('the_content', array(&$this, 'the_content'));
+
 		// Register Plugin CSS
 		wp_register_style(self::prefix . 'style', self::$url . 'hrecipe.css');
 
@@ -44,19 +46,43 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 	}
 	
 	/**
-	 * Add recipe head and footer to post content
+	 * Use template from the plugin if one isn't available in the theme
 	 *
-	 * @param $content string post content
-	 * @return string Updated post content
+	 * @return void | Does not return if a matching template is located
 	 **/
-	function the_content($content)
+	function template_redirect()
 	{
-		$head = $this->recipe_meta_html('head', $this->options['recipe_head_fields']);
-		$footer = $this->recipe_meta_html('footer', $this->options['recipe_footer_fields']);
+		global $post;
 		
-		return $head . $content . $footer;
+		if (is_singular(self::post_type)) {
+			$template_name = 'single-';
+		} elseif (is_post_type_archive(self::post_type)) {
+			$template_name = 'archive-';
+		} else {
+			return;
+		}
+		$template_name .= get_post_type($post) . '.php';
+			
+		// Look for available template
+		$template = locate_template(array($template_name), true);
+		if (empty($template)) {
+			include(self::$dir . 'lib/template/' . $template_name);
+		}
+		exit();
 	}
-
+	
+	/**
+	 * Add bits to the header portion of the page
+	 *
+	 * @return void
+	 **/
+	function wp_head()
+	{
+		// Setup google font used in recipe ingredient lists
+		echo "<link href='http://fonts.googleapis.com/css?family=Indie+Flower' rel='stylesheet' type='text/css'>";
+		return;
+	}
+	
 	/**
 	 * Update the WP query to include additional post types as needed
 	 *
@@ -94,31 +120,19 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 	}
 	
 	/**
-	 * Use template from the plugin if one isn't available in the theme
+	 * Add recipe head and footer to post content
 	 *
-	 * @return void | Does not return if a matching template is located
+	 * @param $content string post content
+	 * @return string Updated post content
 	 **/
-	function template_redirect()
+	function the_content($content)
 	{
-		global $post;
+		$head = $this->recipe_meta_html('head', $this->options['recipe_head_fields']);
+		$footer = $this->recipe_meta_html('footer', $this->options['recipe_footer_fields']);
 		
-		if (is_singular(self::post_type)) {
-			$template_name = 'single-';
-		} elseif (is_post_type_archive(self::post_type)) {
-			$template_name = 'archive-';
-		} else {
-			return;
-		}
-		$template_name .= get_post_type($post) . '.php';
-			
-		// Look for available template
-		$template = locate_template(array($template_name), true);
-		if (empty($template)) {
-			include(self::$dir . 'lib/template/' . $template_name);
-		}
-		exit();
+		return $head . $content . $footer;
 	}
-	
+
 	/**
 	 * Prints HTML with meta information for the current post recipe (date/time and author.)
 	 *
