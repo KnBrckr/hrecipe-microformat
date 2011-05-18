@@ -25,6 +25,7 @@ License: GPL2
 
 FIXME Create widget for Recipe Categories - only allow one category to be selected
 TODO Provide mechanism to import recipes from external sources
+FIXME Enforce PHP version requirement
 */
 
 // Protect from direct execution
