@@ -31,43 +31,35 @@
 
 .ingredients {
 	clear: both;
-	width: 525px;
-	margin: 7px;
+	width: 625px;
+	margin: 0 25px;
 	padding: 5px;
 	border: black solid 1px;
 	font-family: 'Indie Flower', arial, serif;
 }
 
-.ingredients-title {
-	margin-left: 39px;
+.ingredients th {
+	border-bottom: rgb(255, 19, 0) solid 2px;
 }
 
-.ingredients .ingredient:first-child {
-	border-top: rgb(255, 19, 0) solid 2px;
-}
-
-.ingredients .ingredient {
-	margin-left: 25px;
-	list-style-type: square;
-	list-style-image: url("images/ingredient_16.png");
+tr.ingredient td, tr.ingredient:nth-child(2n) td {
+	background: none;
 	border-bottom: rgb(99, 195, 251) solid 1px;
 }
 
 .ingredient .value {
 	display: inline-block;
-	width: 20px;
+	padding-right: .5em;
 }
 .ingredient .type {
 	display: inline-block;
-	width: 50px;
 }
 .ingredient .ingrd {
 	display: inline-block;
-	margin-right: 7px;
+	padding-right: 1em;
 }
 .ingredient .comment {
 	display: inline-block;
-	width: 250px;
 	font-style: italic;
 }
 

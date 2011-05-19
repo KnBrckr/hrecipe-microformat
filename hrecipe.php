@@ -42,7 +42,7 @@ global $hrecipe_microformat;
  *		- meta-box class used to create new post type
  *		- Plugin options class
  **/		
-$required_libs = array('hrecipe-microformat.php');
+$required_libs = array('class-hrecipe-microformat.php');
 foreach ($required_libs as $lib) {
 	if (!include_once($lib)) {
 		hrecipe_microformat_error_log('Unable to load required library:  "' . $lib . '"');

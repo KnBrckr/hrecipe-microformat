@@ -1,13 +1,14 @@
 <?php
 if ( ! class_exists('hrecipe_microformat')) :
 
-if (!include_once('admin/options-class.php')) {
+if (!include_once('admin/class-admin.php')) {
 	return false;
 	
-	// FIXME Allowing scripts to run in user input
+	// FIXME Allowing javascripts to run in user input
+	// TODO Change self::prefix to use '-' as seperator?  shortcodes OK
 }
 
-class hrecipe_microformat extends hrecipe_microformat_options {
+class hrecipe_microformat extends hrecipe_microformat_admin {
 	/**
 	 * undocumented function
 	 *
@@ -20,29 +21,57 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 		add_action('init', array(&$this, 'wp_init'));
 	}
 	
+	/**
+	 * Executes during WP init phase
+	 *
+	 * @return void
+	 */
 	function wp_init() {
-		// Catch any posts that have a plugin supplied default template
-		// FIXME - use this? -> add_action('template_redirect', array(&$this, 'template_redirect'));
-		
-		add_filter('wp_head', array(&$this, 'wp_head'));
-		
 		// Put recipes into the stream if requested in configuration
 		add_filter('pre_get_posts', array(&$this, 'pre_get_posts_filter'));
 		
+		// Do template setup after posts have been loaded
+		add_action('wp', array(&$this, 'wp'));
+		
+		// Register Plugin CSS
+		wp_register_style(self::prefix . 'style', self::$url . 'hrecipe.css');
+	}
+	
+	/**
+	 * Setup actions, filters, etc. needed during template processing if recipes will be handled
+	 *
+	 * Executes after query has been parsed and posts are loaded and before template actions
+	 *
+	 * @return void
+	 **/
+	function wp()
+	{
+		// When query does not include recipes, not necessary to do the related processing
+		if ( ! ( is_singular(self::post_type) 
+						|| is_post_type_archive(self::post_type) 
+						|| (is_home() && $this->options['display_in_home']) 
+						|| (is_feed() && $this->options['display_in_feed'])) ) {
+			return;
+		}
+
+		// Include the plugin styling
+		wp_enqueue_style(self::prefix . 'style');
+				
+		// Catch any posts that have a plugin supplied default template
+		// FIXME - use this? -> add_action('template_redirect', array(&$this, 'template_redirect'));
+		
+		add_action('wp_head', array(&$this, 'wp_head'));
+		
 		// Update the post class as required
-		add_filter('post_class', array(&$this, 'post_class'));
+		if ($this->options['add_post_class']) {
+			add_filter('post_class', array(&$this, 'post_class'));			
+		}
 				
 		// Add recipe meta data to the post content
 		add_filter('the_content', array(&$this, 'the_content'));
 
-		// Register Plugin CSS
-		wp_register_style(self::prefix . 'style', self::$url . 'hrecipe.css');
-
-		// Include the plugin styling
-		wp_enqueue_style(self::prefix . 'style'); // TODO Move so that CSS only included to format recipes
-		
 		/*
-		 * Register shortcodes
+		 * Register plugin supported shortcodes
 		 */
 		add_shortcode(self::prefix . 'title', array(&$this, 'sc_title'));
 	}
@@ -65,7 +94,7 @@ class hrecipe_microformat extends hrecipe_microformat_options {
 		}
 		$template_name .= get_post_type($post) . '.php';
 			
-		// Look for available template
+		// Look for theme provided template
 		$template = locate_template(array($template_name), true);
 		if (empty($template)) {
 			include(self::$dir . 'lib/template/' . $template_name);

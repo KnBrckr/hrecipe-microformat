@@ -91,28 +91,41 @@ var hrecipeIngredientListDialog = {
 		}
 		
 		// Create container div for the ingredient list
-		ingredients = ed.dom.create('div', {'class': 'ingredients mceNonEditable', 'id': tmpID});
+		ingredients = ed.dom.create('table', {'class': 'ingredients mceNonEditable', 'id': tmpID});
 
-		// Add a Title if one provided
-		if ('' !== (val = jQuery('#ingrd-list-name').val())) {
-			val = val.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); // Sanitize user text
-			ingredients.appendChild(ed.dom.create('h4', {'class': 'ingredients-title'}, val));
-		}
+		// FIXME - <thead> is being jammed up by tinymce
+		// Add the section Title
+		val = jQuery('#ingrd-list-name').val().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); // Sanitize user text
+		val = val != '' ? val : '&nbsp;' ;
+		ingredients.appendChild(ed.dom.create('thead').appendChild(ed.dom.create('tr').appendChild(ed.dom.create('th', {'colspan': 2, 'class': 'ingredients-title'}, val))));
 		
-		ingrdList = ed.dom.create('ul');
+		ingrdList = ed.dom.create('tbody');
 		// For each row in the ingredients table, generate the target ingredient tags
 		$('tbody tr').each(function() {
-			var row = $(this);
-			var ingrdRow = ed.dom.create('li', {'class': 'ingredient'});
+			haveIngrd = false;
+			fields = new Array;
+			row = $(this);
+			ingrdRow = ed.dom.create('tr', {'class': 'ingredient'});
+			// FIXME Filter out empty rows
 			$.each(['value', 'type', 'ingrd', 'comment'],function(index,attr){
-				if ('' !== (val = row.find('.' + attr).val())) {
+				if ('' != (val = row.find('.' + attr).val())) {
 					val = val.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); // Sanitize user text
-					ingrdRow.appendChild(ed.dom.create('span', {'class': attr}, val));
+					haveIngrd = true;
 				}
+				// Generate SPAN for each component of ingredient row
+				fields[attr] = ed.dom.create('span', {'class': attr}, val);
 			});
-			
+
 			// If at least one field specified, add to the result
-			if (ingrdRow.childElementCount > 0) {
+			if (haveIngrd) {
+				td1 = ed.dom.create('td');
+				td1.appendChild(fields['value']);
+				td1.appendChild(fields['type']);
+				td2 = ed.dom.create('td');
+				td2.appendChild(fields['ingrd']);
+				td2.appendChild(fields['comment']);
+				ingrdRow.appendChild(td1);
+				ingrdRow.appendChild(td2);
 				ingrdList.appendChild(ingrdRow);
 			}
 		}); // End processing ingredients table
