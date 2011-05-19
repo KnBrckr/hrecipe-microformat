@@ -4,7 +4,6 @@ if ( ! class_exists('hrecipe_microformat')) :
 if (!include_once('admin/class-admin.php')) {
 	return false;
 	
-	// FIXME Allowing javascripts to run in user input
 	// TODO Change self::prefix to use '-' as seperator?  shortcodes OK
 }
 
@@ -287,6 +286,7 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 		switch ($this->recipe_field_map[$field]['format']) {
 			case 'text':  // default Post Meta Data
 				$value = get_post_meta($post->ID, self::prefix . $field, true);
+				$value = esc_html($value);
 				break;
 				
 			case 'tax': // Taxonomy data
@@ -306,11 +306,11 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 				break;
 			
 			case 'rating': // Recipe rating based on reader response
-				$value = '';  // FIXME Add rating module
+				$value = $this->recipe_rating_html($post->ID);
 				break;
 				
 			case 'nutrition': // Recipe nutrition as calculated from ingredients
-				$value = ''; // TODO Add nutrition calculation on save
+				$value = $this->nutrition_html($post->ID);
 				break;
 				
 			default:
@@ -318,11 +318,32 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 		}
 
 		$content =  '<div class="' . self::prefix . $field . '">';
-		if (isset($value) && '' != $value)
-			$content .= $this->recipe_field_map[$field]['label'] . ': <span class="' . $field . '">' . $value . '</span>';
+		$content .= $this->recipe_field_map[$field]['label'] . ': <span class="' . $field . '">' . $value . '</span>';
 		$content .= '</div>';
 		
 		return $content;
+	}
+	
+	/**
+	 * Generate HTML for recipe rating
+	 *
+	 * @return string HTML
+	 **/
+	function recipe_rating_html($post_id)
+	{
+		// FIXME Add rating module
+		return '';
+	}
+	
+	/**
+	 * Generate HTML for recipe nutrition block
+	 *
+	 * @return string HTML
+	 **/
+	function nutrition_html($post_id)
+	{
+		// TODO Add nutrition calculation on save		
+		return '';
 	}
 	
 	/**

@@ -868,7 +868,7 @@ class hrecipe_microformat_admin
 	 **/
 	function text_html($field, $value)
 	{
-		echo '<input type="text" name="' . $field . '" value="' . $value . '" />';
+		echo '<input type="text" name="' . $field . '" value="' . esc_html($value) . '" />';
 	}
 	
 	/**
