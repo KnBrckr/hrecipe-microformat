@@ -26,7 +26,6 @@
 
 // TODO Setup Difficulty as 1-5 level - use more chef hats for harder.
 // TODO Add cuisine types - mexican, spanish, indian, etc.
-// FIXME Meta data updates not saving
 
 class hrecipe_microformat_admin
 {
@@ -504,6 +503,9 @@ class hrecipe_microformat_admin
 	function info_metabox()
 	{
 		global $post;
+		
+		// Use nonce for verification
+		wp_nonce_field( plugin_basename(__FILE__), self::prefix . 'noncename' );
 		
 		// Create the editor metaboxes
 		// TODO Format metabox section
