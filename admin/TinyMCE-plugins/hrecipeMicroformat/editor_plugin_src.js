@@ -11,7 +11,7 @@
  */
 
 // TODO Syntax check for balanced shortcodes and mark any unbalanced in visual editor.
-// TODO Allow editor buttons to be manipulated by TinyMCE configuration panel
+// TODO Allow editor buttons to be manipulated by TinyMCE configuration panel(s)
 
 (function() {	
 	// Load plugin specific language pack	
@@ -27,6 +27,21 @@
 		 * @param {string} url Absolute URL to where the plugin is located.
 		 */
 		init : function(ed, url) {
+			// =============================
+			// = Shortcode editor handling =
+			// =============================
+			// When cursor is in a shortcode, select the entire node
+			// TODO Create generic method to handle atomic tags - use the atomic plugin?
+			shortcodeClasses = ['fn'];
+			ed.onNodeChange.add(function(ed, cm, n, co) {
+				tinymce.each(shortcodeClasses, function(v,i) {
+					if (ed.dom.hasClass(n, v)) {
+						ed.selection.select(n);
+						return;
+					}
+				});
+			});
+			
 			// ================
 			// = Recipe Title =
 			// ================
@@ -34,7 +49,7 @@
 			// Register the commands so that they can be invoked by using tinyMCE.activeEditor.execCommand('mceExample');
 			ed.addCommand('mceHrecipeTitle', function() {
 				if (jQuery(ed.dom.doc.documentElement).find('*:contains("[hrecipe_title]")').length === 0) {
-					title = ed.dom.create('h3',{'class':'fn mceNonEditable'},'[hrecipe_title]');
+					title = ed.dom.create('h3',{'class':'fn'},'[hrecipe_title]');
 					ed.selection.setNode(title);
 				} else {
 					alert(ed.getLang('hrecipeMicroformat.titlePresent'));
@@ -56,10 +71,10 @@
 			
 			// When content is inserted, wrap [hrecipe_title] shortcode with <h3>
 			ed.onBeforeSetContent.add(function(ed, o) {
-				// Replaces all a characters with b characters
-				o.content = o.content.replace(/[^<div.*?>](\[hrecipe_title\])/,'<h3 class="fn mceNonEditable">$1</h3>');
+				o.content = o.content.replace(/(\[hrecipe_title\])/,'<h3 class="fn">$1</h3>');
       });
 			
+
 			// // On content change, 
 			// ed.onChange.add(function(ed, l) {
 			//               console.debug('Editor contents was modified. Contents: ' + l.content);
@@ -121,43 +136,31 @@
 				var ingrds = ed.dom.select('.ingredients');
 				ed.execCommand('mceHrecipeSetupIngrdList', false, ingrds);
 			});
-			
-			// TODO Add & Remove the mceNonEditable class from ingredient list`
-			// TODO Implement Ingredients as shortcodes and edit content on switching editor modes for display
-
-			// When inside an ingredients list...
-			// ed.onNodeChange.add(function(ed, cm, n, co) {
-			// 	var ingrds = ed.dom.getParents(n, '.ingredients');
-			// 	if (ingrds.length > 0) {
-			// 		// Have an ingredients section - Is it already marked?
-			// 		var marked = ed.dom.select('.h-dblClickText', n);
-			// 		if (0 === marked.length) {
-			// 			ed.dom.remove(ed.dom.select('.h-dblClickText')); // Remove from elsewhere		
-			// 			ed.dom.add(ingrds, 'span', {'class': 'h-dblClickText'}, ed.getLang('hrecipeMicroformat.dblClick',0));
-			// 		}
-			// 	} else {
-			// 		ed.dom.remove(ed.dom.select('.h-dblClickText')); // Remove
-			// 	}
-			// });
-			
-			// TODO - Drag, drop lists as a unit. - Use jQuery?
-			// ed.onNodeChange.add(function(ed, cm, n, co) {
-			// 	jQuery(n).closest('.ingredients').each(function() {
-			// 		try {ed.selection.select(this);} catch(e) {}
-			// 	});
-			// });
-			
+						
 			// ================
 			// = Instructions =
 			// ================
 			
 			// FIXME Implement Instructions
+			// When switching to HTML editor, cleanup DIV content surrounding the instruction elements
+			//   - only want to display the shortcode
+			jQuery('body').bind('afterPreWpautop', function(e, o){
+				o.data = o.data
+					.replace(/<div[\s\S]+?\[(\/?)(instructions|step)\]<\/div>/g, '[$1$2]');
+			});
 			
+			// When content is inserted, wrap [hrecipe_title] shortcode with <h3>
+			ed.onBeforeSetContent.add(function(ed, o) {
+				// Replaces all a characters with b characters
+				o.content = o.content.replace(/\[(\/?)(instructions|step)\]/g,'<div class="clear">[$1$2]</div>');
+      });
+			
+							
 			// ========
 			// = Hint =
 			// ========
 			
-			// TODO Implement HINT as a shortcode
+			// TODO Implement HINT as a shortcode?
 			// Register the commands so that they can be invoked by using tinyMCE.activeEditor.execCommand('mceExample');
 			ed.addCommand('mceHrecipeHint', function() {
 				var n = ed.selection.getNode();
@@ -184,16 +187,10 @@
 				cm.setDisabled('hrecipeHint', co && n.nodeName != 'ASIDE');
 				cm.setActive('hrecipeHint', n.nodeName == 'ASIDE' && jQuery(n).hasClass('hrecipe-hint'));
 			});
-			
-			// ======================================
-			// = Next/Prev Step for fullscreen mode =
-			// ======================================
-			
-			// TODO Provide prev & next buttons for editing steps in full screen mode
 		}, // End init
 		
 		/**
-		 * Creates control instances based in the incomming name. This method is normally not
+		 * Creates control instances based in the incoming name. This method is normally not
 		 * needed since the addButton method of the tinymce.Editor class is a more easy way of adding buttons
 		 * but you sometimes need to create more complex controls like listboxes, split buttons etc then this
 		 * method can be used to create those.

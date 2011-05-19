@@ -545,9 +545,10 @@ class hrecipe_microformat_admin
 		
 		if ( defined('DOING_AUTOSAVE') && DOING_AUTOSAVE ) 
 			return $post_id;
-		
+			
 		// Confirm nonce field
-		if ( !wp_verify_nonce( $_POST[self::prefix . 'noncename'], plugin_basename(__FILE__) )) {
+		if ( !isset($_POST[self::prefix . 'noncename']) 
+				|| !wp_verify_nonce( $_POST[self::prefix . 'noncename'], plugin_basename(__FILE__) )) {
 			return $post_id;
 		}
 		

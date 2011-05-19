@@ -73,6 +73,9 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 		 * Register plugin supported shortcodes
 		 */
 		add_shortcode(self::prefix . 'title', array(&$this, 'sc_title'));
+		add_shortcode('instructions', array(&$this, 'sc_instructions'));
+		add_shortcode('step', array(&$this, 'sc_step'));
+		add_shortcode('instruction', array(&$this, 'sc_step'));  // Allow instruction shortcode as an alternate
 	}
 	
 	/**
@@ -355,6 +358,30 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 	{
 		global $post;
 		return '<div class="fn">' . get_post_meta($post->ID, self::prefix . 'fn', true). '</div>';
+	}
+	
+	/**
+	 * Generate HTML for the instructions shortcode
+	 * Example usage:  [instructions]Instruction Text[/instructions]
+	 *
+	 * @return string HTML
+	 **/
+	function sc_instructions($atts, $content = '')
+	{
+		$content = '<div class="instructions">' . do_shortcode($content) . '</div>';
+		return $content;
+	}
+	
+	/**
+	 * Generate HTML for the step shortcode
+	 * Example usage:  [step]An Instruction step[/step]
+	 *
+	 * @return string HTML
+	 **/
+	function sc_step($atts, $content = '')
+	{
+		$content = '<div class="instruction">' . do_shortcode($content) . '</div>';
+		return $content;
 	}
 	
 	/**
