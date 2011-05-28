@@ -91,13 +91,14 @@ var hrecipeIngredientListDialog = {
 		}
 		
 		// Create container div for the ingredient list
-		ingredients = ed.dom.create('table', {'class': 'ingredients mceNonEditable', 'id': tmpID});
+		var ingredients = ed.dom.create('table', {'class': 'ingredients mceNonEditable', 'id': tmpID});
 
-		// FIXME - <thead> is being jammed up by tinymce
 		// Add the section Title
 		val = jQuery('#ingrd-list-name').val().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); // Sanitize user text
 		val = val != '' ? val : '&nbsp;' ;
-		ingredients.appendChild(ed.dom.create('thead').appendChild(ed.dom.create('tr').appendChild(ed.dom.create('th', {'colspan': 2, 'class': 'ingredients-title'}, val))));
+		ingredients.appendChild(z=ed.dom.create('thead'));
+		z.appendChild(z=ed.dom.create('tr'));
+		z.appendChild(ed.dom.create('th', {'colspan': 2, 'class': 'ingredients-title'}, val));
 		
 		ingrdList = ed.dom.create('tbody');
 		// For each row in the ingredients table, generate the target ingredient tags

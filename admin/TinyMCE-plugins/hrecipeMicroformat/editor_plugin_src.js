@@ -141,7 +141,6 @@
 			// = Instructions =
 			// ================
 			
-			// FIXME Implement Instructions
 			// When switching to HTML editor, cleanup DIV content surrounding the instruction elements
 			//   - only want to display the shortcode
 			jQuery('body').bind('afterPreWpautop', function(e, o){
