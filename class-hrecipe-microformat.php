@@ -34,6 +34,10 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 		
 		// Register Plugin CSS
 		wp_register_style(self::prefix . 'style', self::$url . 'hrecipe.css');
+		
+		// Register jQuery UI plugin for Ratings
+		wp_register_script('jquery.ui.stars', self::$url . 'lib/jquery.ui.stars-3.0/jquery.ui.stars.min.js', array('jquery-ui-core', 'jquery-ui-widget'), '3.0.1');
+		wp_register_style('jquery.ui.stars', self::$url . 'lib/jquery.ui.stars-3.0/jquery.ui.stars.min.css', array(), '3.0.1');
 	}
 	
 	/**
@@ -55,6 +59,10 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 
 		// Include the plugin styling
 		wp_enqueue_style(self::prefix . 'style');
+		
+		// Include Ratings JS module
+		wp_enqueue_script('jquery.ui.stars');
+		wp_enqueue_style('jquery.ui.stars');
 				
 		add_action('wp_head', array(&$this, 'wp_head'));
 		
