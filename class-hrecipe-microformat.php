@@ -56,9 +56,6 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 		// Include the plugin styling
 		wp_enqueue_style(self::prefix . 'style');
 				
-		// Catch any posts that have a plugin supplied default template
-		// FIXME - use this? -> add_action('template_redirect', array(&$this, 'template_redirect'));
-		
 		add_action('wp_head', array(&$this, 'wp_head'));
 		
 		// Update the post class as required
@@ -76,32 +73,6 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 		add_shortcode('instructions', array(&$this, 'sc_instructions'));
 		add_shortcode('step', array(&$this, 'sc_step'));
 		add_shortcode('instruction', array(&$this, 'sc_step'));  // Allow instruction shortcode as an alternate
-	}
-	
-	/**
-	 * Use template from the plugin if one isn't available in the theme
-	 *
-	 * @return void | Does not return if a matching template is located
-	 **/
-	function template_redirect()
-	{
-		global $post;
-		
-		if (is_singular(self::post_type)) {
-			$template_name = 'single-';
-		} elseif (is_post_type_archive(self::post_type)) {
-			$template_name = 'archive-';
-		} else {
-			return;
-		}
-		$template_name .= get_post_type($post) . '.php';
-			
-		// Look for theme provided template
-		$template = locate_template(array($template_name), true);
-		if (empty($template)) {
-			include(self::$dir . 'lib/template/' . $template_name);
-		}
-		exit();
 	}
 	
 	/**

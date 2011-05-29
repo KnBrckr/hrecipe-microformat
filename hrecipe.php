@@ -23,9 +23,9 @@ License: GPL2
     along with this program; if not, write to the Free Software
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-FIXME Create widget for Recipe Categories - only allow one category to be selected
+TODO Create widget for Recipe Categories - only allow one category to be selected
 TODO Provide mechanism to import recipes from external sources
-FIXME Enforce PHP version requirement
+TODO Enforce PHP version requirement
 */
 
 // Protect from direct execution

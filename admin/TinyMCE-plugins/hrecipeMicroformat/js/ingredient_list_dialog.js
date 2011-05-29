@@ -93,7 +93,7 @@ var hrecipeIngredientListDialog = {
 		// Create container div for the ingredient list
 		var ingredients = ed.dom.create('table', {'class': 'ingredients mceNonEditable', 'id': tmpID});
 
-		// Add the section Title
+			// Add the section Title
 		val = jQuery('#ingrd-list-name').val().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); // Sanitize user text
 		val = val != '' ? val : '&nbsp;' ;
 		ingredients.appendChild(z=ed.dom.create('thead'));
@@ -107,7 +107,6 @@ var hrecipeIngredientListDialog = {
 			fields = new Array;
 			row = $(this);
 			ingrdRow = ed.dom.create('tr', {'class': 'ingredient'});
-			// FIXME Filter out empty rows
 			$.each(['value', 'type', 'ingrd', 'comment'],function(index,attr){
 				if ('' != (val = row.find('.' + attr).val())) {
 					val = val.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); // Sanitize user text
