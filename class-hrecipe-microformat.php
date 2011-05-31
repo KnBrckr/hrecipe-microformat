@@ -35,9 +35,16 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 		// Register Plugin CSS
 		wp_register_style(self::prefix . 'style', self::$url . 'hrecipe.css');
 		
+		// Register Plugin javascript
+		wp_register_script(self::prefix . 'js', self::$url . 'js/hrecipe.js', array('jquery'));
+		
 		// Register jQuery UI plugin for Ratings
 		wp_register_script('jquery.ui.stars', self::$url . 'lib/jquery.ui.stars-3.0/jquery.ui.stars.min.js', array('jquery-ui-core', 'jquery-ui-widget'), '3.0.1');
 		wp_register_style('jquery.ui.stars', self::$url . 'lib/jquery.ui.stars-3.0/jquery.ui.stars.min.css', array(), '3.0.1');
+		
+		// Setup AJAX handling for recipe ratings
+		add_action('wp_ajax_'. self::prefix .  'recipe_rating', array(&$this, 'ajax_recipe_rating'));
+		add_action('wp_ajax_nopriv_' . self::prefix . 'recipe_rating', array(&$this, 'ajax_recipe_rating'));
 	}
 	
 	/**
@@ -45,10 +52,13 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 	 *
 	 * Executes after query has been parsed and posts are loaded and before template actions
 	 *
+	 * @uses $post Post data
 	 * @return void
 	 **/
 	function wp()
 	{
+		global $post;
+		
 		// When query does not include recipes, not necessary to do the related processing
 		if ( ! ( is_singular(self::post_type) 
 						|| is_post_type_archive(self::post_type) 
@@ -57,13 +67,32 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 			return;
 		}
 
-		// Include the plugin styling
-		wp_enqueue_style(self::prefix . 'style');
-		
 		// Include Ratings JS module
 		wp_enqueue_script('jquery.ui.stars');
 		wp_enqueue_style('jquery.ui.stars');
+		
+		// Include JSON processing javascript module
+		wp_enqueue_script('json2');
 				
+		// Include the plugin styling
+		wp_enqueue_style(self::prefix . 'style');
+		
+		// Load plugin javascript
+		wp_enqueue_script(self::prefix . 'js');
+		
+		// declare the URL to the file that handles the AJAX request (wp-admin/admin-ajax.php)
+		wp_localize_script( 
+			self::prefix . 'js', 
+			'HrecipeMicroformat', 
+			array( 
+				'ajaxurl' => admin_url( 'admin-ajax.php' ),
+				'ratingAction' => self::prefix . 'recipe_rating',
+				'postID' => $post->ID,
+				'userRating' => self::user_rating($post->ID),
+				'ratingNonce' => wp_create_nonce(self::prefix . 'recipe-rating-nonce')
+			) 
+		);
+		
 		add_action('wp_head', array(&$this, 'wp_head'));
 		
 		// Update the post class as required
@@ -208,7 +237,7 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 	 *
 	 * @return string The URL to the author's recipe page.
 	 */
-	// FIXME Hook into author generation
+	// TODO Hook into author generation
 	function get_author_recipes_url($author_id, $author_nicename = '') {
 		global $wp_rewrite;
 		$auth_ID = (int) $author_id;
@@ -246,7 +275,7 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 	{
 		$content = '<div class="' . self::post_type . '-' . $section . '">';
 		foreach (explode(',', $list) as $field) {
-			$content .= $this->recipe_field_html($field);
+			$content .= $this->recipe_field_html($field, $section);
 		}
 		$content .= '</div>';
 		
@@ -257,9 +286,11 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 	 * Provide HTML for a named recipe field
 	 *
 	 * @uses $post When called within The Loop, $post will contain the data for the active post
+	 * @param $field recipe meta data field name
+	 * @param $section 'head' or 'footer'
 	 * @return string HTML
 	 **/
-	function recipe_field_html($field)
+	function recipe_field_html($field, $section)
 	{
 		global $post;
 		if (empty($this->recipe_field_map[$field]) || ! isset($this->recipe_field_map[$field]['format'])) return;
@@ -299,7 +330,7 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 				$value = '';
 		}
 
-		$content =  '<div class="' . self::prefix . $field . '">';
+		$content =  '<div class="' . self::post_type . '-' . $section . '-field ' . self::prefix . $field . '">';
 		$content .= $this->recipe_field_map[$field]['label'] . ': <span class="' . $field . '">' . $value . '</span>';
 		$content .= '</div>';
 		
@@ -307,14 +338,79 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 	}
 	
 	/**
-	 * Generate HTML for recipe rating
+	 * Generate HTML for recipe rating and provide method for user to vote
 	 *
+	 * @param $post_id
 	 * @return string HTML
 	 **/
 	function recipe_rating_html($post_id)
 	{
-		// FIXME Add rating module
-		return '';
+		// Get rating votes from meta data if available
+		$ratings = get_post_meta($post_id, self::prefix . 'ratings', true);
+		if ($ratings) {
+			$ratings = json_decode($ratings);
+			$avg = self::rating_avg($ratings);
+			$unrated = '';
+		} else {
+			$avg['avg'] = 0;
+			$avg['cnt'] = 0;
+			$unrated = ' unrated';
+		}
+
+		$content = '<div id="recipe-stars-' . $post_id . '" class="recipe-stars' . $unrated . '">';
+		$content .= '<div class="recipe-avg-rating">';
+		
+		// Display average # of stars
+		$stars_on_width = round($avg['avg']*16); // Stars are 16px wide, how many are turned on?
+		$content .= '<div class="recipe-stars-off"><div class="recipe-stars-on" style="width:' . $stars_on_width . 'px"></div></div>';
+		
+		// Text based display of average rating and vote count
+		$content .= sprintf('<span class="recipe-stars-avg">%.2f</span> (<span class="recipe-stars-cnt">%d</span> %s)', 
+			$avg['avg'], $avg['cnt'],  _n('vote','votes', $avg['cnt']));
+		$content .= '</div>';
+		
+		// In the event the recipe is unrated...
+		$content .= sprintf('<div class="recipe-unrated">%s</div>', __("Unrated", self::p));
+		
+		// Give user a way to rate the recipe		
+		$content .= '<form class="recipe-user-rating"><div>';
+		$content .= __('Your Rating: ', self::p) . '<select name="recipe-rating">';
+		$user_rating = self::user_rating($post_id);
+		for ($i=1; $i <= 5; $i++) {
+			$selected = ($user_rating == $i) ? 'selected' : ''; // Show user rating
+			$content .= '<option value="' . $i .'"'. $selected . '>' . sprintf(_n('%d star', '%d stars', $i, self::p), $i) . '</option>';
+		}
+		$content .= '</select><div class="thank-you">' . __('Thank you for your vote!', self::p) . '</div></div></form>';
+		$content .= '</div>'; // Close entire ratings div
+		return $content;
+	}
+	
+	/**
+	 * Retrieve the user rating for a recipe from cookies
+	 *
+	 * @return int rating value 0-5
+	 **/
+	function user_rating($post_id)
+	{
+		$index = 'recipe-rating-' . $post_id;
+		return isset($_COOKIE[$index]) ? $_COOKIE[$index] : 0;
+	}
+	
+	/**
+	 * Calculate a rating average from array of rating counts
+	 *
+	 * @return real Rating Average
+	 **/
+	function rating_avg($ratings)
+	{
+		$total = $sum_count = 0;
+		
+		foreach($ratings as $key => $count) {
+			$total += $key * $count;
+			$sum_count += $count;
+		}
+		
+		return array( 'avg' => $total / $sum_count, 'cnt' => $sum_count );
 	}
 	
 	/**
@@ -361,6 +457,60 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 	{
 		$content = '<div class="instruction">' . do_shortcode($content) . '</div>';
 		return $content;
+	}
+	
+	/**
+	 * Process AJAX request to rate recipes
+	 *
+	 * TODO If cookies can't be saved, don't allow voting by the user - use check for WP test cookie presence
+	 *
+	 * @author Kenneth J. Brucker <ken@pumastudios.com>
+	 **/
+	function ajax_recipe_rating()
+	{
+		$post_id = $_POST['postID'];
+		$rating = $_POST['rating'];
+		$prev_rating = $_POST['prevRating'];
+		$nonce = $_POST['ratingNonce'];
+		
+		if (! wp_verify_nonce($nonce, self::prefix . 'recipe-rating-nonce')) {
+			die( 'ajax_recipe_rating: Bad Nonce detected.');
+		}
+		
+		$ratings = get_post_meta($post_id, self::prefix . 'ratings', true);
+		if ($ratings) {
+			$ratings = json_decode($ratings, true);
+		} else {
+			$ratings = array( 1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0 );
+		}
+
+		// Adjust vote count for this user, remove old vote if previous value provided.
+		if (isset($ratings[$rating])) { $ratings[$rating]++; }
+		if ($prev_rating && isset($ratings[$prev_rating]) && $ratings[$prev_rating] > 0) {
+			$ratings[$prev_rating]--;
+		}
+		
+		$avg = self::rating_avg($ratings);
+		
+		// Save new ratings array for this post
+		$json_ratings = json_encode($ratings);
+		add_post_meta($post_id, self::prefix . 'ratings', $json_ratings, true) or update_post_meta($post_id, self::prefix . 'ratings', $json_ratings);
+		
+		// Save user rating for this recipe in a cookie (expires in 10 years)
+		setcookie('recipe-rating-' . $post_id, $rating, time()+60*60*24*365*10, COOKIEPATH, COOKIE_DOMAIN);
+
+		// response output
+		$response = json_encode(array(
+			'postID' => $post_id,
+			'avg' => $avg['avg'],
+			'cnt' => $avg['cnt'],
+			'userRating' => $rating,
+			'ratingNonce' => wp_create_nonce(self::prefix . 'recipe-rating-nonce'),
+		));
+		header( "Content-Type: application/json" );
+		echo $response;
+		
+		exit;
 	}
 	
 	/**

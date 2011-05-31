@@ -2,9 +2,6 @@
  * hrecipe admin javascript
  **/
 
-// counter to create unique ids based on 'hrecipe-tinymce' prefix
-var hrecipeTinymceId = 1;
-
 jQuery(document).ready( function($) {
 	// Make the recipe field sections sortable to configure head and footer contents
 	$('.recipe-fields').sortable(
@@ -49,20 +46,6 @@ jQuery(document).ready( function($) {
 			step.remove();			
 		}
 	});
-	
-		
-  // Use TinyMCE controls on metaboxes that request it.		
-	// if ( typeof( tinyMCE ) == "object" && typeof( tinyMCE.execCommand ) == "function" ) {
-	// 	$('.add-tinymce').each(function() {
-	// 		id = $(this).attr('id');
-	// 		if (!id) {
-	// 			// element has no id, put one on it
-	// 			id = 'hrecipe-tinymce-' . hrecipeTinymceId++;
-	// 			$(this).attr('id', id);
-	// 		}
-	// 		tinyMCE.execCommand("mceAddControl", false, id);			
-	//	});
-	//}
 });
 
 //

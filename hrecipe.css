@@ -20,11 +20,56 @@
 	padding: 3px;
 	margin: 0 20px;
 }
-.hrecipe-head div, .hrecipe-footer div {
+.hrecipe-head-field, .hrecipe-footer-field {
 	display: inline-block;
 	width: 30%;
 	padding: 3px;
 	margin: 3px;
+}
+
+/* ================= */
+/* = Recipe Rating = */
+/* ================= */
+
+/* Hide the stars select - stars displayed via javascript */
+.recipe-stars select {
+	display: none;
+}
+
+/* If javascript not available, can't vote on recipe rating */
+.nojs .recipe-user-rating {
+	display: none;
+}
+
+/* Rated Recipe */
+.recipe-stars-off, .recipe-stars-on {
+	position: relative;
+	height: 16px;
+	width: 80px;
+	background: url(lib/jquery.ui.stars-3.0/jquery.ui.stars.gif) repeat-x 0 -32px;
+}
+.recipe-stars-on {
+    position: absolute;
+    background-position: 0 -48px;
+}
+.recipe-stars .recipe-avg-rating {
+	display: inherit;
+}
+.recipe-stars .recipe-unrated {
+	display: none;
+}
+.recipe-stars .thank-you {
+	display: none;
+	position: absolute;
+	background: #ffffff;
+}
+
+/* Unrated Recipe */
+.recipe-stars.unrated .recipe-avg-rating {
+	display: none;
+}
+.recipe-stars.unrated .recipe-unrated {
+	display: inherit;
 }
 
 /* ================ */
