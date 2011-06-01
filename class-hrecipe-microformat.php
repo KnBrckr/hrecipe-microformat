@@ -81,6 +81,7 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 		wp_enqueue_script(self::prefix . 'js');
 		
 		// declare the URL to the file that handles the AJAX request (wp-admin/admin-ajax.php)
+		// FIXME Address ratings in feeds, archives and home page when multiple recipes can be displayed
 		wp_localize_script( 
 			self::prefix . 'js', 
 			'HrecipeMicroformat', 
