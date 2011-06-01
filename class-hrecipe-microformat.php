@@ -80,30 +80,32 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 		// Load plugin javascript
 		wp_enqueue_script(self::prefix . 'js');
 		
-		// declare the URL to the file that handles the AJAX request (wp-admin/admin-ajax.php)
-		// FIXME Address ratings in feeds, archives and home page when multiple recipes can be displayed
-		wp_localize_script( 
-			self::prefix . 'js', 
-			'HrecipeMicroformat', 
-			array( 
-				'ajaxurl' => admin_url( 'admin-ajax.php' ),
-				'ratingAction' => self::prefix . 'recipe_rating',
-				'postID' => $post->ID,
-				'userRating' => self::user_rating($post->ID),
-				'ratingNonce' => wp_create_nonce(self::prefix . 'recipe-rating-nonce')
-			) 
-		);
-		
 		add_action('wp_head', array(&$this, 'wp_head'));
 		
 		// Update the post class as required
 		if ($this->options['add_post_class']) {
 			add_filter('post_class', array(&$this, 'post_class'));			
 		}
-				
-		// Add recipe meta data to the post content
-		add_filter('the_content', array(&$this, 'the_content'));
 
+		// When displaying a single recipe, add the recipe header and footer content
+		if (is_single()) {
+			// declare the URL to the file that handles the AJAX request (wp-admin/admin-ajax.php)
+			wp_localize_script( 
+				self::prefix . 'js', 
+				'HrecipeMicroformat', 
+				array( 
+					'ajaxurl' => admin_url( 'admin-ajax.php' ),
+					'ratingAction' => self::prefix . 'recipe_rating',
+					'postID' => $post->ID,
+					'userRating' => self::user_rating($post->ID),
+					'ratingNonce' => wp_create_nonce(self::prefix . 'recipe-rating-nonce')
+				) 
+			);
+
+			// Add recipe meta data to the post content
+			add_filter('the_content', array(&$this, 'the_content'));			
+		}
+		
 		/*
 		 * Register plugin supported shortcodes
 		 */
