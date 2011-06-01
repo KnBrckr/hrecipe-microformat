@@ -36,8 +36,9 @@
 	display: none;
 }
 
+/* FIXME Detect no-javascript in plugin */
 /* If javascript not available, can't vote on recipe rating */
-.nojs .recipe-user-rating {
+.no-js .recipe-user-rating {
 	display: none;
 }
 
