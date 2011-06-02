@@ -9,22 +9,31 @@
 /* ================================ */
 /* = Recipe Header/Footer content = */
 /* ================================ */
-.hrecipe-head{
-	margin-top: 5px;
-}
-.hrecipe-footer {
-	margin-bottom: 5px;
-}
 .hrecipe-head, .hrecipe-footer {
 	border: 1px solid ;
 	padding: 3px;
-	margin: 0 20px;
+	margin: 5px 0;
 }
 .hrecipe-head-field, .hrecipe-footer-field {
 	display: inline-block;
 	width: 30%;
 	padding: 3px;
 	margin: 3px;
+}
+
+/* ===================== */
+/* = Recipe Difficulty = */
+/* ===================== */
+
+.recipe-difficulty-on, .recipe-difficulty-off {
+	position: relative;
+	height: 24px;
+	width: 120px; /* 5 x width of icon*/
+	background: url(images/icons.png) repeat-x;
+}
+.recipe-difficulty-on {
+	postion: absolute;
+	background-position: 0 -24px;
 }
 
 /* ================= */

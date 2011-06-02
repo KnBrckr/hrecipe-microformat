@@ -22,11 +22,11 @@ License: GPL2
     You should have received a copy of the GNU General Public License
     along with this program; if not, write to the Free Software
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-
-TODO Create widget for Recipe Categories - only allow one category to be selected
-TODO Provide mechanism to import recipes from external sources
-TODO Enforce PHP version requirement
 */
+
+// TODO Provide mechanism to import recipes from external sources
+// TODO Enforce PHP version requirement
+// TODO Enforce WP version requirement
 
 // Protect from direct execution
 if (!defined('WP_PLUGIN_DIR')) {
@@ -56,7 +56,7 @@ function hrecipe_microformat_error_log($msg) {
 	global $hrecipe_microformat_errors;
 
 	if ( ! is_array( $hrecipe_microformat_errors ) ) {
-		add_action('admin_footer', 'hrecipe_microformat_error_log_display'); // TODO Change to use notice
+		add_action('admin_footer', 'hrecipe_microformat_error_log_display'); // TODO Change to use WordPress Notice formatting
 		$hrecipe_microformat_errors = array();
 	}
 	

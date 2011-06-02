@@ -318,7 +318,7 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 				break;
 				
 			case 'difficulty': // Recipe difficulty
-				$value = get_post_meta($post->ID, self::prefix . $field, true);	  // FIXME
+				$value = $this->recipe_difficulty($post->ID);
 				break;
 			
 			case 'rating': // Recipe rating based on reader response
@@ -337,6 +337,21 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 		$content .= $this->recipe_field_map[$field]['label'] . ': <span class="' . $field . '">' . $value . '</span>';
 		$content .= '</div>';
 		
+		return $content;
+	}
+	
+	/**
+	 * undocumented function
+	 *
+	 * @return void
+	 * @author Kenneth J. Brucker <ken@pumastudios.com>
+	 **/
+	function recipe_difficulty($post_id)
+	{
+		$difficulty = get_post_meta($post_id, self::prefix . 'difficulty', true);
+		$content = '<div class="recipe-difficulty-off">';
+		$content .= '<div class="recipe-difficulty-on" style="width: ' . $difficulty * 24 . 'px"></div>';
+		$content .= '</div>';
 		return $content;
 	}
 	

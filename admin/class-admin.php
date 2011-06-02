@@ -24,8 +24,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  **/
 
-// TODO Setup Difficulty as 1-5 level - use more chef hats for harder.
 // TODO Add cuisine types - mexican, spanish, indian, etc.
+// TODO Create admin widget for Recipe Categories - only allow one category to be selected
+
 
 class hrecipe_microformat_admin
 {
@@ -138,10 +139,10 @@ class hrecipe_microformat_admin
 																'3' => __('Medium', self::p),
 																'5' => __('Hard', self::p),
 															),
-														 'format' => 'text'),
+														 'format' => 'difficulty'),
 			'rating'     => array( 'label' => __('Rating', self::p),
 														 'description' => __('Rating of the recipe out of five stars.', self::p),
-														 'metabox' => '', // TODO How is rating managed?
+														 'metabox' => '',
 														 'format' => 'rating'),
 			'category'   => array( 'label' => __('Category', self::p),
 														 'description' => __('Type of recipe', self::p),
@@ -779,7 +780,6 @@ class hrecipe_microformat_admin
 		// Build list of unused fields
 		$unused_fields = array();
 		foreach($this->recipe_field_map as $key => $row) {
-			// TODO Only allow a subset of the fields to be in header or footer
 			if (! in_array($key, $head_fields) && ! in_array($key, $footer_fields)) {
 				// Add unused fields to the list
 				array_push($unused_fields, $key); 
