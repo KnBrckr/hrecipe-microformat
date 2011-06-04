@@ -17,3 +17,35 @@
 	list-style-type: none;
 	float: left;
 }
+
+/* ======================= */
+/* = Recipe Info Metabox = */
+/* ======================= */
+
+#hrecipe_info p {
+	padding: 5px;
+	border: 1px solid #dfdfdf;
+	border-radius: 6px;
+}
+
+#hrecipe_info_fn input {
+	width: 70%;
+}
+
+#hrecipe_info .field-label {
+	width: 125px;
+	font-size: 130%;
+	display: inline-block;
+}
+
+#hrecipe_info .field-description {
+	display: block;
+	margin-left: 125px;
+}
+
+#hrecipe_info .radio-button {
+	margin-right: 15px;
+}
+#hrecipe_info .radio-button input {
+	margin-right: 5px;
+}

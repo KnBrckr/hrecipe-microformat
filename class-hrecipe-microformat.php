@@ -349,8 +349,14 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 	function recipe_difficulty($post_id)
 	{
 		$difficulty = get_post_meta($post_id, self::prefix . 'difficulty', true);
-		$content = '<div class="recipe-difficulty-off">';
-		$content .= '<div class="recipe-difficulty-on" style="width: ' . $difficulty * 24 . 'px"></div>';
+		$description = $this->recipe_field_map['difficulty']['option_descriptions'][$difficulty] | '';
+		
+		// Microformat encoding of difficulty (x out of 5)
+		$content = '<span class="value-title" title="' . $difficulty . '/5"></span>';
+		
+		// Display difficulty graphically - Difficulty array is 0 based
+		$content .= '<div class="recipe-difficulty-off" title="' . $description . '">';
+		$content .= '<div class="recipe-difficulty-on recipe-difficulty-' . $difficulty . '"></div>';
 		$content .= '</div>';
 		return $content;
 	}
@@ -374,8 +380,11 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 			$avg['cnt'] = 0;
 			$unrated = ' unrated';
 		}
+		
+		// Microformat encoding of the recipe rating (x out of 5)
+		$content = '<span class="value-title" title="' . $avg['avg'] . '/5"></span>';
 
-		$content = '<div id="recipe-stars-' . $post_id . '" class="recipe-stars' . $unrated . '">';
+		$content .= '<div id="recipe-stars-' . $post_id . '" class="recipe-stars' . $unrated . '">';
 		$content .= '<div class="recipe-avg-rating">';
 		
 		// Display average # of stars

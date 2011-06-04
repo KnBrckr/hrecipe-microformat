@@ -97,6 +97,13 @@ class hrecipe_microformat_admin
 	protected $recipe_field_map;
 	
 	/**
+	 * Description text for each level of recipe difficulty
+	 *
+	 * @var array of strings 
+	 **/
+	protected $difficulty_description;
+	
+	/**
 	 * Setup plugin defaults and register with WordPress for use in Admin screens
 	 **/
 	function setup()
@@ -135,9 +142,18 @@ class hrecipe_microformat_admin
 														 'id' => self::prefix . 'difficulty',
 														 'metabox' => 'info',
 														 'options' => array(
-																'1' => __('Easy', self::p),
-																'3' => __('Medium', self::p),
-																'5' => __('Hard', self::p),
+																'1' => __('Basic', self::p),
+																'2' => __('Easy', self::p),
+																'3' => __('Average', self::p),
+																'4' => __('Hard', self::p),
+																'5' => __('Challenging', self::p)
+															),
+															'option_descriptions' => array(
+																'1' => __('Basic recipe with a few common ingredients, no alcohol, a few simple steps and no heat source required.  This is a safe recipe that can be done by children with limited assistance.', self::p),
+																'2' => __('Easy recipe with easy to find ingredients and a small number of steps that might contain alcohol and may require a heat source.  The recipe might be able to be made by older children and is generally appropriate for someone with little cooking experience.', self::p),
+																'3' => __('Average difficulty that might require some skills (chopping, dicing, slicing, measuring, small appliances, etc.).  Ingredients are available to most home cooks at their local grocery store.  Cooking time is usually no more than about an hour.', self::p),
+																'4' => __('Above Average recipes might contain harder to find ingredients (specialty stores), advanced cooking techniques or unusual tools not found in the typical home kitchen.  Some recipes in this category might use basic ingredients while requiring advanced techniques or special tools.  These recipes might have significantly more preparation steps, longer processes or difficult assembly steps.', self::p),
+																'5' => __('These are challenging recipes, particularly for the home cook.  Special techniques or tools might be required and recipes might contain multiple hard to find ingredients.', self::p)
 															),
 														 'format' => 'difficulty'),
 			'rating'     => array( 'label' => __('Rating', self::p),
@@ -509,26 +525,22 @@ class hrecipe_microformat_admin
 		wp_nonce_field( plugin_basename(__FILE__), self::prefix . 'noncename' );
 		
 		// Create the editor metaboxes
-		// TODO Format metabox section
-		foreach ($this->recipe_field_map as $field) {
+		foreach ($this->recipe_field_map as $key => $field) {
 			// Include 'info' fields in this metabox
 			if ('info' == $field['metabox']) {
 				$value = get_post_meta($post->ID, $field['id'], true) | '';
-				echo '<label>' . $field['label'];				
+				echo '<p id="' . self::prefix . 'info_' . $key . '"><label><span class="field-label">' . $field['label'] . '</span>';
 				switch ($field['type']) {
 					case 'text':
 						self::text_html($field['id'], $value);
 						break;
 					
 					case 'radio':
-						self::radio_html($field['id'], $field['options'], $value);
+						self::radio_html($field['id'], $field['options'], $field['option_descriptions'], $value);
 						break;
-						
-					default:
-						echo "a field<br>";
 				}
-				if (isset($field['description'])) echo '<span>' . $field['description'] . '</span>';
-				echo '</label>';				
+				if (isset($field['description'])) echo '<span class="field-description">' . $field['description'] . '</span>';
+				echo '</label></p>';
 			}
 		} // End foreach
 	}
@@ -877,14 +889,16 @@ class hrecipe_microformat_admin
 	 *
 	 * @param string $field Name of field
 	 * @param array $options array of value=>label pairs for radio button option
+	 * @param array $option_descr array of value=>option descriptions for each radio button option
 	 * @param string $value Default value for selected radio button
 	 * @return void
 	 **/
-	function radio_html($field, $options, $value)
+	function radio_html($field, $options, $option_descr, $value)
 	{
 		foreach ($options as $key => $option) {
 			$checked = ($value == $key) ? ' checked' : '';
-			echo '<input type="radio" name="'. $field . '" value="'. $key . '"' . $checked . ' />' . $option ;			
+			$descr = isset($option_descr[$key]) ? $option_descr[$key] : '';
+			echo '<span class="radio-button" title="'. $descr . '"><input type="radio" name="'. $field . '" value="'. $key . '"' . $checked . ' />' . $option . '</span>';	
 		}
 	}
 	

@@ -27,6 +27,8 @@ License: GPL2
 // TODO Provide mechanism to import recipes from external sources
 // TODO Enforce PHP version requirement
 // TODO Enforce WP version requirement
+// TODO Create widget to display recipe meta data to user, will need printing option as well
+// TODO Modify recipe meta header to float left
 
 // Protect from direct execution
 if (!defined('WP_PLUGIN_DIR')) {
