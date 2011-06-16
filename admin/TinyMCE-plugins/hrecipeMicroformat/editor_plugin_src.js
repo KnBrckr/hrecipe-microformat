@@ -141,18 +141,18 @@
 			// = Instructions =
 			// ================
 			
-			// When switching to HTML editor, cleanup DIV content surrounding the instruction elements
-			//   - only want to display the shortcode
-			jQuery('body').bind('afterPreWpautop', function(e, o){
-				o.data = o.data
-					.replace(/<div[\s\S]+?\[(\/?)(instructions|step)\]<\/div>/g, '[$1$2]');
-			});
-			
-			// When content is inserted, wrap [hrecipe_title] shortcode with <h3>
-			ed.onBeforeSetContent.add(function(ed, o) {
-				// Replaces all a characters with b characters
-				o.content = o.content.replace(/\[(\/?)(instructions|step)\]/g,'<div class="clear">[$1$2]</div>');
-      });
+			// // When switching to HTML editor, cleanup DIV content surrounding the instruction elements
+			// //   - only want to display the shortcode
+			// jQuery('body').bind('afterPreWpautop', function(e, o){
+			// 	o.data = o.data
+			// 		.replace(/<div[\s\S]+?\[(\/?)(instructions|step)\]<\/div>/g, '[$1$2]');
+			// });
+			// 
+			// // When content is inserted, wrap [hrecipe_title] shortcode with <h3>
+			// ed.onBeforeSetContent.add(function(ed, o) {
+			// 	// Replaces all a characters with b characters
+			// 	o.content = o.content.replace(/\[(\/?)(instructions|step)\]/g,'<div class="clear">[$1$2]</div>');
+			//       });
 			
 							
 			// ========

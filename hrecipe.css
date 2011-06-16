@@ -1,10 +1,6 @@
-.hrecipe, .fn, .recipeid, .ingredient, .comment, .yield, .instructions, .instruction, .duration, .preptime, .cooktime, .summary, .author, .published, .category, .difficulty {
-
-}
-
-.value, .type {
-	
-}
+/**
+ * 
+ **/
 
 /* ================================ */
 /* = Recipe Header/Footer content = */
@@ -61,7 +57,6 @@
 	display: none;
 }
 
-/* FIXME Detect no-javascript in plugin */
 /* If javascript not available, can't vote on recipe rating */
 .no-js .recipe-user-rating {
 	display: none;

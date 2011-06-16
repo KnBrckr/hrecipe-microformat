@@ -8,7 +8,7 @@ Author: Kenneth J. Brucker
 Author URI: http://action-a-day.com
 License: GPL2
 
-    Copyright 2011  Kenneth J. Brucker  (email : ken@pumastudios.com)
+    Copyright 2011  Kenneth J. Brucker  (email : ken.brucker@action-a-day.com)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License, version 2, as 
@@ -24,9 +24,8 @@ License: GPL2
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+// TODO Get copyright notice into all files
 // TODO Provide mechanism to import recipes from external sources
-// TODO Enforce PHP version requirement
-// TODO Enforce WP version requirement
 // TODO Create widget to display recipe meta data to user, will need printing option as well
 // TODO Modify recipe meta header to float left
 
@@ -80,6 +79,6 @@ function hrecipe_microformat_error_log_display() {
 register_activation_hook( __FILE__, array('hrecipe_microformat', 'plugin_activation'));
 
 // Setup plugin de-activation function to cleanup rewrite rules
-register_activation_hook(__FILE__, array('hrecipe_microformat', 'plugin_deactivation'));
+register_deactivation_hook(__FILE__, array('hrecipe_microformat', 'plugin_deactivation'));
 
 ?>

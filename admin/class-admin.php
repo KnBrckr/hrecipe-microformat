@@ -26,7 +26,7 @@
 
 // TODO Add cuisine types - mexican, spanish, indian, etc.
 // TODO Create admin widget for Recipe Categories - only allow one category to be selected
-
+// TODO Phone-home with error log
 
 class hrecipe_microformat_admin
 {
@@ -1117,6 +1117,7 @@ class hrecipe_microformat_admin
 	
 	/**
 	 * Log an error message for display
+	 * TODO Support the WP Debug Bar Plugin
 	 **/
 	function debug_log($msg)
 	{
@@ -1145,7 +1146,7 @@ class hrecipe_microformat_admin
 	function log_err($msg)
 	{
 		error_log(self::p . ": " . $msg);
-		$this->options['debug_log']($msg);
+		$this->debug_log($msg);
 	}
 } // END class 
 ?>

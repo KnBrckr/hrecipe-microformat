@@ -10,9 +10,15 @@
 }
 .ingredients, .instructions, .hrecipe-hint {
 	border: 1px red solid;
+	clear: both;
 }
 
-.ingredients {
+/*.step {
+	clear: both;
+}
+*/
+
+.alignleft {
 	clear: both;
 }
 

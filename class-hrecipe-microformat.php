@@ -9,9 +9,19 @@ if (!include_once('admin/class-admin.php')) {
 
 class hrecipe_microformat extends hrecipe_microformat_admin {
 	/**
-	 * undocumented function
+	 * Minimum version of WordPress required by plugin
+	 **/
+	const wp_version_required = '3.1';
+	
+	/**
+	 * Minimum version of PHP required by the plugin
+	 **/
+	const php_version_required = '5.2.7';
+	
+	/**
+	 * Class contructor
 	 *
-	 * @author Kenneth J. Brucker <ken@pumastudios.com>
+	 * Call the parent class setup and init the module during wp_init phase
 	 */
 	
 	function __construct() {
@@ -66,7 +76,7 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 						|| (is_feed() && $this->options['display_in_feed'])) ) {
 			return;
 		}
-
+		
 		// Include Ratings JS module
 		wp_enqueue_script('jquery.ui.stars');
 		wp_enqueue_style('jquery.ui.stars');
@@ -82,6 +92,12 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 		
 		add_action('wp_head', array(&$this, 'wp_head'));
 		
+		// During handling of header in the body ...
+		add_action('get_header', array(&$this, 'get_header'));
+		
+		// Update classes applied to <body> element
+		add_filter('body_class', array (&$this, 'body_class'),10,2);
+
 		// Update the post class as required
 		if ($this->options['add_post_class']) {
 			add_filter('post_class', array(&$this, 'post_class'));			
@@ -125,6 +141,43 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 		// Setup google font used in recipe ingredient lists
 		echo "<link href='http://fonts.googleapis.com/css?family=Indie+Flower' rel='stylesheet' type='text/css'>";
 		return;
+	}
+	
+	/**
+	 * Add plugin defined classes to body
+	 *
+	 * Update body class to flag as no-js.  If javascript is available, the class will be cleared.
+	 * The filter is called after WP has added contents of $class to the $classes array.
+	 *
+	 * @param array $classes Array of classes defined for <body>
+	 * @param string|array $class String or array of classes to be added to class array
+	 * @return array Updated class Array
+	 */
+	function body_class($classes, $class) {
+		if (! in_array('no-js', $classes)) {
+			// Add no-js to class list if not already there
+			$classes[] = "no-js";	
+		}
+		return $classes;
+	}
+	
+	/**
+	 * Plugin processing during the header section of the body element.
+	 * - Add javascript to remove 'no-js' class when javascript is available
+	 *
+	 * @param $name Optional name of header template to use (header-$name.php)
+	 * @return void
+	 * @author Kenneth J. Brucker <ken@pumastudios.com>
+	 **/
+	function get_header($name = null)
+	{
+		?>
+		<script>
+			// If javascript can run, remove the no-js class from the body
+			var el = document.getElementsByTagName('body')[0];  
+			el.className = el.className.replace('no-js','');
+		</script>
+		<?php
 	}
 	
 	/**
@@ -542,13 +595,25 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 	
 	/**
 	 * Perform Plugin Activation handling
-	 *	* Start fresh with re-write rules 
-	 *	* Populate the plugin taxonomies with defaults
+	 *  * Confirm that plugin environment requirements are met
+	 *	* Run parent class activation
 	 *
 	 * @return void
 	 **/
 	public static function plugin_activation()
 	{
+		global $wp_version;
+		
+		// Enforce minimum PHP version requirements
+		if (version_compare(self::php_version_required, phpversion(), '>')) {
+			die(self::p . ' plugin requires minimum PHP v' . self::php_version_required . '.  You are running v' . phpversion());
+		}
+		
+		// Enforce minimum WP version
+		if (version_compare(self::wp_version_required, $wp_version, '>')) {
+			die(self::p . ' plugin requires minimum WordPress v' . self::wp_version_required . '.  You are running v' . $wp_version);
+		}
+		
 		parent::on_activation();
 	}
 	
