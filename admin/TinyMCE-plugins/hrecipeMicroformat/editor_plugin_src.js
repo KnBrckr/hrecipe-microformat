@@ -1,14 +1,33 @@
 /**
- * editor_plugin_src.js
+ * Plugin to manage hrecipe format in TinyMCE
  *
- * Copyright 2011, Kenneth J. Brucker
+ * @package hRecipe Microformat
+ * @author Kenneth J. Brucker <ken@pumastudios.com>
+ * @copyright 2011 Kenneth J. Brucker (email: ken@pumastudios.com)
+ * 
+ * This file is part of hRecipe Microformat, a plugin for Wordpress.
+ *
+ * Copyright 2011  Kenneth J. Brucker  (email : ken@pumastudios.com)
  *
  * Copyright 2009, Moxiecode Systems AB
  * Released under LGPL License.
  *
  * License: http://tinymce.moxiecode.com/license
  * Contributing: http://tinymce.moxiecode.com/contributing
- */
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License, version 2, as 
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ **/
 
 // TODO Syntax check for balanced shortcodes and mark any unbalanced in visual editor.
 // TODO Allow editor buttons to be manipulated by TinyMCE configuration panel(s)
