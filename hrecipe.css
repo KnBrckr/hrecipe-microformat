@@ -136,10 +136,12 @@
 
 .ingredients th {
 	border-bottom: rgb(255, 19, 0) solid 2px;
+	background: inherit;
+	height: 2em;
 }
 
 tr.ingredient td, tr.ingredient:nth-child(2n) td {
-	background: none;
+	background: inherit;
 	border-bottom: rgb(99, 195, 251) solid 1px;
 }
 
