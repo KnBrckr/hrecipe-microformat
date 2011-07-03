@@ -120,10 +120,11 @@ var hrecipeIngredientListDialog = {
 
 			// Add the section Title
 		val = jQuery('#ingrd-list-name').val().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); // Sanitize user text
-		val = val != '' ? val : '&nbsp;' ;
+//		val = val != '' ? val : '&nbsp;' ;
 		ingredients.appendChild(z=ed.dom.create('thead'));
 		z.appendChild(z=ed.dom.create('tr'));
-		z.appendChild(ed.dom.create('th', {'colspan': 2, 'class': 'ingredients-title'}, val));
+		z.appendChild(z=ed.dom.create('th', {'colspan': 2}));
+		z.appendChild(ed.dom.create('span', {'class': 'ingredients-title'}, val));
 		
 		ingrdList = ed.dom.create('tbody');
 		// For each row in the ingredients table, generate the target ingredient tags
