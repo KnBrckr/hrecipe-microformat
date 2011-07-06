@@ -115,15 +115,16 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 		
 		// Load plugin javascript
 		wp_enqueue_script(self::prefix . 'js');
-		
+
+		// During handling of the header ...
 		add_action('wp_head', array(&$this, 'wp_head'));
-		
-		// During handling of header in the body ...
-		add_action('get_header', array(&$this, 'get_header'));
 		
 		// Update classes applied to <body> element
 		add_filter('body_class', array (&$this, 'body_class'),10,2);
 
+		// During handling of footer in the body ...
+		add_action('wp_footer', array(&$this, 'wp_footer'));
+		
 		// Update the post class as required
 		if ($this->options['add_post_class']) {
 			add_filter('post_class', array(&$this, 'post_class'));			
@@ -188,14 +189,12 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 	}
 	
 	/**
-	 * Plugin processing during the header section of the body element.
+	 * Plugin processing in the footer section of the body element.
 	 * - Add javascript to remove 'no-js' class when javascript is available
 	 *
-	 * @param $name Optional name of header template to use (header-$name.php)
 	 * @return void
-	 * @author Kenneth J. Brucker <ken@pumastudios.com>
 	 **/
-	function get_header($name = null)
+	function wp_footer()
 	{
 		?>
 		<script>

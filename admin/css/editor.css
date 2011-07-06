@@ -29,15 +29,10 @@
 	font-size: .5em;
 	color: red;	
 }
-.ingredients, .instructions, .hrecipe-hint {
+.ingredients, .instructions, .hrecipe-hint, .step {
 	border: 1px red solid;
 	clear: both;
 }
-
-/*.step {
-	clear: both;
-}
-*/
 
 .alignleft {
 	clear: both;
@@ -59,6 +54,6 @@
 .hrecipe-hint:before {
 	content: "{Hint}";
 }
-.instructions .step:before {
+.step:before {
 	content: "{Step}";
 }

@@ -598,15 +598,33 @@ class hrecipe_microformat_admin
 	/**
 	 * Configure tinymce
 	 *
+	 * TinyMCE Filters:
+	 *  mce_external_plugins - Adds plugins to tinymce init handling
+	 *  mce_buttons_x - Add buttons to a button row
+	 *  mce_css - Applies style sheets to tinymce config
+	 *  tiny_mce_before_init - modify tinymce init array
+	 *
 	 * @return void
 	 **/
 	function configure_tinymce()
 	{
+	   // Don't bother doing this stuff if the current user lacks permissions
+	   if ( ! current_user_can('edit_posts') && ! current_user_can('edit_pages') )
+	     return;
+
+		// Add only in Rich Editor mode
+		if ( get_user_option('rich_editing') != 'true')
+			return;
+
+		// Setup the TinyMCE buttons
+    add_filter('mce_external_plugins', array(&$this, 'add_tinymce_plugins'));
+    add_filter('mce_buttons_3', array(&$this, 'register_buttons'));
+
 		// Add editor stylesheet
 		add_filter( 'mce_css', array( &$this, 'add_tinymce_css' ) );
 		
-		// Setup the TinyMCE buttons
-		self::add_buttons();
+		// Add custom styles
+		add_filter( 'tiny_mce_before_init', array(&$this, 'tinymce_init_array'));
 	}
 	
 	/**
@@ -912,21 +930,9 @@ class hrecipe_microformat_admin
 		echo '<input type="hidden" name="' . self::settings . '[' . $field . ']" value="' . $value . '">';
 	}
 	
-	function add_buttons() {
-	   // Don't bother doing this stuff if the current user lacks permissions
-	   if ( ! current_user_can('edit_posts') && ! current_user_can('edit_pages') )
-	     return;
- 
-	   // Add only in Rich Editor mode
-	   if ( get_user_option('rich_editing') == 'true') {
-	     add_filter('mce_external_plugins', array(&$this, 'add_tinymce_plugins'));
-	     add_filter('mce_buttons_3', array(&$this, 'register_buttons'));
-	   }
-	}
- 
 	function register_buttons($buttons) {
-	   array_push($buttons, 'hrecipeTitle', 'hrecipeIngredientList', 'hrecipeHint');
-	// TODO 'hrecipeIngredient', Instruction...
+	   array_push($buttons, 'hrecipeTitle', 'hrecipeIngredientList');
+	// TODO 'hrecipeIngredient', 'hrecipeInstructions'
 	   return $buttons;
 	}
  
@@ -960,6 +966,7 @@ class hrecipe_microformat_admin
 		
 		return false;
 	}
+	
 	/**
 	 * Add plugin CSS to tinymce
 	 *
@@ -970,6 +977,28 @@ class hrecipe_microformat_admin
 		$mce_css .= self::$url . 'admin/css/editor.css';
 		$mce_css .= ',' . self::$url . 'admin/css/jquery-ui.css';
 		return $mce_css; 
+	}
+	
+	/**
+	 * Add plugin styles to tinymce
+	 *
+	 * Called prior to tinymce init to modify tinymce init parameters
+	 *
+	 * @return void
+	 **/
+	function tinymce_init_array($initArray)
+	{
+		// Preserve formats set by other plugs
+		$style_formats = isset($initArray['style_formats']) ? json_decode($initArray['style_formats']) : array();
+		
+		// Recipe Instruction Steps
+		$style_formats[] = array('title' => 'Step', 'block' => 'div', 'wrapper' => true, 'classes' => 'step', 'exact' => true);
+		
+		// Recipe Hints
+		$style_formats[] = array('title' => 'Hint', 'block' => 'aside', 'classes' => 'hrecipe-hint');
+		
+		$initArray['style_formats'] = json_encode($style_formats);
+		return $initArray;
 	}
 		
 	/**

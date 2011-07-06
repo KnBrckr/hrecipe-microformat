@@ -160,7 +160,7 @@ tr.ingredient td, tr.ingredient:nth-child(2n) td {
 /* ================ */
 /* = Instructions = */
 /* ================ */
-.instruction {
+.step {
 	clear: both;
 }
 

@@ -29,7 +29,6 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  **/
 
-// TODO Syntax check for balanced shortcodes and mark any unbalanced in visual editor.
 // TODO Allow editor buttons to be manipulated by TinyMCE configuration panel(s)
 
 (function() {	
@@ -50,7 +49,6 @@
 			// = Shortcode editor handling =
 			// =============================
 			// When cursor is in a shortcode, select the entire node
-			// TODO Create generic method to handle atomic tags - use the atomic plugin?
 			shortcodeClasses = ['fn'];
 			ed.onNodeChange.add(function(ed, cm, n, co) {
 				tinymce.each(shortcodeClasses, function(v,i) {
@@ -156,55 +154,6 @@
 				ed.execCommand('mceHrecipeSetupIngrdList', false, ingrds);
 			});
 						
-			// ================
-			// = Instructions =
-			// ================
-			
-			// // When switching to HTML editor, cleanup DIV content surrounding the instruction elements
-			// //   - only want to display the shortcode
-			// jQuery('body').bind('afterPreWpautop', function(e, o){
-			// 	o.data = o.data
-			// 		.replace(/<div[\s\S]+?\[(\/?)(instructions|step)\]<\/div>/g, '[$1$2]');
-			// });
-			// 
-			// // When content is inserted, wrap [hrecipe_title] shortcode with <h3>
-			// ed.onBeforeSetContent.add(function(ed, o) {
-			// 	// Replaces all a characters with b characters
-			// 	o.content = o.content.replace(/\[(\/?)(instructions|step)\]/g,'<div class="clear">[$1$2]</div>');
-			//       });
-			
-							
-			// ========
-			// = Hint =
-			// ========
-			
-			// TODO Implement HINT as a shortcode?
-			// Register the commands so that they can be invoked by using tinyMCE.activeEditor.execCommand('mceExample');
-			ed.addCommand('mceHrecipeHint', function() {
-				var n = ed.selection.getNode();
-				hint = jQuery(n).closest('.hrecipe-hint');
-				if (hint.length > 0) {
-					// In a hint section... remove the aside tags
-					hint.closest('div').replaceWith(hint.html()); // closest() to work around tinymce defect
-				} else {
-					// TODO Ideally want to use only an ASIDE tag here, but tinymce is adding "&nbsp;" text around it.
-					//      When the DIV is removed, also remove the closest() portion from replaceWith above
-					ed.execCommand('mceReplaceContent', false, '<DIV><ASIDE  CLASS="hrecipe-hint">{$selection}</ASIDE></DIV>');
-				}				
-			});
-
-			// Register buttons
-			ed.addButton('hrecipeHint', {
-				title : 'hrecipeMicroformat.hintDesc',
-				cmd : 'mceHrecipeHint',
-				image : url + '/img/hrecipeHint.gif'
-			});
-			
-			// Add a node change handler, selects the button in the UI when in an aside or text is selected
-			ed.onNodeChange.add(function(ed, cm, n, co) {
-				cm.setDisabled('hrecipeHint', co && n.nodeName != 'ASIDE');
-				cm.setActive('hrecipeHint', n.nodeName == 'ASIDE' && jQuery(n).hasClass('hrecipe-hint'));
-			});
 		}, // End init
 		
 		/**
