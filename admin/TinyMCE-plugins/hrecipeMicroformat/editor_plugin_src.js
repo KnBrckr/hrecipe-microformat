@@ -134,6 +134,7 @@
 				// On click inside ingredients
 				jQuery(n).click(
 					function() {
+						ed.selection.select(this);
 						ed.execCommand('mceHrecipeIngredientList',true);
 					}
 				);
