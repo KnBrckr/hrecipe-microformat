@@ -84,9 +84,12 @@ var hrecipeIngredientListDialog = {
 	init : function() {
 		// If editing an existing list, populate the dialog with the content
 		var n = tinyMCEPopup.editor.selection.getNode();
-		//var f = document.forms[0];
 		var emptyRow = $('.ingrd-list tr:first');
 		var ingredientList = $(n).closest('.ingredients');
+		
+		if (ingredientList.length > 0) {
+			$('#insert').val(tinyMCEPopup.getLang('hrecipeMicroformat.dlgUpdate'));
+		}
 		
 		$('#ingrd-list-name').val(ingredientList.find('.ingredients-title').text()); // Grab title for this list
 		ingredientList.find('.ingredient').each(function(){

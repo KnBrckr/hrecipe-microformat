@@ -5,7 +5,5 @@ tinyMCE.addI18n('en.hrecipeMicroformat',{
 	hintDesc : 'Toggle Recipe Hint',
 	
 	dlgDelete : 'Delete',
-	
-	/* Step Dialog */
-	dlgStepTitle : 'Add/Edit Instruction Step'
+	dlgUpdate : 'Update'
 });
