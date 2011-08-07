@@ -67,6 +67,7 @@ jQuery(document).ready( function($) {
 		
 		// Put new row into the table after the current one
 		row.after(clonedRow);
+		$('tbody').sortable('refresh');
 	});
 	
 	// Delete active row
@@ -87,10 +88,6 @@ var hrecipeIngredientListDialog = {
 		var emptyRow = $('.ingrd-list tr:first');
 		var ingredientList = $(n).closest('.ingredients');
 		
-		if (ingredientList.length > 0) {
-			$('#insert').val(tinyMCEPopup.getLang('hrecipeMicroformat.dlgUpdate'));
-		}
-		
 		$('#ingrd-list-name').val(ingredientList.find('.ingredients-title').text()); // Grab title for this list
 		ingredientList.find('.ingredient').each(function(){
 			// For each ingredient in the document ...
@@ -102,7 +99,13 @@ var hrecipeIngredientListDialog = {
 			});
 			emptyRow.before(clonedRow);
 		});
-		
+
+		// If modifying an existing ingredient list ...
+		if (ingredientList.length > 0) {
+			$('#insert').val(tinyMCEPopup.getLang('hrecipeMicroformat.dlgUpdate'));  // Label button as 'Update' vs. 'Insert'
+			$('tbody').sortable({ items: 'tr' }); // Create sortable list
+		}
+				
 		// Setup autocomplete for fields in the table
 		$('.type').autocomplete({source: availableUnits});
 	},
