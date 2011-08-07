@@ -154,7 +154,6 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 		 */
 		add_shortcode(self::prefix . 'title', array(&$this, 'sc_title'));
 		add_shortcode('instructions', array(&$this, 'sc_instructions'));
-		add_shortcode('step', array(&$this, 'sc_step'));
 		add_shortcode('instruction', array(&$this, 'sc_step'));  // Allow instruction shortcode as an alternate
 	}
 	
@@ -549,18 +548,6 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 	function sc_instructions($atts, $content = '')
 	{
 		$content = '<div class="instructions">' . do_shortcode($content) . '</div>';
-		return $content;
-	}
-	
-	/**
-	 * Generate HTML for the step shortcode
-	 * Example usage:  [step]An Instruction step[/step]
-	 *
-	 * @return string HTML
-	 **/
-	function sc_step($atts, $content = '')
-	{
-		$content = '<div class="instruction">' . do_shortcode($content) . '</div>';
 		return $content;
 	}
 	
