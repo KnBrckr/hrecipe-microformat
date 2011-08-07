@@ -131,7 +131,7 @@
 	margin: 5px 25px;
 	padding: 5px;
 	border: black solid 1px;
-	font-family: 'Indie Flower', arial, serif;
+	font-family: 'Annie Use Your Telescope', arial, serif;
 }
 
 .ingredients th {
@@ -151,7 +151,9 @@ tr.ingredient td, tr.ingredient:nth-child(2n) td {
 .ingredient .type {
 }
 .ingredient .ingrd {
-	padding-right: 1em;
+}
+.ingredient .comment:before {
+	content: " – ";
 }
 .ingredient .comment {
 	font-style: italic;

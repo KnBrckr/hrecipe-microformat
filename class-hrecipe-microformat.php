@@ -166,7 +166,7 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 	function wp_head()
 	{
 		// Setup google font used in recipe ingredient lists
-		echo "<link href='http://fonts.googleapis.com/css?family=Indie+Flower' rel='stylesheet' type='text/css'>";
+		echo "<link href='http://fonts.googleapis.com/css?family=Annie+Use+Your+Telescope' rel='stylesheet' type='text/css'>";
 		return;
 	}
 	
