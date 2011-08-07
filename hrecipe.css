@@ -132,6 +132,7 @@
 	padding: 5px;
 	border: black solid 1px;
 	font-family: 'Annie Use Your Telescope', arial, serif;
+	background: rgb(255,255,255);
 }
 
 .ingredients th {
