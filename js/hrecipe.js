@@ -24,6 +24,11 @@
  **/
 
 jQuery(document).ready( function($) {
+	// Fixup display of fractions in ingredients
+	$('.ingredient .value').html(function(i,value){
+		return fancyFraction(value);
+	});
+	
 	// Format recipe ratings with jQuery UI stars plugin
 	$('.recipe-user-rating').stars({
 		cancelShow: false,
@@ -74,6 +79,12 @@ jQuery(document).ready( function($) {
 		}
 	});
 });
+
+// Improved formating of fractions
+function fancyFraction(value) {
+	return value.replace(/(\d*)\/(\d*)/g,'<sup>$1</sup>&frasl;<sub>$2</sub>');
+}
+
 
 // $("#stars-wrapper1").stars({
 //     cancelShow: false,
