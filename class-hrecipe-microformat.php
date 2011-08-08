@@ -1,14 +1,12 @@
 <?php
 /**
- * Main hrecipe 
+ * hrecipe_microformat Class
  *
  * @package hRecipe Microformat
  * @author Kenneth J. Brucker <ken@pumastudios.com>
  * @copyright 2011 Kenneth J. Brucker (email: ken@pumastudios.com)
  * 
  * This file is part of hRecipe Microformat, a plugin for Wordpress.
- *
- * Copyright 2011  Kenneth J. Brucker  (email : ken@pumastudios.com)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2, as 
@@ -37,7 +35,7 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 	/**
 	 * Minimum version of WordPress required by plugin
 	 **/
-	const wp_version_required = '3.1';
+	const wp_version_required = '3.2';
 	
 	/**
 	 * Minimum version of PHP required by the plugin
@@ -121,6 +119,9 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 		
 		// Update classes applied to <body> element
 		add_filter('body_class', array (&$this, 'body_class'),10,2);
+		
+		// Hook template redirect to provide default page templates within the plugin
+		add_action('template_redirect', array(&$this, 'template_redirect'));
 
 		// During handling of footer in the body ...
 		add_action('wp_footer', array(&$this, 'wp_footer'));
@@ -185,6 +186,34 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 			$classes[] = "no-js";	
 		}
 		return $classes;
+	}
+	
+	/**
+	 * Use template provided page templates as defaults
+	 *
+	 * @return void
+	 * @author Kenneth J. Brucker <ken.brucker@action-a-day.com>
+	 **/
+	function template_redirect()
+	{
+		global $post;
+		
+		if (!$this->options['add_post_class'] && is_singular(self::post_type)) {
+			// Don't format as a post TODO Provide a template to format single recipes
+			$template_name = 'single-';
+		} elseif (is_post_type_archive(self::post_type)) {
+			$template_name = 'archive-';
+		} else {
+			return;
+		}
+		
+		$template_name .= get_post_type($post) . '.php';
+		// Look for available templates
+		$template = locate_template(array($template_name), true);
+		if (empty($template)) {
+			include(self::$dir . 'lib/template/' . $template_name);
+		}
+		exit();
 	}
 	
 	/**

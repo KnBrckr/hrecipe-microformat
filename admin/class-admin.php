@@ -28,6 +28,23 @@
 // TODO Create admin widget for Recipe Categories - only allow one category to be selected
 // TODO Phone-home with error log
 
+// Protect from direct execution
+if (!defined('WP_PLUGIN_DIR')) {
+	header('Status: 403 Forbidden');
+  header('HTTP/1.1 403 Forbidden');
+  exit();
+}
+
+// On admin screens, load additional classes
+if (is_admin()) {
+	$required_libs = array('class-hrecipe-importer.php');
+	foreach ($required_libs as $lib) {
+		if (!include_once($lib)) {
+			return false;
+		}
+	}
+}
+
 class hrecipe_microformat_admin
 {
 	/**
