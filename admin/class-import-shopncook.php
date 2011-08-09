@@ -140,7 +140,12 @@ class import_shopncook {
 	 * @return string HTML text for recipe
 	 */
 	private function scx_instructions($ingrd_list, $instructions) {
+		// TODO Return ingredients (and steps) in a structure to hide higher level formatting from data model
+		// Open Ingredients table and add header
 		$text = '<table class="ingredients">';
+		$text .= '<thead><tr><th colspan="2"><span class="ingredients-title">Ingredients</span></th></tr></thead>';
+		
+		// Add list of ingredients to table
 		if (is_array($ingrd_list['INGREDIENT'])) {
 			foreach ($ingrd_list['INGREDIENT'] as $ingrd) {
 				$text .= $this->scx_ingredient($ingrd);
