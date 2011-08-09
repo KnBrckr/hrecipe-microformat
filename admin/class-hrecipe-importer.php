@@ -175,7 +175,7 @@ class hrecipe_importer {
 	/**
 	 * From normalized recipe array, create a recipe post
 	 *
-	 * @input array $recipe
+	 * @param array $recipe
 	 *  $recipe['fn']            Recipe Title
 	 *	$recipe['yield']         Recipe Yield
 	 *	$recipe['duration']      Total time to execute recipe

@@ -139,14 +139,6 @@ class hrecipe_microformat_admin
 														 'id' => self::prefix . 'fn',
 														 'metabox' => 'info',
 														 'type' => 'text'),
-			'summary'    => array( 'label' => __('Summary', self::p), # TODO Change to use excerpt?
-														 'description' => implode(' ', array(
-																							__('Short description of the recipe.',self::p), 
-																							__('(Might not display in all areas.)', self::p))),
-														 'type' => 'text',
-														 'id' => self::prefix . 'summary',
-														 'metabox' => 'info',
-														 'format' => 'text'),
 			'yield'      => array( 'label' => __('Yield', self::p), # TODO Use value, unit for yield (x cookies, x servings, ...)?
 														 'description' => __('Amount the recipe produces, generally the number of servings.', self::p),
 														 'type' => 'text',
@@ -508,7 +500,7 @@ class hrecipe_microformat_admin
 				'has_archive' => true,
 				'rewrite' => array('slug' => 'Recipes'),
 				'menu_position' => 7,
-				'supports' => array('title', 'editor', 'author', 'thumbnail', 'trackbacks', 'comments', 'revisions'),
+				'supports' => array('title', 'editor', 'excerpt', 'author', 'thumbnail', 'trackbacks', 'comments', 'revisions'),
 				'taxonomies' => array('post_tag'),
 			)
 		);
