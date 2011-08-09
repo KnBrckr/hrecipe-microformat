@@ -454,7 +454,7 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 	 **/
 	function recipe_difficulty($post_id)
 	{
-		$difficulty = get_post_meta($post_id, self::prefix . 'difficulty', true);
+		$difficulty = get_post_meta($post_id, self::prefix . 'difficulty', true) | 0;
 		$description = $this->recipe_field_map['difficulty']['option_descriptions'][$difficulty] | '';
 		
 		// Microformat encoding of difficulty (x out of 5)

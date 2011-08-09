@@ -53,6 +53,9 @@
 	background-position: 0 -24px;
 	position: absolute;
 }
+.recipe-difficulty-0 {
+	width: 0px;
+}
 .recipe-difficulty-1 {
 	width: 24px;
 }

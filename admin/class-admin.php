@@ -166,6 +166,7 @@ class hrecipe_microformat_admin
 																'5' => __('Challenging', self::p)
 															),
 															'option_descriptions' => array(
+																'0' => __('The difficulty of this recipe has not been entered.', self::p),
 																'1' => __('Basic recipe with a few common ingredients, no alcohol, a few simple steps and no heat source required.  This is a safe recipe that can be done by children with limited assistance.', self::p),
 																'2' => __('Easy recipe with easy to find ingredients and a small number of steps that might contain alcohol and may require a heat source.  The recipe might be able to be made by older children and is generally appropriate for someone with little cooking experience.', self::p),
 																'3' => __('Average difficulty that might require some skills (chopping, dicing, slicing, measuring, small appliances, etc.).  Ingredients are available to most home cooks at their local grocery store.  Cooking time is usually no more than about an hour.', self::p),
@@ -1125,6 +1126,18 @@ class hrecipe_microformat_admin
 	function handle_database_ver()
 	{
 		$this->admin_notice_errors[] = sprintf(__('Recipe database version mismatch; using v%1$d, required v%2$d', self::p), $this->options['database_ver'], self::required_db_ver);
+	}
+	
+	/**
+	 * Return WordPress Post Meta Key field ID for specified hrecipe microformat key
+	 *
+	 * @access public
+	 * @param string $microformat Microformat tag
+	 * @return string or false if microformat tag not defined
+	 **/
+	public function post_meta_key($microformat)
+	{
+		return isset($this->recipe_field_map[$microformat]) ? $this->recipe_field_map[$microformat]['id'] : false;
 	}
 	
 	/**

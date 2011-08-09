@@ -104,7 +104,7 @@ class import_shopncook {
 	 */
 	private function parse_recipe($scx) {
 		$recipe['fn'] = $scx['RECIPEHEADER']['RECIPETITLE'];
-		$recipe['yeild'] = $this->scx_string($scx['RECIPEHEADER']['NBPERSONS']); // NBPERSONS vs. PORTIONYIELD?
+		$recipe['yield'] = $this->scx_string($scx['RECIPEHEADER']['NBPERSONS']); // NBPERSONS vs. PORTIONYIELD?
 		$recipe['duration'] = $this->scx_string($scx['RECIPEHEADER']['TOTALTIME']);
 		$recipe['preptime'] = $this->scx_string($scx['RECIPEHEADER']['PREPTIME']);
 		$recipe['cooktime'] = ''; // Not present in ShopNCook files
@@ -115,7 +115,7 @@ class import_shopncook {
 		$recipe['summary'] = ''; // Not present in ShopNCook files
 		$recipe['published'] = ''; // Not present in ShopNCook files
 		$recipe['tag'] = ''; // Not present in ShopNCook files
-		$recipe['difficulty'] = ''; // Not present in ShopNCook files	
+		$recipe['difficulty'] = '0'; // Not present in ShopNCook files	
 
 		return $recipe;
 	}
