@@ -60,8 +60,7 @@ class import_shopncook {
 	/**
 	 * import a ShopNCook SCX format file
 	 *
-	 * @return void
-	 * @author Kenneth J. Brucker <ken.brucker@action-a-day.com>
+	 * @return array of normalized recipes
 	 **/
 	function import_scx($fname)
 	{
@@ -104,18 +103,23 @@ class import_shopncook {
 	 */
 	private function parse_recipe($scx) {
 		$recipe['fn'] = $scx['RECIPEHEADER']['RECIPETITLE'];
-		$recipe['yield'] = $this->scx_string($scx['RECIPEHEADER']['NBPERSONS']); // NBPERSONS vs. PORTIONYIELD?
+		$recipe['yield'] = $this->scx_string($scx['RECIPEHEADER']['NBPERSONS']); // TODO NBPERSONS vs. PORTIONYIELD?
 		$recipe['duration'] = $this->scx_string($scx['RECIPEHEADER']['TOTALTIME']);
 		$recipe['preptime'] = $this->scx_string($scx['RECIPEHEADER']['PREPTIME']);
 		$recipe['cooktime'] = ''; // Not present in ShopNCook files
 		$recipe['author'] = $this->scx_string($scx['RECIPEHEADER']['SOURCE']);
 		$recipe['category'] = $this->scx_string($scx['RECIPEHEADER']['CATEGORY']);
-		$recipe['instructions'] = $this->scx_instructions($scx['INGREDIENTLIST'], $scx['RECIPETEXT']); // FIXME
-		//$recipe['photo']?
 		$recipe['summary'] = ''; // Not present in ShopNCook files
 		$recipe['published'] = ''; // Not present in ShopNCook files
 		$recipe['tag'] = ''; // Not present in ShopNCook files
 		$recipe['difficulty'] = '0'; // Not present in ShopNCook files	
+
+		/**
+		 * Setup content array
+		 */
+		$recipe['content'] = array();
+		array_push($recipe['content'], array('type' => 'ingrd-list', 'data' => $this->scx_ingrd_list($scx['INGREDIENTLIST'])));
+		array_push($recipe['content'], array('type' => 'text', 'data' => $scx['RECIPETEXT']));
 
 		return $recipe;
 	}
@@ -132,30 +136,25 @@ class import_shopncook {
 	}
 
 	/**
-	 * Create recipe instruction text from the ingredient list and recipe text
+	 * Create normalized recipe array from the ingredient list
 	 *
 	 * @access private
 	 * @param string $ingrd_list list of ingredients from ShopNCook recipe
-	 * @param string $instructions Recipe text from ShopNCook recipe
 	 * @return string HTML text for recipe
 	 */
-	private function scx_instructions($ingrd_list, $instructions) {
-		// TODO Return ingredients (and steps) in a structure to hide higher level formatting from data model
-		// Open Ingredients table and add header
-		$text = '<table class="ingredients">';
-		$text .= '<thead><tr><th colspan="2"><span class="ingredients-title">Ingredients</span></th></tr></thead>';
-		
-		// Add list of ingredients to table
+	private function scx_ingrd_list($ingrd_list) {
+		$ingrd_norm = array();
+
+		// Add list of ingredients to array
 		if (is_array($ingrd_list['INGREDIENT'])) {
 			foreach ($ingrd_list['INGREDIENT'] as $ingrd) {
-				$text .= $this->scx_ingredient($ingrd);
+				$ingrd_norm = array_merge($ingrd_norm, $this->scx_ingredient($ingrd));
 			}
 		} else {
-			$text .= $this->scx_ingredient($ingrd_list['INGREDIENT']);
+			$ingrd_norm = array_merge($ingrd_norm, $this->scx_ingredient($ingrd_list['INGREDIENT']));
 		}
-		$text .= '</table>';
 
-		return $text . "\n\n" . $instructions;
+		return $ingrd_norm; 
 	}
 
 	/**
@@ -172,9 +171,11 @@ class import_shopncook {
 	 *
 	 * @access private
 	 * @param array or string $ingrd Translation of XML formated ShopNCook ingredient
-	 * @return string
+	 * @return array
 	 **/
 	private function scx_ingredient($ingrd) {
+		$ingrd_norm = array();
+		
 		if (is_array($ingrd)) {
 			if ($ingrd['_']['QUANTITY']) {
 				$qty = rtrim($ingrd['_']['QUANTITY'], '.0'); // Remove trailing 0 and decimal point
@@ -183,19 +184,16 @@ class import_shopncook {
 				$qty = $ingrd['INGREDIENTQUANTITY'];
 				$unit = '';
 			}
-			$qty = $qty ? '<span class="value">' . $qty . '</span>' : '';
-			$unit = $unit ? '<span class="type">' . $unit . '</span>' : '';
-			$item = ($tmp = $this->scx_string($ingrd['INGREDIENTITEM'])) ? '<span class="ingrd">' . $tmp . '</span>' : ''; 
-			$comment = ($tmp = $this->scx_string($ingrd['INGREDIENTCOMMENT'])) ? '<span class="comment">' . $tmp . '</span>' : '';
-			$text = '<tr class="ingredient"><td>' . $qty . $unit . '</td><td>' . $item . $comment . '</td></tr>';
+			array_push($ingrd_norm, array('value' => $qty, 'type' => $unit,
+			                              'ingrd' => is_string($ingrd['INGREDIENTITEM']) ? $ingrd['INGREDIENTITEM'] : '',
+			                              'comment' => is_string($ingrd['INGREDIENTCOMMENT']) ?  $ingrd['INGREDIENTCOMMENT'] : ''));
 		} else {
-			$text = '';
 			foreach (explode("\n", $ingrd) as $item) {
-				$text .= '<tr class="ingredient"><td></td><td><span class="ingrd">' . $item . '</span></td></tr>';
+				array_push($ingrd_norm, array('ingrd' => $item));
 			}
 		}
 
-		return $text;
+		return $ingrd_norm;
 	}	
 } // End class import_shopncook
 ?>

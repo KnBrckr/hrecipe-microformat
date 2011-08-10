@@ -143,6 +143,8 @@ class hrecipe_importer {
 			return $recipes;
 		}
 
+		// TODO Change import to work a single recipe at a time to minimize memory impact off large imports
+		
 		/**
 		 * Parse incoming data into a normalized format
 		 */
@@ -183,7 +185,7 @@ class hrecipe_importer {
 	 *	$recipe['cooktime']      Cooking time for recipe
 	 *	$recipe['author']        Recipe Author
 	 *	$recipe['category']      Recipe Category
-	 *	$recipe['instructions']  Text of Recipe
+	 *	$recipe['content']       array of recipe content elements
 	 *	$recipe['summary']       Summary or introduction text
 	 *	$recipe['published']     Date published in 'Y-m-d H:i:s' format
 	 *	$recipe['tag']           Comma separated list of tags
@@ -199,18 +201,16 @@ class hrecipe_importer {
 		 * Sanitize incoming recipe data
 		 */
 		$recipe['yield'] = $recipe['yield'] != '0' ? $recipe['yield'] : '';
-		$recipe['instructions'] = wpautop(wp_kses_post($recipe['instructions']));
 		$recipe['summary'] = wpautop(wp_kses_data($recipe['summary']));
 		$recipe['published'] = $recipe['published'] ? $recipe['published'] : date('Y-m-d H:i:s'); // TODO Validate published date format
 		$recipe['difficulty'] = $recipe['difficulty'] ? $recipe['difficulty'] : '0';
-
+		
 		/**
 		 * Add Recipe to the database
 		 */
-
 		$new_post = array(
 			'post_title' => $recipe['fn'],
-      'post_content' => $recipe['instructions'],
+      'post_content' => $this->build_post_content($recipe['content']),
       'post_status' => $post_status, 
       'post_type' => $hrecipe_microformat::post_type,
       'post_date' => $recipe['published'],
@@ -233,6 +233,49 @@ class hrecipe_importer {
 		}
 		
 		return false;
+	}
+	
+	/**
+	 * Build post content from array of ingredients and instruction text
+	 *
+	 * @access private
+	 * @param array $content
+	 *    Each index element is sub-array containing ['type'] and ['data']
+	 * @return text
+	 **/
+	private function build_post_content($content)
+	{
+		$text = '';
+		
+		foreach ($content as $index => $section) {
+			switch ($section['type']) {
+				case 'ingrd-list':
+					// Open Ingredients table and add header
+					$text .= '<table class="ingredients">';
+					$text .= '<thead><tr><th colspan="2"><span class="ingredients-title">Ingredients</span></th></tr></thead>';
+
+					// Add row for each ingredient
+					foreach ($section['data'] as $d) {
+						foreach (array('value', 'type', 'ingrd', 'comment') as $i) {
+							$$i = isset($d[$i]) && $d[$i] ? '<span class="' . $i . '">' . $d[$i] . '</span>' : '';
+						}
+						$text .= '<tr class="ingredient"><td>' . $value . $type . '</td><td>' . $ingrd . $comment . '</td></tr>';
+					}
+					
+					$text .= '</table>';
+					break;
+					
+				case 'text':
+					$text .= wpautop(wp_kses_post($section['data']));
+					break;
+				
+				default:
+					$text .= 'Unknown content type "' . $section['type'] . '" found in import data.';
+					break;
+			}
+		}
+		
+		return $text;
 	}
 } // End hrecipe_importer class
 
