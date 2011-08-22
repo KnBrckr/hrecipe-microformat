@@ -281,7 +281,7 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 		$footer = $this->recipe_meta_html('footer', $this->options['recipe_footer_fields']);
 		
 		return $head . $content . $footer;
-	}
+	}	
 
 	/**
 	 * Prints HTML with meta information for the current post recipe (date/time and author.)

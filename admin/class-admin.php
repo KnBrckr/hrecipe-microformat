@@ -1136,7 +1136,6 @@ class hrecipe_microformat_admin
 	 * Cleanup database if uninstall is requested
 	 *
 	 * @return void
-	 * @author Kenneth J. Brucker <ken@pumastudios.com>
 	 **/
 	function uninstall() {
 		delete_option(self::settings); // Remove the plugin settings

@@ -71,6 +71,11 @@ class import_shopncook {
 			return false;
 		}
 		
+		if (! array_key_exists('SHOPNCOOK', $recipe_import)) {
+			$this->error_msg = 'File does not appear to be exported from ShopNCook';
+			return false;
+		}
+		
 		// Version check the XML content
 		if ('1.0' != $recipe_import['SHOPNCOOK']['_']['VERSION']) {
 			$this->error_msg = 'Unknown ShopNCook XML version ' . $recipe_import['SHOPNCOOK']['_']['VERSION'];
@@ -103,7 +108,8 @@ class import_shopncook {
 	 */
 	private function parse_recipe($scx) {
 		$recipe['fn'] = $scx['RECIPEHEADER']['RECIPETITLE'];
-		$recipe['yield'] = $this->scx_string($scx['RECIPEHEADER']['NBPERSONS']); // TODO NBPERSONS vs. PORTIONYIELD?
+		// Yield is consistently provided by NBPERSONS vs. PORTIONYIELD
+		$recipe['yield'] = $this->scx_string($scx['RECIPEHEADER']['NBPERSONS']);
 		$recipe['duration'] = $this->scx_string($scx['RECIPEHEADER']['TOTALTIME']);
 		$recipe['preptime'] = $this->scx_string($scx['RECIPEHEADER']['PREPTIME']);
 		$recipe['cooktime'] = ''; // Not present in ShopNCook files
