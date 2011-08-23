@@ -25,13 +25,13 @@
 
 if ( ! class_exists('hrecipe_microformat')) :
 
-if (!include_once('admin/class-admin.php')) {
+if (!include_once('admin/class-hrecipe-admin.php')) {
 	return false;
 	
 	// TODO Change self::prefix to use '-' as seperator?  shortcodes OK
 }
 
-class hrecipe_microformat extends hrecipe_microformat_admin {
+class hrecipe_microformat extends hrecipe_admin {
 	/**
 	 * Minimum version of WordPress required by plugin
 	 **/
@@ -155,6 +155,7 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 		 */
 		add_shortcode(self::prefix . 'title', array(&$this, 'sc_title'));
 		add_shortcode('instructions', array(&$this, 'sc_instructions'));
+		add_shortcode('step', array(&$this, 'sc_step'));
 		add_shortcode('instruction', array(&$this, 'sc_step'));  // Allow instruction shortcode as an alternate
 	}
 	
@@ -560,6 +561,8 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 	/**
 	 * Generate HTML for the recipe title shortcode
 	 *
+	 * @param array $atts shortcode attributes
+	 * @param string $content shortcode contents
 	 * @return string HTML formatted title string
 	 **/
 	function sc_title($atts, $content = '')
@@ -570,8 +573,14 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 	
 	/**
 	 * Generate HTML for the instructions shortcode
-	 * Example usage:  [instructions]Instruction Text[/instructions]
+	 * Example usage:  
+	 *  [instructions]
+	 *  [step]Step 1[/step]
+	 *  [step]Step ...[/step]
+	 *  [/instructions]
 	 *
+	 * @param array $atts shortcode attributes
+	 * @param string $content shortcode contents
 	 * @return string HTML
 	 **/
 	function sc_instructions($atts, $content = '')
@@ -581,11 +590,26 @@ class hrecipe_microformat extends hrecipe_microformat_admin {
 	}
 	
 	/**
-	 * Process AJAX request to rate recipes
+	 * Generate HTML for the step shortcode
+	 * Example usage: [step]An instruction step[/step]
 	 *
-	 * TODO If cookies can't be saved, don't allow voting by the user - use check for WP test cookie presence
+	 * @param array $atts shortcode attributes
+	 * @param string $content shortcode contents
+	 * @return string HTML
+	 **/
+	function sc_step($atts, $content = '')
+	{
+		return '<div class="step">' . do_shortcode($content) . '</div>';
+	}
+	
+	/**
+	 * Process AJAX request to rate recipes, save user's rating in cookie
 	 *
-	 * @author Kenneth J. Brucker <ken@pumastudios.com>
+	 * TODO If cookies can't be saved, don't allow voting by the user - test for WP test cookie presence
+	 * TODO Make cookie storage more efficient - store all votes in one cookie
+	 *
+	 * @internal	Ballot box stuffing is possible since the presence of a vote is saved in the user's browser
+	 * @return does not return
 	 **/
 	function ajax_recipe_rating()
 	{

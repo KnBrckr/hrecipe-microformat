@@ -75,7 +75,7 @@
 
 			// Register buttons
 			ed.addButton('hrecipeTitle', {
-				title : 'hrecipeMicroformat.titleDesc',
+				title : 'hrecipeMicroformat.buttonTitle',
 				cmd : 'mceHrecipeTitle',
 				image : url + '/img/hrecipeTitle.gif'
 			});
@@ -96,7 +96,7 @@
 			// ed.onChange.add(function(ed, l) {
 			//               console.debug('Editor contents was modified. Contents: ' + l.content);
 			//       });
-						
+			
 			// ==============
 			// = Ingredient =
 			// ==============
@@ -142,7 +142,7 @@
 
 			// Register Ingredient List button
 			ed.addButton('hrecipeIngredientList', {
-				title : 'hrecipeMicroformat.ingrdListDesc',
+				title : 'hrecipeMicroformat.buttonIngrdList',
 				cmd : 'mceHrecipeIngredientList',
 				image : url + '/img/hrecipeIngredientList.gif'
 			});

@@ -285,7 +285,7 @@ class hrecipe_importer {
 // TODO Confirm importer not registered if the plugin is not active
 include_once(ABSPATH . 'wp-admin/includes/import.php');
 if(function_exists('register_importer')) {
-	$hrecipe_import = new hrecipe_importer(hrecipe_microformat_admin::p);
+	$hrecipe_import = new hrecipe_importer(hrecipe_admin::p);
 	register_importer($hrecipe_import->id, $hrecipe_import->name, $hrecipe_import->desc, array ($hrecipe_import, 'dispatch'));
 }
 ?>

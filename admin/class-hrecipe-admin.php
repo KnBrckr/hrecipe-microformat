@@ -45,7 +45,7 @@ if (is_admin()) {
 	}
 }
 
-class hrecipe_microformat_admin
+class hrecipe_admin
 {
 	/**
 	 * Define some shorthand
@@ -501,7 +501,7 @@ class hrecipe_microformat_admin
 				'rewrite' => array('slug' => 'Recipes'),
 				'menu_position' => 7,
 				'supports' => array('title', 'editor', 'excerpt', 'author', 'thumbnail', 'trackbacks', 'comments', 'revisions'),
-				'taxonomies' => array('post_tag'),
+				'taxonomies' => array('post_tag'), // FIXME Setup Taxonomy to allow only a single selection
 			)
 		);
 	}
@@ -994,18 +994,18 @@ class hrecipe_microformat_admin
 	 *
 	 * Called prior to tinymce init to modify tinymce init parameters
 	 *
-	 * @return void
+	 * @return array tinyMCE init hash array
 	 **/
 	function tinymce_init_array($initArray)
 	{
-		// Preserve formats set by other plugs
+		// Preserve formats set by other plugins
 		$style_formats = isset($initArray['style_formats']) ? json_decode($initArray['style_formats']) : array();
 		
 		// Recipe Instruction Steps
 		$style_formats[] = array('title' => 'Step', 'block' => 'div', 'wrapper' => true, 'classes' => 'step', 'exact' => true);
 		
 		// Recipe Hints
-		$style_formats[] = array('title' => 'Hint', 'block' => 'aside', 'classes' => 'hrecipe-hint');
+		$style_formats[] = array('title' => 'Hint', 'block' => 'p', 'classes' => 'hrecipe-hint');
 		
 		$initArray['style_formats'] = json_encode($style_formats);
 		return $initArray;

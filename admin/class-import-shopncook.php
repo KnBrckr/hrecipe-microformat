@@ -22,7 +22,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  **/
 
-if (!include_once('class-parse-xml.php')) {
+if (!include_once('class-hrecipe-parse-xml.php')) {
 	return false;
 }
 
@@ -53,7 +53,7 @@ class import_shopncook {
 	 */
 	public function __construct() {
 		// Setup parser that maps INGREDIENTTEXT to INGREDIENT so all elements in INGREDIENTLIST remain in order
-		$this->xml_parser = new parse_xml();
+		$this->xml_parser = new hrecipe_parse_xml();
 		$this->xml_parser->set_tags(array('INGREDIENTTEXT' => 'INGREDIENT'));
 	}
 	

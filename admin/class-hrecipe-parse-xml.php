@@ -22,7 +22,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  **/
 
-class parse_xml {
+class hrecipe_parse_xml {
 	/**
 	 * The array created by the parser which can be assigned to a variable with: $varArr = $domObj->array.
 	 *
