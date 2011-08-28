@@ -1000,12 +1000,16 @@ class hrecipe_admin
 	{
 		// Preserve formats set by other plugins
 		$style_formats = isset($initArray['style_formats']) ? json_decode($initArray['style_formats']) : array();
-		
+				
 		// Recipe Instruction Steps
-		$style_formats[] = array('title' => 'Step', 'block' => 'div', 'wrapper' => true, 'classes' => 'step', 'exact' => true);
+		// $style_formats[] = array('title' => 'Step', 'block' => 'div', 'wrapper' => true, 'classes' => 'step', 'exact' => true);
+		$style_formats[] = array('title' => 'Step', 'block' => 'div', 'classes' => 'step');
 		
 		// Recipe Hints
-		$style_formats[] = array('title' => 'Hint', 'block' => 'p', 'classes' => 'hrecipe-hint');
+		$style_formats[] = array('title' => 'Hint', 'block' => 'p', 'classes' => 'hrecipe-hint');		
+		
+		// $initArray['theme_advanced_blockformats'] = 'Step,Hint,p,pre,address,h1,h2,h3,h4,h5,h6';
+		// $initArray['formats'] = json_encode($formats);
 		
 		$initArray['style_formats'] = json_encode($style_formats);
 		return $initArray;

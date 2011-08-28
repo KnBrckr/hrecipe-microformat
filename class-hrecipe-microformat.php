@@ -132,6 +132,7 @@ class hrecipe_microformat extends hrecipe_admin {
 		}
 
 		// When displaying a single recipe, add the recipe header and footer content
+		// FIXME Need to process content any time a recipe is displayed
 		if (is_single()) {
 			// declare the URL to the file that handles the AJAX request (wp-admin/admin-ajax.php)
 			wp_localize_script( 
@@ -278,10 +279,13 @@ class hrecipe_microformat extends hrecipe_admin {
 	 **/
 	function the_content($content)
 	{
-		$head = $this->recipe_meta_html('head', $this->options['recipe_head_fields']);
-		$footer = $this->recipe_meta_html('footer', $this->options['recipe_footer_fields']);
+		$result = '<article class="hrecipe">';
+		$result .= $this->recipe_meta_html('head', $this->options['recipe_head_fields']);
+		$result .= '<section class="instructions">' . $content . '</section>';
+		$result .= $this->recipe_meta_html('footer', $this->options['recipe_footer_fields']);
+		$result .= '</article>';
 		
-		return $head . $content . $footer;
+		return $result;
 	}	
 
 	/**
@@ -568,7 +572,12 @@ class hrecipe_microformat extends hrecipe_admin {
 	function sc_title($atts, $content = '')
 	{
 		global $post;
-		return '<div class="fn">' . get_post_meta($post->ID, self::prefix . 'fn', true). '</div>';
+		if ($title = get_post_meta($post->ID, self::prefix . 'fn', true)) {
+			$result = '<div class="fn">' . $title . '</div>';
+		} else {
+			$result = '';
+		}
+		return $result;
 	}
 	
 	/**
