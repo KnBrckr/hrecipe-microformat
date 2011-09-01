@@ -40,7 +40,7 @@ get_header(); ?>
 									<?php hrecipe_microformat::recipe_footer();?>
 									<div class="entry-utility">
 										<?php hrecipe_microformat::posted_in(); ?>
-										<?php edit_post_link( __( 'Edit'), '<span class="edit-link">', '</span>' ); ?>
+										<?php edit_post_link( __( 'Edit', hrecipe_microformat::p), '<span class="edit-link">', '</span>' ); ?>
 									</div><!-- .entry-utility -->
 								</div><!-- #post-## -->
 

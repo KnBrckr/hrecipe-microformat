@@ -28,22 +28,17 @@ get_header(); ?>
 
 		<div id="container">
 			<div id="content" role="main">
-				
-				Verily!  A gaggle of recipes!
-
 				<?php if ( have_posts() ) while ( have_posts() ) : the_post(); ?>
 
 								<div id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
-									<?php if ( is_front_page() ) { ?>
-										<h2 class="entry-title"><?php the_title(); ?></h2>
-									<?php } else { ?>
-										<h1 class="entry-title"><?php the_title(); ?></h1>
-									<?php } ?>
+									<h1 class="entry-title"><a href="<?php the_permalink(); ?>" title="<?php printf( esc_attr__( 'Permalink to %s', hrecipe_microformat::p ), the_title_attribute( 'echo=0' ) ); ?>" rel="bookmark"><?php the_title(); ?></a></h1>
 
 									<div class="entry-content">
-										<?php the_content(); ?>
-										<?php wp_link_pages( array( 'before' => '<div class="page-link">' . __( 'Pages:', 'twentyten' ), 'after' => '</div>' ) ); ?>
-										<?php edit_post_link( __( 'Edit', 'twentyten' ), '<span class="edit-link">', '</span>' ); ?>
+										<?php if ( has_post_thumbnail() ) { // check if the post has a Post Thumbnail assigned to it.
+										  the_post_thumbnail();
+										}
+										// FIXME Add 'the_content' filter to remove Ingredients tables before generating excerpt
+										the_excerpt(); ?>
 									</div><!-- .entry-content -->
 								</div><!-- #post-## -->
 

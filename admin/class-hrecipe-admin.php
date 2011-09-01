@@ -242,6 +242,8 @@ class hrecipe_admin
 		// Perform plugin actions needed during WP init
 		add_action('init', array(&$this, 'plugin_init'));
 		
+		add_action( 'after_setup_theme', array( $this, 'add_featured_image_support' ), 11 );
+		
 		// When displaying admin screens ...
 		if ( is_admin() ) {
 			// Add menu item for plugin options page
@@ -289,7 +291,7 @@ class hrecipe_admin
 		// On activation, flush rewrite rules to make sure plugin is setup correctly. 
 		flush_rewrite_rules();
 	}
-
+	
 	/**
 	 * Run during WP init phase
 	 *
@@ -506,6 +508,27 @@ class hrecipe_admin
 		);
 	}
 	
+	/**
+	 * Enabled featured images (post thumbnail) for Recipe Post type
+	 *
+	 * @access public
+	 * @return void
+	 */
+	public function add_featured_image_support()
+	{
+		$supported_types = get_theme_support( 'post-thumbnails' );
+
+		if( $supported_types === false )
+			add_theme_support( 'post-thumbnails', array( self::post_type ) );               
+		elseif( is_array( $supported_types ) )
+		{
+			$supported_types[0][] = self::post_type;
+			add_theme_support( 'post-thumbnails', $supported_types[0] );
+		}
+		
+		error_log(var_export($supported_types[0], true));
+	}
+
 	/**
 	 * Add the metaboxes needed in the admin screens
 	 *   Use add_meta_box( $id, $title, $callback, $page, $context, $priority, $callback_args )
