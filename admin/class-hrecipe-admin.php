@@ -525,8 +525,6 @@ class hrecipe_admin
 			$supported_types[0][] = self::post_type;
 			add_theme_support( 'post-thumbnails', $supported_types[0] );
 		}
-		
-		error_log(var_export($supported_types[0], true));
 	}
 
 	/**
