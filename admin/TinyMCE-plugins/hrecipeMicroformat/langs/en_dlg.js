@@ -1,14 +1,10 @@
 tinyMCE.addI18n('en.hrecipeIngredientList_dlg',{
-	title : 'Add/Edit Ingredient List',
-	listHeader : 'Recipe List Header:',
-	caption : 'List of Ingredients'
-});
-tinyMCE.addI18n('en.hrecipeMicroformat_dlg',{
+	'title' : 'Add/Edit Ingredient List',
+	'listHeader' : 'Recipe List Header:',
+	'caption' : 'List of Ingredients',
 	'amount' : 'Amount',
 	'unit' : 'Unit',
 	'ingredient' : 'Ingredient',
 	'comment' : 'Comment',
 	'delete' : 'Delete'
 });
-
-/* TODO Normalize translation list */
