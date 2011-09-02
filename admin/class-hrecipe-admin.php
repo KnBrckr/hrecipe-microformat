@@ -126,7 +126,7 @@ class hrecipe_admin
 	function setup()
 	{
 		self::$dir = WP_PLUGIN_DIR . '/' . self::p . '/' ;
-		self::$url =  WP_PLUGIN_URL . '/' . self::p . '/' ;
+		self::$url =  plugins_url(self::p) . '/' ;
 		$this->admin_notices = array();
 		$this->admin_notice_errors = array();
 

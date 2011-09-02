@@ -23,8 +23,6 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  **/
 
-tinyMCEPopup.requireLangPack();
-
 // Setup autocomplete for fields
 var availableUnits=[ // TODO Setup for i18n
 	'cup',
@@ -218,3 +216,4 @@ function hrecipeCloneRow(row, autoinit) {
 }
 
 tinyMCEPopup.onInit.add(hrecipeIngredientListDialog.init, hrecipeIngredientListDialog);
+tinyMCEPopup.requireLangPack();
