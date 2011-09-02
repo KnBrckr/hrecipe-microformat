@@ -651,6 +651,7 @@ class hrecipe_admin
 
 		// Setup the TinyMCE buttons
     add_filter('mce_external_plugins', array(&$this, 'add_tinymce_plugins'));
+		add_filter('mce_external_languages', array(&$this, 'add_tinymce_langs'));
     add_filter('mce_buttons_3', array(&$this, 'register_buttons'));
 
 		// Add editor stylesheet
@@ -982,6 +983,26 @@ class hrecipe_admin
 	}
 	
 	/**
+	 * Add language files for tinymce popups
+	 *
+	 * @access public
+	 * @param $langs array of language files
+	 * @return array language files to run
+	 **/
+	function add_tinymce_langs($langs)
+	{
+		// file system path to the TinyMCE plugins
+		$mce_plugins = self::$dir . 'admin/TinyMCE-plugins/';
+		
+		// for each plugin, add the language file
+		foreach (array('hrecipeMicroformat') as $plugin) {
+			$langs[$plugin] = $mce_plugins . $plugin . '/langs/langs.php';
+		}
+		
+		return $langs;
+	}
+	
+	/**
 	 * Locate tinymce plugin file, use either the dev src or the minified version if available
 	 *
 	 * @return string URL path to TinyMCE javascript plugin
@@ -1157,6 +1178,36 @@ class hrecipe_admin
 	public function post_meta_key($microformat)
 	{
 		return isset($this->recipe_field_map[$microformat]) ? $this->recipe_field_map[$microformat]['id'] : false;
+	}
+	
+	/**
+	 * Return contents of named file in filesystem
+	 *
+	 * @access public
+	 * @param $path string File name to retrieve
+	 * @return string File contents
+	 **/
+	function get_file($path)
+	{
+		if ( function_exists('realpath') )
+			$path = realpath($path);
+
+		if ( ! $path || ! @is_file($path) )
+			return '';
+
+		if ( function_exists('file_get_contents') )
+			return @file_get_contents($path);
+
+		$content = '';
+		$fp = @fopen($path, 'r');
+		if ( ! $fp )
+			return '';
+
+		while ( ! feof($fp) )
+			$content .= fgets($fp);
+
+		fclose($fp);
+		return $content;
 	}
 	
 	/**
