@@ -647,7 +647,6 @@ class hrecipe_admin
 
 		// Setup the TinyMCE buttons
     add_filter('mce_external_plugins', array(&$this, 'add_tinymce_plugins'));
-		add_filter('mce_external_languages', array(&$this, 'add_tinymce_langs'));
     add_filter('mce_buttons_3', array(&$this, 'register_buttons'));
 
 		// Add editor stylesheet
@@ -976,26 +975,6 @@ class hrecipe_admin
 		}
 	
 		return $plugin_array;
-	}
-	
-	/**
-	 * Add language files for tinymce popups
-	 *
-	 * @access public
-	 * @param $langs array of language files
-	 * @return array language files to run
-	 **/
-	function add_tinymce_langs($langs)
-	{
-		// file system path to the TinyMCE plugins
-		$mce_plugins = self::$dir . 'admin/TinyMCE-plugins/';
-		
-		// for each plugin, add the language file
-		foreach (array('hrecipeMicroformat') as $plugin) {
-			$langs[$plugin] = $mce_plugins . $plugin . '/langs/langs.php';
-		}
-		
-		return $langs;
 	}
 	
 	/**
