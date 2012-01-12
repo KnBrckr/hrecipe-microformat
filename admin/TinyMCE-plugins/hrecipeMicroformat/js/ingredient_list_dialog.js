@@ -47,30 +47,29 @@ var availableUnits=[ // TODO Setup for i18n, pull from database
 
 // TODO Autocomplete for ingredient name
 // FIXME On initial table creation, unable to sort list of ingredients
-// FIXME Table contents not displaying for existing lists
 
 // After document is loaded, init elements
 jQuery(document).ready( function($) {
 	// Make table rows sortable
-	$('tbody').sortable(
+	jQuery('tbody').sortable(
 		{
 			items: 'tr'
 		}
 	);
 	
 	// Insert a new row after the active row
-	$('.insert').live('click', function(){
-		var row = $(this).closest('tr');
+	jQuery('.insert').live('click', function(){
+		var row = jQuery(this).closest('tr');
 		var clonedRow = hrecipeCloneRow(row, true);
 		
 		// Put new row into the table after the current one
 		row.after(clonedRow);
-		$('tbody').sortable('refresh');
+		jQuery('tbody').sortable('refresh');
 	});
 	
 	// Delete active row
-	$('.delete').live('click', function() {
-		var btn = $(this);
+	jQuery('.delete').live('click', function() {
+		var btn = jQuery(this);
 		
 		if (btn.closest('tbody').find('tr').length > 1) {
 			btn.closest('tr').remove();			
@@ -82,16 +81,16 @@ jQuery(document).ready( function($) {
 var hrecipeIngredientListDialog = {
 	init : function() {
 		// If editing an existing list, populate the dialog with the content
-		var n = tinyMCEPopup.editor.selection.getNode();
-		var emptyRow = $('.ingrd-list tr:first');
-		var ingredientList = $(n).closest('.ingredients');
+		var n = tinyMCEPopup.editor.selection.getSelectedBlocks()[0]; // getNode() has been returning entire window
+		var emptyRow = jQuery('.ingrd-list tr:first');
+		var ingredientList = jQuery(n).closest('.ingredients');
 		
-		$('#ingrd-list-name').val(ingredientList.find('.ingredients-title').text()); // Grab title for this list
+		jQuery('#ingrd-list-name').val(ingredientList.find('.ingredients-title').text()); // Grab title for this list
 		ingredientList.find('.ingredient').each(function(){
 			// For each ingredient in the document ...
-			var sourceRow = $(this);
+			var sourceRow = jQuery(this);
 			var clonedRow = hrecipeCloneRow(emptyRow, false); // Don't init autocomplete on clone
-			$.each(['.value', '.type', '.ingrd', '.comment'], function(index,attr){
+			jQuery.each(['.value', '.type', '.ingrd', '.comment'], function(index,attr){
 				var attrVal = sourceRow.find(attr).text();
 				clonedRow.find(attr).val(attrVal);
 			});
@@ -100,12 +99,12 @@ var hrecipeIngredientListDialog = {
 
 		// If modifying an existing ingredient list ...
 		if (ingredientList.length > 0) {
-			$('#insert').val(tinyMCEPopup.getLang('hrecipeMicroformat.dlgUpdate'));  // Label button as 'Update' vs. 'Insert'
-			$('tbody').sortable({ items: 'tr' }); // Create sortable list
+			jQuery('#insert').val(tinyMCEPopup.getLang('hrecipeIngredientList_dlg.update'));  // Label button as 'Update' vs. 'Insert'
+			jQuery('tbody').sortable({ items: 'tr' }); // Create sortable list
 		}
 				
 		// Setup autocomplete for fields in the table
-		$('.type').autocomplete({source: availableUnits});
+		jQuery('.type').autocomplete({source: availableUnits});
 	},
 
 	// Insert the contents from the input into the document
@@ -132,12 +131,12 @@ var hrecipeIngredientListDialog = {
 		
 		ingrdList = ed.dom.create('tbody');
 		// For each row in the ingredients table, generate the target ingredient tags
-		$('tbody tr').each(function() {
+		jQuery('tbody tr').each(function() {
 			haveIngrd = false;
 			fields = new Array;
-			row = $(this);
+			row = jQuery(this);
 			ingrdRow = ed.dom.create('tr', {'class': 'ingredient'});
-			$.each(['value', 'type', 'ingrd', 'comment'],function(index,attr){
+			jQuery.each(['value', 'type', 'ingrd', 'comment'],function(index,attr){
 				if ('' != (val = row.find('.' + attr).val())) {
 					val = val.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); // Sanitize user text
 					haveIngrd = true;
@@ -168,8 +167,8 @@ var hrecipeIngredientListDialog = {
 		// If the new section has any content, insert at selection location
 		if (ingredients.childElementCount > 0) { 
 			
-			var n = ed.selection.getNode();
-			var oldIngredients = ed.dom.getParent(n, '.ingredients');
+			var n = ed.selection.getSelectedBlocks()[0]; // getNode() has been returning entire window
+			var oldIngredients = jQuery(n).closest('.ingredients').get(0);
 			if (oldIngredients) {
 				// Replace old with new - Change active selection to be the old div
 				ed.selection.select(oldIngredients);
@@ -188,8 +187,8 @@ var hrecipeIngredientListDialog = {
 	
 	// Remove Ingredient List from content
 	'remove' : function() {
-		var n = tinyMCEPopup.editor.selection.getNode();
-		$(n).closest('.ingredients').remove(); // TODO tinymce Undo button is not updating after remove.
+		var n = tinyMCEPopup.editor.selection.getSelectedBlocks()[0]; // getNode() has been returning entire window
+		jQuery(n).closest('.ingredients').remove(); // TODO tinymce Undo button is not updating after remove.
 		tinyMCEPopup.close();
 	}
 };

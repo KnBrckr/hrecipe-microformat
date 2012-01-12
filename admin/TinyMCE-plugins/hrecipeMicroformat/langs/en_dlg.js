@@ -6,5 +6,6 @@ tinyMCE.addI18n('en.hrecipeIngredientList_dlg',{
 	'unit' : 'Unit',
 	'ingredient' : 'Ingredient',
 	'comment' : 'Comment',
-	'delete' : 'Delete'
+	'delete' : 'Delete',
+	'update' : 'Update'
 });

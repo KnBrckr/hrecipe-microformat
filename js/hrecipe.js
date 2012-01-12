@@ -27,20 +27,20 @@ jQuery(document).ready( function($) {
 	var metric = ['g', 'kg', 'l', 'ml'];
 	
 	//Display non-metric values in fractions
-	$('.ingredient').each(function(i,e){
-		var value = $(this).find('.value');
-		var type = $(this).find('.type');
-		if ($.inArray(type.text().toLowerCase(), metric) >= 0) { return; } // If type is in metric array, skip processing
+	jQuery('.ingredient').each(function(i,e){
+		var value = jQuery(this).find('.value');
+		var type = jQuery(this).find('.type');
+		if (jQuery.inArray(type.text().toLowerCase(), metric) >= 0) { return; } // If type is in metric array, skip processing
 		value.text(value.text().replace(/(\d*)\.(\d*)/g, decimal2fraction));
 	});
 	
 	// Fixup display of fractions in ingredients
-	$('.ingredient .value').html(function(i,value){
+	jQuery('.ingredient .value').html(function(i,value){
 		return fancyFraction(value);
 	});
 	
 	// Format recipe ratings with jQuery UI stars plugin
-	$('.recipe-user-rating').stars({
+	jQuery('.recipe-user-rating').stars({
 		cancelShow: false,
 		inputType: 'select',
 		callback: function(ui, type, value)
@@ -48,7 +48,7 @@ jQuery(document).ready( function($) {
 			// Thank for the vote
 			jQuery('#recipe-stars-' + HrecipeMicroformat.postID + ' .thank-you').fadeIn(200);
 			
-			$.post(
+			jQuery.post(
 				HrecipeMicroformat.ajaxurl, 
 				{
 					action: HrecipeMicroformat.ratingAction,
@@ -161,15 +161,15 @@ function decimal2fraction(str, i, f, s) {
 }
 
 
-// $("#stars-wrapper1").stars({
+// jQuery("#stars-wrapper1").stars({
 //     cancelShow: false,
-//     captionEl: $("#stars-cap"),
+//     captionEl: jQuery("#stars-cap"),
 //     callback: function(ui, type, value)
 //     {
-//         $.getJSON("ratings.php", {rate: value}, function(json)
+//         jQuery.getJSON("ratings.php", {rate: value}, function(json)
 //         {
-//             $("#fake-stars-on").width(Math.round( $("#fake-stars-off").width() / ui.options.items * parseFloat(json.avg) ));
-//             $("#fake-stars-cap").text(json.avg + " (" + json.votes + ")");
+//             jQuery("#fake-stars-on").width(Math.round( jQuery("#fake-stars-off").width() / ui.options.items * parseFloat(json.avg) ));
+//             jQuery("#fake-stars-cap").text(json.avg + " (" + json.votes + ")");
 //         });
 //     }
 // });
