@@ -2,8 +2,8 @@
 Contributors: draca
 Donate link: http://action-a-day.com
 Tags: 
-Requires at least: 3.1
-Tested up to: 3.1.2
+Requires at least: 3.3.1
+Tested up to: 3.3.1
 Stable tag: trunk
 
 Provides TinyMCE editing for the hRecipe microformat

@@ -8,7 +8,7 @@ Author: Kenneth J. Brucker
 Author URI: http://action-a-day.com
 License: GPL2
 
-    Copyright 2011  Kenneth J. Brucker  (email : ken.brucker@action-a-day.com)
+    Copyright 2012 Kenneth J. Brucker  (email : ken.brucker@action-a-day.com)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License, version 2, as 

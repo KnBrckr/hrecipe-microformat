@@ -4,7 +4,7 @@
  *
  * @package hRecipe Microformat
  * @author Kenneth J. Brucker <ken@pumastudios.com>
- * @copyright 2011 Kenneth J. Brucker (email: ken@pumastudios.com)
+ * @copyright 2012 Kenneth J. Brucker (email: ken@pumastudios.com)
  * 
  * This file is part of hRecipe Microformat, a plugin for Wordpress.
  *
@@ -35,7 +35,7 @@ class hrecipe_microformat extends hrecipe_admin {
 	/**
 	 * Minimum version of WordPress required by plugin
 	 **/
-	const wp_version_required = '3.2';
+	const wp_version_required = '3.3.1';
 	
 	/**
 	 * Minimum version of PHP required by the plugin

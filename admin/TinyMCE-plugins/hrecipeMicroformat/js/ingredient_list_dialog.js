@@ -3,11 +3,9 @@
  *
  * @package hRecipe Microformat
  * @author Kenneth J. Brucker <ken@pumastudios.com>
- * @copyright 2011 Kenneth J. Brucker (email: ken@pumastudios.com)
+ * @copyright 2012 Kenneth J. Brucker (email: ken@pumastudios.com)
  * 
  * This file is part of hRecipe Microformat, a plugin for Wordpress.
- *
- * Copyright 2011  Kenneth J. Brucker  (email : ken@pumastudios.com)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2, as 
@@ -24,7 +22,7 @@
  **/
 
 // Setup autocomplete for fields
-var availableUnits=[ // TODO Setup for i18n
+var availableUnits=[ // TODO Setup for i18n, pull from database
 	'cup',
 	'cups',
 	'g',
@@ -47,7 +45,9 @@ var availableUnits=[ // TODO Setup for i18n
 	'tsp'
 ];
 
-// TODO - Autocomplete for ingredient name
+// TODO Autocomplete for ingredient name
+// FIXME On initial table creation, unable to sort list of ingredients
+// FIXME Table contents not displaying for existing lists
 
 // After document is loaded, init elements
 jQuery(document).ready( function($) {
