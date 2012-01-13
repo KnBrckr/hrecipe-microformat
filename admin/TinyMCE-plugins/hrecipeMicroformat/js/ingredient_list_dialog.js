@@ -46,17 +46,9 @@ var availableUnits=[ // TODO Setup for i18n, pull from database
 ];
 
 // TODO Autocomplete for ingredient name
-// FIXME On initial table creation, unable to sort list of ingredients
 
-// After document is loaded, init elements
+// Setup Insert and Delete Row functions
 jQuery(document).ready( function($) {
-	// Make table rows sortable
-	jQuery('tbody').sortable(
-		{
-			items: 'tr'
-		}
-	);
-	
 	// Insert a new row after the active row
 	jQuery('.insert').live('click', function(){
 		var row = jQuery(this).closest('tr');
@@ -100,8 +92,10 @@ var hrecipeIngredientListDialog = {
 		// If modifying an existing ingredient list ...
 		if (ingredientList.length > 0) {
 			jQuery('#insert').val(tinyMCEPopup.getLang('hrecipeIngredientList_dlg.update'));  // Label button as 'Update' vs. 'Insert'
-			jQuery('tbody').sortable({ items: 'tr' }); // Create sortable list
 		}
+		
+		// Make ingredients list sortable
+		jQuery('tbody').sortable({ items: 'tr' });
 				
 		// Setup autocomplete for fields in the table
 		jQuery('.type').autocomplete({source: availableUnits});
