@@ -501,7 +501,7 @@ class hrecipe_admin
 				'rewrite' => array('slug' => 'Recipes'),
 				'menu_position' => 7,
 				'supports' => array('title', 'editor', 'excerpt', 'author', 'thumbnail', 'trackbacks', 'comments', 'revisions'),
-				'taxonomies' => array('post_tag'), // FIXME Setup Taxonomy to allow only a single selection
+				'taxonomies' => array('post_tag'), // TODO Setup Taxonomy to allow only a single selection
 			)
 		);
 	}

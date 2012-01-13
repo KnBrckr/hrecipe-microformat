@@ -22,7 +22,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  **/
 
-// FIXME Format the Recipe Archive - Use recipe summary when available
+// TODO Format the Recipe Archive - Use recipe summary when available
 
 get_header(); ?>
 
@@ -37,7 +37,7 @@ get_header(); ?>
 										<?php if ( has_post_thumbnail() ) { // check if the post has a Post Thumbnail assigned to it.
 										  the_post_thumbnail();
 										}
-										// FIXME Add 'the_content' filter to remove Ingredients tables before generating excerpt
+										// TODO Add 'the_content' filter to remove Ingredients tables before generating excerpt
 										the_excerpt(); ?>
 									</div><!-- .entry-content -->
 								</div><!-- #post-## -->
