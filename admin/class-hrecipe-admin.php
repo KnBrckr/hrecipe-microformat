@@ -123,6 +123,7 @@ class hrecipe_admin
 	 **/
 	function setup()
 	{
+		// TODO Move init required for all pages out of admin section to speed init time
 		self::$dir = WP_PLUGIN_DIR . '/' . self::p . '/' ;
 		self::$url =  plugins_url(self::p) . '/' ;
 		$this->admin_notices = array();
@@ -928,7 +929,7 @@ class hrecipe_admin
 	 **/
 	function text_html($field, $value)
 	{
-		echo '<input type="text" name="' . $field . '" value="' . esc_html($value) . '" />';
+		echo '<input type="text" name="' . $field . '" value="' . esc_attr($value) . '" />';
 	}
 	
 	/**

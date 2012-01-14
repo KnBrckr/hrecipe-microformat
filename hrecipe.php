@@ -24,7 +24,6 @@ License: GPL2
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-// TODO Provide mechanism to import recipes from external sources
 // TODO Create widget to display recipe meta data to user, will need printing option as well
 // TODO Modify recipe meta header to float right or be in sidebar
 

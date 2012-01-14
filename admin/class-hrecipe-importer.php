@@ -24,6 +24,10 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  **/
 
+// TODO Import MasterCook format
+// TODO Import Text File format
+// TODO Import hrecipe format
+
 // Protect from direct execution
 if (!defined('WP_PLUGIN_DIR')) {
 	header('Status: 403 Forbidden');
@@ -71,44 +75,61 @@ class hrecipe_importer {
 	public function dispatch() {
 		global $hrecipe_microformat;
 		
+		echo '<div id="' . $this->id . '">';
+		
 		// Confirm that the hrecipe object is available
 		if (empty($hrecipe_microformat)) {
 			?>
 			<h2>Recipe Import</h2>
 			<p>There is an internal error with the hrecipe-microformat plugin.  Importing is not available.</p>	
 			<?php
-			return;
-		}
+		} else {
+			// TODO Provide form for import of multiple recipes to set difficulty etc.?
+
+			// Retrieve which step is active in import process
+			if (empty ($_POST['step']))
+				$step = 0;
+			else
+				$step = (int) $_POST['step'];
+
+			// 0 = Display upload form
+			// 1 = Import entire file contents
+			// 2 = Select recipes to upload from file
+			// 3 = Import selected recipes
+			switch ($step) {
+				case 0 :
+					// Display Upload form
+					$this->upload_form();
+					break;
+				case 1 :
+					// Import all recipes in the uploaded file
+					check_admin_referer($this->id);
+					$this->import_all();
+					break;
+				case 2:
+					// Select recipes from file to be imported
+					check_admin_referer($this->id);
+					$this->select_import_recipes();
+					break;
+				case 3:
+					// Import selected recipes
+					check_admin_referer($this->id);
+					echo 'Importing selected';
+					// TODO Implement selective importing of recipes
+					break;
+			}
+		} // End have valid hrecipe_microformat config
 		
-		// TODO Provide form for import of multiple recipes to set difficulty etc.?
-		
-		// Retrieve which step is active in import process
-		if (empty ($_GET['step']))
-			$step = 0;
-		else
-			$step = (int) $_GET['step'];
- 
-		switch ($step) {
-			case 0 :
-				$this->upload_form('admin.php?import='.$this->id.'&amp;step=1');
-				break;
-			case 1 :
-				check_admin_referer($this->id);
-				$recipes = $this->import();
-				if (isset($recipes['error'])) echo $recipes['error'];
-				break;
-		}
+		echo '</div>';
 	}
 	
 	/**
 	 * Display upload form
 	 *
-	 * TODO Allow multiple files on upload
-	 *
 	 * @access private
 	 * @return void
 	 **/
-	function upload_form($action) {
+	function upload_form() {
 		$bytes = apply_filters( 'import_upload_size_limit', wp_max_upload_size() );
 		$size = wp_convert_bytes_to_hr( $bytes );
 		?>
@@ -117,13 +138,26 @@ class hrecipe_importer {
 		<ul>
 			<li><?php _e('ShopNCook Export Format (.scx)', $this->domain)?></li>
 		</ul>
-		<form enctype="multipart/form-data" id="import-upload-form" method="post" action="<?php echo esc_attr(wp_nonce_url($action, $this->id)); ?>">
+		<form enctype="multipart/form-data" id="import-upload-form" method="post" 
+			action="<?php echo esc_attr(wp_nonce_url('admin.php?import=' . $this->id, $this->id)); ?>">
 		<p>
-		<label for="upload"><?php _e( 'Select a recipe file from your computer:', $this->domain ); ?></label> (<?php printf( __('Maximum size: %s', $this->domain ), $size ); ?>)
+		<label for="upload"><h3><?php _e( 'Select a recipe file from your computer:', $this->domain ); ?></h3></label> (<?php printf( __('Maximum size: %s', $this->domain ), $size ); ?>)<br />
 		<input type="file" id="upload" name="import" required />
-		<input type="hidden" name="action" value="save" />
 		<input type="hidden" name="max_file_size" value="<?php echo $bytes; ?>" />
+		<input type="hidden" name="step" value="1" />
 		</p>
+		<p>
+			<label for="publish"><h4><?php _e( 'Imported Recipes should be ... ', $this->domain );?></h4></label>
+			<input type="radio" name="publish" value="0" checked><?php _e ( 'Drafts', $this->domain ); ?>
+			<input type="radio" name="publish" value="1"><?php _e ( 'Published', $this->domain ); ?>
+		</p>
+		<!-- TODO Implement ability to select recipes to import from larger file
+		<p>
+			<label for="import_all"><h3><?php _e( 'How should recipes be imported?', $this->domain); ?></h3></label>
+			<input type="radio" name="step" value="1" checked><?php _e( 'Import All Recipes from source file', $this->domain ); ?><br />
+			<input type="radio" name="step" value="2"><?php _e( 'Select Recipes from file to import', $this->domain); ?>
+		</p>
+		-->
 		<?php submit_button( __('Upload file and import', $this->domain), 'button' ); ?>
 		</form>
 		<?php
@@ -135,41 +169,109 @@ class hrecipe_importer {
 	 * @access private
 	 * @return void
 	 */
-	private function import() {
-		if ( !isset($_FILES['import']) || 0 === $_FILES['import']['size'] ) {
-			$recipes['error'] = __( 'Empty file received. This error could be caused by uploads being disabled in your <ph></ph>p.ini or by post_max_size being defined as smaller than upload_max_filesize in php.ini.', $this->domain );
-			return $recipes;
-		}
+	private function import_all() {
+		// Normalize uploaded file into internal format for processing
+		$recipes = $this->normalize_file();
 
-		// TODO Change import to work a single recipe at a time to minimize memory impact off large imports
-		
-		/**
-		 * Parse incoming data into a normalized format
-		 */
-		$import = new import_shopncook();
-		$recipes = $import->import_scx($_FILES['import']['tmp_name']);
-		if (! $recipes) {
-			$recipes['error'] = __('Received error importing ShopNCook data.', $this->domain) . ' ' . $import->error_msg;
-			return $recipes;
+		if (isset($recipes['error'])) {
+			echo $recipes['error'];
+			return;
 		}
 		
 		/**
 		 * For each recipe, create a new post
 		 */
 		
+		// User select draft or publish for this import?
+		$publish = $_POST['publish'];
+		
 		echo '<h3>' . sprintf(__('Importing %d Recipe(s):', $this->domain), count($recipes)) . '</h3>';
 		echo '<ol>';
 		foreach ($recipes as $index => $recipe) {
-			if ($errmsg = $this->add_recipe_post($recipe)) {
+			if ($errmsg = $this->add_recipe_post($recipe, $publish)) {
 				echo '<li>' . $errmsg . '</li>';
-				$recipes['error'] = sprintf(__('Error creating recipe %d.  Remainder of Import cancelled.', $this->domain), $index + 1);
+				$errmsg = sprintf(__('Error creating recipe %d.  Remainder of Import cancelled.', $this->domain), $index + 1);
 				break;
 			}
 			echo '<li>' . esc_attr($recipe['fn']) . '</li>';
 		}
 		echo '</ol>';
 
-		return $recipes;
+		if (isset($errmsg)) {
+			echo '<h3>' . $errmsg . '</h3>';
+		} else {
+			echo '<h3>' . sprintf(__('Recipe Import Complete.', $this->domain)) . '</h3>';			
+		}
+		
+		return;
+	}
+	
+	/**
+	 * Display form to select which recipes in a data file will be imported
+	 *
+	 * @return void
+	 **/
+	private function select_import_recipes()
+	{
+		// Normalize uploaded file into internal format for processing
+		$recipes = $this->normalize_file();
+		
+		// TODO Temporarily save normalized data for next step
+
+		if (isset($recipes['error'])) {
+			echo $recipes['error'];
+			return;
+		}
+		?>
+		<form enctype="multipart/form-data" id="import-upload-form" method="post" 
+			action="<?php echo esc_attr(wp_nonce_url('admin.php?import=' . $this->id, $this->id)); ?>">
+			<h3>Select Recipes to Import:</h3>
+			<input type="hidden" name="step" value="3" />
+			<?php
+			foreach ($recipes as $index => $recipe) {
+				echo '<input type="checkbox" name="import_indexes[]" value="'. $index . '">' . esc_attr( $recipe['fn'] ) . '<br />';
+			}
+		
+			submit_button( __('Import selected recipes', $this->domain), 'button' );
+			?>
+		</form>
+		<?php
+	}
+	
+	/**
+	 * Read uploaded file, normalizing recipe content into internal format for processing
+	 * 
+	 * @return array of normalized recipes
+	 **/
+	private function normalize_file()
+	{
+		if ( !isset($_FILES['import']) || 0 === $_FILES['import']['size'] ) {
+			$recipes['error'] = __( 'Empty file received. This error could be caused by uploads being disabled or by post_max_size being defined as smaller than upload_max_filesize in your PHP configuration.', $this->domain );
+			return $recipes;
+		}
+
+		/**
+		 * Parse incoming data into a normalized format based on file type
+		 */
+		
+		$path_parts = pathinfo($_FILES['import']['name']);	
+		switch ($path_parts['extension']) {
+			case 'scx': // Import ShopNCook data
+				$import_type = __("ShopNCook", $this->domain);
+				$import = new import_shopncook();
+				break;
+				
+			default:
+				$recipes['error'] = __('Unknown recipe format uploaded.');
+				break;
+		}
+		
+		if (! empty($import)) {
+			$recipes = $import->normalize_all($_FILES['import']['tmp_name']);
+		} else {
+			$recipes['error'] = sprintf(__('Received error importing %s data.', $this->domain), $import_type) . ' ' . $import->error_msg;
+		}
+		return $recipes;		
 	}
 	
 	/**
@@ -188,18 +290,17 @@ class hrecipe_importer {
 	 *	$recipe['published']     Date published in 'Y-m-d H:i:s' format
 	 *	$recipe['tag']           Comma separated list of tags
 	 *	$recipe['difficulty']    Recipe difficulty rating  [0-5]
+	 * @param boolean $publish   Should recipe be added in draft or published state?
 	 * @return false on success, error message on failure
 	 **/
-	private function add_recipe_post($recipe)	{
+	private function add_recipe_post($recipe, $publish)	{
 		global $hrecipe_microformat;
-		
-		$post_status = 'draft';  // TODO Setup option for default post status
 		
 		/**
 		 * Sanitize incoming recipe data
 		 */
 		$recipe['yield'] = $recipe['yield'] != '0' ? $recipe['yield'] : '';
-		$recipe['summary'] = wpautop(wp_kses_data($recipe['summary']));
+		$recipe['summary'] = wpautop($recipe['summary']);
 		$recipe['published'] = $recipe['published'] ? $recipe['published'] : date('Y-m-d H:i:s'); // TODO Validate published date format
 		$recipe['difficulty'] = $recipe['difficulty'] ? $recipe['difficulty'] : '0';
 		
@@ -209,7 +310,7 @@ class hrecipe_importer {
 		$new_post = array(
 			'post_title' => $recipe['fn'],
       'post_content' => $this->build_post_content($recipe['content']),
-      'post_status' => $post_status, 
+      'post_status' => $publish ? 'publish' : 'draft', 
       'post_type' => $hrecipe_microformat::post_type,
       'post_date' => $recipe['published'],
       'post_excerpt' => $recipe['summary'],
@@ -250,7 +351,7 @@ class hrecipe_importer {
 				case 'ingrd-list':
 					// Open Ingredients table and add header
 					$text .= '<table class="ingredients">';
-					$text .= '<thead><tr><th colspan="2"><span class="ingredients-title">Ingredients</span></th></tr></thead>';
+					$text .= '<thead><tr><th colspan="2"><span class="ingredients-title">' . __('Ingredients', $this->domain) . '</span></th></tr></thead>';
 
 					// Add row for each ingredient
 					foreach ($section['data'] as $d) {
@@ -264,7 +365,7 @@ class hrecipe_importer {
 					break;
 					
 				case 'text':
-					$text .= wpautop(wp_kses_post($section['data']));
+					$text .= wpautop($section['data']);
 					break;
 				
 				default:
@@ -280,7 +381,6 @@ class hrecipe_importer {
 /**
  * Register the importer with Wordpress - must include the import module as it's not included by default
  */
-// TODO Confirm importer not registered if the plugin is not active
 include_once(ABSPATH . 'wp-admin/includes/import.php');
 if(function_exists('register_importer')) {
 	$hrecipe_import = new hrecipe_importer(hrecipe_admin::p);

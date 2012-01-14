@@ -413,7 +413,7 @@ class hrecipe_microformat extends hrecipe_admin {
 		switch ($this->recipe_field_map[$field]['format']) {
 			case 'text':  // default Post Meta Data
 				$value = get_post_meta($post->ID, self::prefix . $field, true);
-				$value = esc_html($value);
+				$value = esc_attr($value);
 				break;
 				
 			case 'tax': // Taxonomy data
@@ -573,7 +573,7 @@ class hrecipe_microformat extends hrecipe_admin {
 	{
 		global $post;
 		if ($title = get_post_meta($post->ID, self::prefix . 'fn', true)) {
-			$result = '<div class="fn">' . $title . '</div>';
+			$result = '<div class="fn">' . esc_attr($title) . '</div>';
 		} else {
 			$result = '';
 		}

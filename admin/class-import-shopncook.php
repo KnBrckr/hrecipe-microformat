@@ -62,7 +62,7 @@ class import_shopncook {
 	 *
 	 * @return array of normalized recipes
 	 **/
-	function import_scx($fname)
+	function normalize_all($fname)
 	{
 		// import the XML data
 		if (! ($recipe_import = $this->xml_parser->parse($fname))) {
