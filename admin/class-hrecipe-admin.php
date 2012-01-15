@@ -265,13 +265,19 @@ class hrecipe_admin
 	 **/
 	function on_activation()
 	{
+		// FIXME On failure activation is run 3 times!
 		self::register_taxonomies();  // Register the needed taxonomies so they can be populated
 		self::create_post_type();			// Create the hrecipe post type so that rewrite rules can be flushed.
 		
 		// Create foods database
 		$food_db = new hrecipe_food_db;
-		$food_db->create_food_schema();		// Setup schema
-		$food_db->load_sr(); 							// Load USDA Standard Reference database
+		try {
+			$food_db->create_food_schema();		// Setup schema
+			$food_db->load_food_db(WP_PLUGIN_DIR . '/' . self::p . '/db/'); 				// Load USDA Standard Reference database			
+		} catch (Exception $e) {
+			$food_db->drop_food_schema();
+			throw new Exception('Unable to load USDA SR, caught exception: ' . $e->getMessage());
+		}
 		
 		// Only insert terms if the category taxonomy doesn't already exist.
 		if (0 == count(get_terms(self::prefix . 'category', 'hide_empty=0&number=1'))) {

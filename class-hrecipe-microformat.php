@@ -40,7 +40,7 @@ class hrecipe_microformat extends hrecipe_admin {
 	/**
 	 * Minimum version of PHP required by the plugin
 	 **/
-	const php_version_required = '5.2.7';
+	const php_version_required = '5.3.6';
 	
 	/**
 	 * Class contructor

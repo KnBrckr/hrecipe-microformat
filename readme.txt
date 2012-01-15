@@ -13,7 +13,8 @@ Provides TinyMCE editing for the hRecipe microformat
 
 == Installation ==
 
-Requires PHP5.2
+Requires PHP v5.3.6.  Use of unset in classes was a bug fixed in v5.3.6.
+
 Plugin makes use of wpautop handling!  Using plugins that change the handling could alter output from this plugin.
 
 == Frequently Asked Questions ==

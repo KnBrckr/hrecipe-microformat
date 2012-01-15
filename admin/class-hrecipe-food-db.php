@@ -34,6 +34,14 @@ if (!defined('WP_PLUGIN_DIR')) {
 
 if (is_admin()) {
 	require_once(ABSPATH . 'wp-admin/includes/upgrade.php'); // Need dbDelta to manipulate DB Tables
+	
+	// Load plugin libs that are needed
+	$required_libs = array('class-hrecipe-usda-sr-txt.php');
+	foreach ($required_libs as $lib) {
+		if (!include_once($lib)) {
+			return false;
+		}
+	}
 }
 
 class hrecipe_food_db {
@@ -77,27 +85,27 @@ class hrecipe_food_db {
 		 * manufacturer name, scientific name, percentage and description of refuse, and factors used for calculating 
 		 * protein and kilocalories, if applicable. Items used in the FNDDS are also identified by value of “Y” in the Survey field.
 		 *
-		 * Field       Type  Blank  Description
-		 * NDB_No      A 5*    N    5-digit Nutrient Databank number that uniquely identifies a food item. 
+		 * Col Field       Type  Blank  Description
+		 * 0   NDB_No      A 5*    N    5-digit Nutrient Databank number that uniquely identifies a food item. 
 		 *                          If this field is defined as numeric, the leading zero will be lost.
-		 * FdGrp_Cd    A 4     N    4-digit code indicating food group to which a food item belongs.
-		 * Long_Desc   A 200   N    200-character description of food item.
-		 * Shrt_Desc   A 60    N    60-character abbreviated description of food item. 
+		 * 1   FdGrp_Cd    A 4     N    4-digit code indicating food group to which a food item belongs.
+		 * 2   Long_Desc   A 200   N    200-character description of food item.
+		 * 3   Shrt_Desc   A 60    N    60-character abbreviated description of food item. 
 		 *                          Generated from the 200-character description using abbreviations in Appendix A.
 		 *                          If short description is longer than 60 characters, additional abbreviations are made.
-		 * ComName     A 100   Y    Other names commonly used to describe a food, including local or regional names 
+		 * 4   ComName     A 100   Y    Other names commonly used to describe a food, including local or regional names 
 		 *                          for various foods, for example, “soda” or “pop” for “carbonated beverages.”
-		 * ManufacName A 65    Y    Indicates the company that manufactured the product, when appropriate.
-		 * Survey      A 1     Y    Indicates if the food item is used in the USDA Food and Nutrient Database for 
+		 * 5   ManufacName A 65    Y    Indicates the company that manufactured the product, when appropriate.
+		 * 6   Survey      A 1     Y    Indicates if the food item is used in the USDA Food and Nutrient Database for 
 		 *                          Dietary Studies (FNDDS) and thus has a complete nutrient profile for the 65 FNDDS nutrients.
-		 * Ref_desc    A 135   Y    Description of inedible parts of a food item (refuse), such as seeds or bone.
-		 * Refuse      N 2     Y    Percentage of refuse.
-		 * SciName     A 65    Y    Scientific name of the food item. Given for the least processed form of the 
+		 * 7   Ref_desc    A 135   Y    Description of inedible parts of a food item (refuse), such as seeds or bone.
+		 * 8   Refuse      N 2     Y    Percentage of refuse.
+		 * 9   SciName     A 65    Y    Scientific name of the food item. Given for the least processed form of the 
 		 *                          food (usually raw), if applicable.
-		 * N_Factor    N 4.2   Y    Factor for converting nitrogen to protein (see p. 10)
-		 * Pro_Factor  N 4.2   Y    Factor for calculating calories from protein (see p. 11).
-		 * Fat_Factor  N 4.2   Y    Factor for calculating calories from fat (see p. 11).
-		 * CHO_Factor  N 4.2   Y    Factor for calculating calories from carbohydrate (see p. 11).
+		 * 10  N_Factor    N 4.2   Y    Factor for converting nitrogen to protein (see p. 10)
+		 * 11  Pro_Factor  N 4.2   Y    Factor for calculating calories from protein (see p. 11).
+		 * 12  Fat_Factor  N 4.2   Y    Factor for calculating calories from fat (see p. 11).
+		 * 13  CHO_Factor  N 4.2   Y    Factor for calculating calories from carbohydrate (see p. 11).
 		 *
 		 * * Marks Primary keys
 		 *
@@ -119,10 +127,10 @@ class hrecipe_food_db {
 		 *
 		 * support table to the Food Description table and contains a list of food groups used in SR24 and their descriptions.
 		 *
-		 * Field       Type  Blank  Description
-		 * FdGrp_Cd    A 4*    N    4-digit code identifying a food group. Only the first 2 digits are currently assigned. 
+		 * Col Field       Type  Blank  Description
+		 * 0   FdGrp_Cd    A 4*    N    4-digit code identifying a food group. Only the first 2 digits are currently assigned. 
 		 *                          In the future, the last 2 digits may be used. Codes may not be consecutive.
-		 * FdGrp_Desc  A 60    N    Name of food group.
+		 * 1   FdGrp_Desc  A 60    N    Name of food group.
 		 *
 		 * * Marks Primary keys
 		 */
@@ -138,10 +146,10 @@ class hrecipe_food_db {
 		 * support table to the Food Description table and contains the factors from the LanguaL 
 		 * Thesaurus used to code a particular food.
 		 *
-		 * Field       Type  Blank  Description
-		 * NDB_No      A 5*    N    5-digit Nutrient Databank number that uniquely identifies a food item. 
+		 * Col Field       Type  Blank  Description
+		 * 0   NDB_No      A 5*    N    5-digit Nutrient Databank number that uniquely identifies a food item. 
 		 *                          If this field is defined as numeric, the leading zero will be lost.
-		 * Factor_Code A 5     N    The LanguaL factor from the Thesaurus
+		 * 1   Factor_Code A 5     N    The LanguaL factor from the Thesaurus
 		 *
 		 * * Marks Primary keys		
 		 */
@@ -157,10 +165,10 @@ class hrecipe_food_db {
 		 * support table to the LanguaL Factor table and contains the descriptions for only those factors used 
 		 * in coding the selected food items codes in this release of SR.
 		 *
-		 * Field       Type  Blank  Description
-		 * Factor_Code A 5*    N    The The LanguaL factor from the Thesaurus. Only those codes used to factor the 
+		 * Col Field       Type  Blank  Description
+		 * 0   Factor_Code A 5*    N    The The LanguaL factor from the Thesaurus. Only those codes used to factor the 
 		 *                          foods contained in the LanguaL Factor file are included in this file
-		 * Description A 140   N    The description of the LanguaL Factor Code from the thesaurus
+		 * 1   Description A 140   N    The description of the LanguaL Factor Code from the thesaurus
 		 *
 		 * * Marks Primary keys		
 		 */
@@ -175,15 +183,15 @@ class hrecipe_food_db {
 		 *
 		 * Contains the weight in grams of a number of common measures for each food item.
 		 *
-		 * Field         Type  Blank  Description
-		 * NDB_No        A 5*    N    5-digit Nutrient Databank number that uniquely identifies a food item. 
+		 * Col Field         Type  Blank  Description
+		 * 0   NDB_No        A 5*    N    5-digit Nutrient Databank number that uniquely identifies a food item. 
 		 *                          If this field is defined as numeric, the leading zero will be lost.
-		 * Seq           A 2*    N    Sequence Number
-		 * Amount        N 5.3   N    Unit modifier (for example, 1 in “1 cup”).
-		 * Msre_Desc     A 80    N    Description (for example, cup, diced, and 1-inch pieces).
-		 * Gm_Wgt        N 7.1   N    Gram weight.
-		 * Num_Data_Pts  N 3     Y    Number of data points.
-		 * Std_Dev       N 7.3   Y    Standard deviation.
+		 * 1   Seq           A 2*    N    Sequence Number
+		 * 2   Amount        N 5.3   N    Unit modifier (for example, 1 in “1 cup”).
+		 * 3   Msre_Desc     A 80    N    Description (for example, cup, diced, and 1-inch pieces).
+		 * 4   Gm_Wgt        N 7.1   N    Gram weight.
+		 * 5   Num_Data_Pts  N 3     Y    Number of data points.
+		 * 6   Std_Dev       N 7.3   Y    Standard deviation.
 		 *
 		 * * Marks Primary keys		
 		 */
@@ -201,18 +209,18 @@ class hrecipe_food_db {
 		 *
 		 * Contains additional information about the food item, household weight, and nutrient value.
 		 *
-		 * Field       Type  Blank  Description
-		 * NDB_No      A 5     N    5-digit Nutrient Databank number that uniquely identifies a food item. 
+		 * Col Field       Type  Blank  Description
+		 * 0   NDB_No      A 5     N    5-digit Nutrient Databank number that uniquely identifies a food item. 
 		 *                          If this field is defined as numeric, the leading zero will be lost.
-		 * Footnt_No   A 4     N    Sequence number. If a given footnote applies to more than one nutrient number, 
+		 * 1   Footnt_No   A 4     N    Sequence number. If a given footnote applies to more than one nutrient number, 
 		 *                          the same footnote number is used. As a result, this file cannot be indexed.
-		 * Footnt_Typ  A 1     N    Type of Footnote
+		 * 2   Footnt_Typ  A 1     N    Type of Footnote
 		 *                          D = footnote adding information to the food description;
 		 *                          M = footnote adding information to measure description;
 		 *                          N = footnote providing additional information on a nutrient value. 
 		 *                          If the Footnt_typ = N, the Nutr_No will also be filled in.
-		 * Nutr_No     A 3     Y    Unique 3-digit identifier code for a nutrient to which footnote applies.
-		 * Footnt_Txt  A 200   N    Footnote text.
+		 * 3   Nutr_No     A 3     Y    Unique 3-digit identifier code for a nutrient to which footnote applies.
+		 * 4   Footnt_Txt  A 200   N    Footnote text.
 		 *
 		 * * Marks Primary keys		
 		 */
@@ -220,60 +228,60 @@ class hrecipe_food_db {
 		/**
 		 * Abbreviated Nutritional Data
 		 *
-		 * Field       Type    Description
-		 * NDB_No      A 5*    5-digit Nutrient Databank number that uniquely identifies a food item. 
-		 * Shrt_Desc   A 60    60-character abbreviated description of food item.†
-		 * Water       N 10.2  Water (g/100g)
-		 * Energ_Kcal  N 10    Food energy (kcal/100 g)
-		 * Protein     N 10.2  Protein (g/100 g)
-		 * Lipid_Tot   N 10.2  Total lipid (fat)(g/100 g)
-		 * Ash         N 10.2  Ash (g/100 g)
-		 * Carbohydrt  N 10.2  Carbohydrate, by difference (g/100 g)
-		 * Fiber_TD    N 10.1  Total dietary fiber (g/100 g)
-		 * Sugar_Tot   N 10.2  Total sugars (g/100 g)
-		 * Calcium     N 10    Calcium (mg/100 g)
-		 * Iron        N 10.2  Iron (mg/100 g)
-		 * Magnesium   N 10    Magnesium (mg/100 g)
-		 * Phosphorus  N 10    Phosphorus (mg/100 g)
-		 * Potassium   N 10    Potassium (mg/100 g)
-		 * Sodium      N 10    Sodium (mg/100 g)
-		 * Zinc        N 10.2  Zinc (mg/100 g)
-		 * Copper      N 10.3  Copper (mg/100 g)
-		 * Manganese   N 10.3  Manganese (mg/100 g)
-		 * Selenium    N 10.1  Selenium (μg/100 g)
-		 * Vit_C       N 10.1  Vitamin C (mg/100 g)
-		 * Thiamin     N 10.3  Thiamin (mg/100 g)
-		 * Riboflavin  N 10.3  Riboflavin (mg/100 g)
-		 * Niacin      N 10.3  Niacin (mg/100 g)
-		 * Panto_acid  N 10.3  Pantothenic acid (mg/100 g)
-		 * Vit_B6      N 10.3  Vitamin B6 (mg/100 g)
-		 * Folate_Tot  N 10    Folate, total (μg/100 g)
-		 * Folic_acid  N 10    Folic acid (μg/100 g)
-		 * Food_Folate N 10    Food folate (μg/100 g)
-		 * Folate_DFE  N 10    Folate (μg dietary folate equivalents/100 g)
-		 * Choline_Tot N 10    Choline, total (mg/100 g)
-		 * Vit_B12     N 10.2  Vitamin B12 (μg/100 g)
-		 * Vit_A_IU    N 10    Vitamin A (IU/100 g)
-		 * Vit_A_RAE   N 10    Vitamin A (μg retinol activity equivalents/100g)
-		 * Retinol     N 10    Retinol (μg/100 g)
-		 * Alpha_Carot N 10    Alpha-carotene (μg/100 g)
-		 * Beta_Carot  N 10    Beta-carotene (μg/100 g)
-		 * Beta_Crypt  N 10    Beta-cryptoxanthin (μg/100 g)
-		 * Lycopene    N 10    Lycopene (μg/100 g)
-		 * Lut+Zea     N 10    Lutein+zeazanthin (μg/100 g)
-		 * Vit_E       N 10.2  Vitamin E (alpha-tocopherol) (mg/100 g)
-		 * Vit_D_mcg   N 10.1  Vitamin D (μg/100 g)
-		 * Vit_D_IU    N 10    Vitamin D (IU/100 g)
-		 * Vit_K       N 10.1  Vitamin K (phylloquinone) (μg/100 g)
-		 * FA_Sat      N 10.3  Saturated fatty acid (g/100 g)
-		 * FA_Mono     N 10.3  Monounsaturated fatty acids (g/100 g)
-		 * FA_Poly     N 10.3  Polyunsaturated fatty acids (g/100 g)
-		 * Cholestrl   N 10.3  Cholesterol (mg/100 g)
-		 * GmWt_1      N 9.2   First household weight for this item from the Weight file.
-		 * GmWt_Desc1  A 120   Description of household weight number 1
-		 * GmWt_2      N 9.2   Second household weight for this item from the Weight file.
-		 * GmWt_Desc2  A 120   Description of household weight number 2.
-		 * Refuse_Pct  N 2     Percent refuse.
+		 * Col Field       Type    Description
+		 * 0   NDB_No      A 5*    5-digit Nutrient Databank number that uniquely identifies a food item. 
+		 * 1   Shrt_Desc   A 60    60-character abbreviated description of food item.†
+		 * 2   Water       N 10.2  Water (g/100g)
+		 * 3   Energ_Kcal  N 10    Food energy (kcal/100 g)
+		 * 4   Protein     N 10.2  Protein (g/100 g)
+		 * 5   Lipid_Tot   N 10.2  Total lipid (fat)(g/100 g)
+		 * 6   Ash         N 10.2  Ash (g/100 g)
+		 * 7   Carbohydrt  N 10.2  Carbohydrate, by difference (g/100 g)
+		 * 8   Fiber_TD    N 10.1  Total dietary fiber (g/100 g)
+		 * 9   Sugar_Tot   N 10.2  Total sugars (g/100 g)
+		 * 10  Calcium     N 10    Calcium (mg/100 g)
+		 * 11  Iron        N 10.2  Iron (mg/100 g)
+		 * 12  Magnesium   N 10    Magnesium (mg/100 g)
+		 * 13  Phosphorus  N 10    Phosphorus (mg/100 g)
+		 * 14  Potassium   N 10    Potassium (mg/100 g)
+		 * 15  Sodium      N 10    Sodium (mg/100 g)
+		 * 16  Zinc        N 10.2  Zinc (mg/100 g)
+		 * 17  Copper      N 10.3  Copper (mg/100 g)
+		 * 18  Manganese   N 10.3  Manganese (mg/100 g)
+		 * 19  Selenium    N 10.1  Selenium (μg/100 g)
+		 * 20  Vit_C       N 10.1  Vitamin C (mg/100 g)
+		 * 21  Thiamin     N 10.3  Thiamin (mg/100 g)
+		 * 22  Riboflavin  N 10.3  Riboflavin (mg/100 g)
+		 * 23  Niacin      N 10.3  Niacin (mg/100 g)
+		 * 24  Panto_acid  N 10.3  Pantothenic acid (mg/100 g)
+		 * 25  Vit_B6      N 10.3  Vitamin B6 (mg/100 g)
+		 * 26  Folate_Tot  N 10    Folate, total (μg/100 g)
+		 * 27  Folic_acid  N 10    Folic acid (μg/100 g)
+		 * 28  Food_Folate N 10    Food folate (μg/100 g)
+		 * 29  Folate_DFE  N 10    Folate (μg dietary folate equivalents/100 g)
+		 * 30  Choline_Tot N 10    Choline, total (mg/100 g)
+		 * 31  Vit_B12     N 10.2  Vitamin B12 (μg/100 g)
+		 * 32  Vit_A_IU    N 10    Vitamin A (IU/100 g)
+		 * 33  Vit_A_RAE   N 10    Vitamin A (μg retinol activity equivalents/100g)
+		 * 34  Retinol     N 10    Retinol (μg/100 g)
+		 * 35  Alpha_Carot N 10    Alpha-carotene (μg/100 g)
+		 * 36  Beta_Carot  N 10    Beta-carotene (μg/100 g)
+		 * 37  Beta_Crypt  N 10    Beta-cryptoxanthin (μg/100 g)
+		 * 38  Lycopene    N 10    Lycopene (μg/100 g)
+		 * 39  Lut+Zea     N 10    Lutein+zeazanthin (μg/100 g)
+		 * 40  Vit_E       N 10.2  Vitamin E (alpha-tocopherol) (mg/100 g)
+		 * 41  Vit_D_mcg   N 10.1  Vitamin D (μg/100 g)
+		 * 42  Vit_D_IU    N 10    Vitamin D (IU/100 g)
+		 * 43  Vit_K       N 10.1  Vitamin K (phylloquinone) (μg/100 g)
+		 * 44  FA_Sat      N 10.3  Saturated fatty acid (g/100 g)
+		 * 45  FA_Mono     N 10.3  Monounsaturated fatty acids (g/100 g)
+		 * 46  FA_Poly     N 10.3  Polyunsaturated fatty acids (g/100 g)
+		 * 47  Cholestrl   N 10.3  Cholesterol (mg/100 g)
+		 * 48  GmWt_1      N 9.2   First household weight for this item from the Weight file.
+		 * 49  GmWt_Desc1  A 120   Description of household weight number 1
+		 * 50  GmWt_2      N 9.2   Second household weight for this item from the Weight file.
+		 * 51  GmWt_Desc2  A 120   Description of household weight number 2.
+		 * 52  Refuse_Pct  N 2     Percent refuse.
 		 *
 		 * * Marks Primary keys		
 		 */
@@ -332,13 +340,52 @@ class hrecipe_food_db {
 	}
 	
 	/**
-	 * Load USDA Standard Reference into the DB
+	 * Drop USDA SR tables
 	 *
 	 * @return void
 	 **/
-	function load_sr()
+	function drop_food_schema()
 	{
-		// FIXME Load the tables
+		$tables = array('abbrev', 'fd_group', 'food_des', 'langdesc', 'langual', 'weight');
+		
+		foreach ($tables as $table) {
+			//FIXME Drop the tables
+			error_log('Dropping ' . $table);
+		}
+	}
+	
+	/**
+	 * Load USDA Standard Reference into the DB
+	 *
+	 * @param string $db_path Path to Standard Reference files
+	 * @return void
+	 **/
+	function load_food_db($db_path)
+	{
+		global $wpdb;
+		
+		// Table food_des
+		
+		// Table fd_group
+		$sr = new hrecipe_usda_sr_txt($db_path . 'FD_GROUP.txt');
+		
+		while ($row = $sr->next()) {
+			// Insert $row into the table
+			$rows_affected = $wpdb->insert( $this->table_prefix . 'fd_group', array( 'FdGrp_Cd' => $row[0], 'FdGrp_Desc' => $row[1] ) );
+			error_log(var_export($rows_affected, true));
+		}
+		unset($sr); // Trigger __destructor() for class
+		
+		// Table langual
+		
+		// Table langdesc
+		
+		// Table weight
+		
+		// Table abbrev
+		
+		// FIXME Implement all table adds
+		throw new Exception ('Force Fail');
 	}
 } // End class hrecipe_food_db
 ?>
