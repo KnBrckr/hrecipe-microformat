@@ -156,7 +156,7 @@ class hrecipe_food_db {
 		$sql .= "CREATE TABLE " . $prefix . 'langual' . " (
 			NDB_No char(5) NOT NULL,
 			Factor_Code char(5) NOT NULL,
-			PRIMARY KEY  (NDB_No)
+			KEY NDB_No (NDB_No)
 		) $charset_collate;";
 		
 		/**
@@ -201,7 +201,8 @@ class hrecipe_food_db {
 			Amount decimal(5,3) NOT NULL,
 			Msre_Desc varchar(80) NOT NULL,
 			Gm_Wgt decimal(7,1) NOT NULL,
-			UNIQUE KEY NDB_No_Seq (NDB_No,Seq)
+			UNIQUE KEY NDB_No_Seq (NDB_No,Seq),
+			KEY NDB_No (NDB_No)
 		) $charset_collate;";	
 
 		/**
@@ -340,17 +341,17 @@ class hrecipe_food_db {
 	}
 	
 	/**
-	 * Drop USDA SR tables
+	 * Drop USDA SR tables if they exist in DB
 	 *
 	 * @return void
 	 **/
 	function drop_food_schema()
 	{
-		$tables = array('abbrev', 'fd_group', 'food_des', 'langdesc', 'langual', 'weight');
+		global $wpdb;
 		
+		$tables = array('abbrev', 'fd_group', 'food_des', 'langdesc', 'langual', 'weight');		
 		foreach ($tables as $table) {
-			//FIXME Drop the tables
-			error_log('Dropping ' . $table);
+			$wpdb->query("DROP TABLE IF EXISTS " . $this->table_prefix . $table);
 		}
 	}
 	
@@ -362,9 +363,26 @@ class hrecipe_food_db {
 	 **/
 	function load_food_db($db_path)
 	{
+		// TODO Handle Condition when tables already populated
 		global $wpdb;
 		
 		// Table food_des
+		$sr = new hrecipe_usda_sr_txt($db_path . 'FOOD_DES.txt');
+		
+		while ($row = $sr->next()) {
+			// Insert $row into the table
+			$rows_affected = $wpdb->insert( $this->table_prefix . 'food_des', 
+				array(
+					'NDB_No' => $row[0],
+					'FdGrp_Cd' => $row[1],
+					'Long_Desc' => $row[2],
+					'Shrt_Desc' => $row[3],
+					'ComName' => $row[4],
+					'ManufacName' => $row[5],
+					'SciName' => $row[9]
+				));
+		}
+		unset($sr); // Trigger __destructor() for class
 		
 		// Table fd_group
 		$sr = new hrecipe_usda_sr_txt($db_path . 'FD_GROUP.txt');
@@ -372,20 +390,64 @@ class hrecipe_food_db {
 		while ($row = $sr->next()) {
 			// Insert $row into the table
 			$rows_affected = $wpdb->insert( $this->table_prefix . 'fd_group', array( 'FdGrp_Cd' => $row[0], 'FdGrp_Desc' => $row[1] ) );
-			error_log(var_export($rows_affected, true));
 		}
 		unset($sr); // Trigger __destructor() for class
 		
 		// Table langual
+		$sr = new hrecipe_usda_sr_txt($db_path . 'LANGUAL.txt');
+		
+		while ($row = $sr->next()) {
+			// Insert $row into the table
+			$rows_affected = $wpdb->insert( $this->table_prefix . 'langual', array( 'NDB_No' => $row[0], 'Factor_Code' => $row[1] ) );
+		}		
+		unset($sr); // Trigger __destructor() for class		
 		
 		// Table langdesc
+		$sr = new hrecipe_usda_sr_txt($db_path . 'LANGDESC.txt');
+		
+		while ($row = $sr->next()) {
+			// Insert $row into the table
+			$rows_affected = $wpdb->insert( $this->table_prefix . 'langdesc', array( 'Factor_Code' => $row[0], 'Description' => $row[1] ) );
+		}		
+		unset($sr); // Trigger __destructor() for class		
 		
 		// Table weight
+		$sr = new hrecipe_usda_sr_txt($db_path . 'WEIGHT.txt');
+		
+		while ($row = $sr->next()) {
+			// Insert $row into the table
+			$rows_affected = $wpdb->insert( $this->table_prefix . 'weight', 
+				array(
+					'NDB_No' => $row[0],
+					'Seq' => $row[1],
+					'Amount' => $row[2],
+					'Msre_Desc' => $row[3],
+					'Gm_Wgt' => $row[4]
+				) );
+		}		
+		unset($sr); // Trigger __destructor() for class		
 		
 		// Table abbrev
+		$sr = new hrecipe_usda_sr_txt($db_path . 'ABBREV.txt');
 		
-		// FIXME Implement all table adds
-		throw new Exception ('Force Fail');
+		while ($row = $sr->next()) {
+			// Insert $row into the table
+			$rows_affected = $wpdb->insert( $this->table_prefix . 'abbrev', 
+				array(
+					'NDB_No' => $row[0],'Water' => $row[2],'Energ_Kcal' => $row[3],'Protein' => $row[4],'Lipid_Tot' => $row[5],
+				  'Carbohydrt' => $row[7],'Fiber_TD' => $row[8],'Sugar_Tot' => $row[9],'Calcium' => $row[10],
+				  'Iron' => $row[11],'Magnesium' => $row[12],'Phosphorus' => $row[13],'Potassium' => $row[14],'Sodium' => $row[15],
+				  'Zinc' => $row[16],'Copper' => $row[17],'Manganese' => $row[18],'Selenium' => $row[19],'Vit_C' => $row[20],
+				  'Thiamin' => $row[21],'Riboflavin' => $row[22],'Niacin' => $row[23],'Panto_acid' => $row[24],'Vit_B6' => $row[25],
+				  'Folate_Tot' => $row[26],'Folic_acid' => $row[27],'Food_Folate' => $row[28],'Folate_DFE' => $row[29],
+				  'Choline_Tot' => $row[30],'Vit_B12' => $row[31],'Vit_A_IU' => $row[32],'Vit_A_RAE' => $row[33],'Retinol' => $row[34],
+				  'Alpha_Carot' => $row[35],'Beta_Carot' => $row[36],'Beta_Crypt' => $row[37],'Lycopene' => $row[38],
+				  'LutZea' => $row[39],'Vit_E' => $row[40],'Vit_D_mcg' => $row[41],'Vit_D_IU' => $row[42],'Vit_K' => $row[43],
+				  'FA_Sat' => $row[44],'FA_Mono' => $row[45],'FA_Poly' => $row[46],'Cholestrl' => $row[47]
+				) 
+			);
+		}		
+		unset($sr); // Trigger __destructor() for class		
 	}
 } // End class hrecipe_food_db
 ?>
