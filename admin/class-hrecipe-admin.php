@@ -35,7 +35,7 @@ if (!defined('WP_PLUGIN_DIR')) {
 
 // On admin screens, load additional classes
 if (is_admin()) {
-	$required_libs = array('class-hrecipe-importer.php');
+	$required_libs = array('class-hrecipe-importer.php', 'class-hrecipe-food-db.php');
 	foreach ($required_libs as $lib) {
 		if (!include_once($lib)) {
 			return false;
@@ -267,6 +267,11 @@ class hrecipe_admin
 	{
 		self::register_taxonomies();  // Register the needed taxonomies so they can be populated
 		self::create_post_type();			// Create the hrecipe post type so that rewrite rules can be flushed.
+		
+		// Create foods database
+		$food_db = new hrecipe_food_db;
+		$food_db->create_food_schema();		// Setup schema
+		$food_db->load_sr(); 							// Load USDA Standard Reference database
 		
 		// Only insert terms if the category taxonomy doesn't already exist.
 		if (0 == count(get_terms(self::prefix . 'category', 'hide_empty=0&number=1'))) {
@@ -1216,7 +1221,10 @@ class hrecipe_admin
 				}				
 			} 
 			unset($wp_taxonomies[$taxonomy]);
-		}		
+		}
+		
+		/** Drop nutritional tables **/
+		// FIXME Drop nutritional tables
 	}
 	
 	/**
