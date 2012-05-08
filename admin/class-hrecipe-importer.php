@@ -117,6 +117,11 @@ class hrecipe_importer {
 					echo 'Importing selected';
 					// TODO Implement selective importing of recipes
 					break;
+				default:
+					// Uh-Oh!  Shouldn't get here
+					echo 'Invalid step value specified: ' . $step;
+					echo 'Please report this error.';
+					break;
 			}
 		} // End have valid hrecipe_microformat config
 		
@@ -124,7 +129,7 @@ class hrecipe_importer {
 	}
 	
 	/**
-	 * Display upload form
+	 * Display upload form to user
 	 *
 	 * @access private
 	 * @return void
@@ -148,8 +153,9 @@ class hrecipe_importer {
 		</p>
 		<p>
 			<label for="publish"><h4><?php _e( 'Imported Recipes should be ... ', $this->domain );?></h4></label>
-			<input type="radio" name="publish" value="0" checked><?php _e ( 'Drafts', $this->domain ); ?>
-			<input type="radio" name="publish" value="1"><?php _e ( 'Published', $this->domain ); ?>
+			<input type="radio" name="status" value="0" checked><?php _e ( 'Drafts', $this->domain ); ?>
+			<input type="radio" name="status" value="1"><?php _e ( 'Published', $this->domain ); ?>
+			<input type="radio" name="status" value="2"><?php _e ( 'Private (only visible to Editors and Administrators)', $this->domain); ?>
 		</p>
 		<!-- TODO Implement ability to select recipes to import from larger file
 		<p>
@@ -166,6 +172,7 @@ class hrecipe_importer {
 	/**
 	 * Handle import request from dispatcher
 	 *
+	 * @param int $_POST['status']  0 ==> Add Recipes as Drafts, 1 ==> Publish on Add, 2 ==> Private on Add
 	 * @access private
 	 * @return void
 	 */
@@ -182,13 +189,12 @@ class hrecipe_importer {
 		 * For each recipe, create a new post
 		 */
 		
-		// User select draft or publish for this import?
-		$publish = $_POST['publish'];
+		$post_status = $_POST['status'];
 		
 		echo '<h3>' . sprintf(__('Importing %d Recipe(s):', $this->domain), count($recipes)) . '</h3>';
 		echo '<ol>';
 		foreach ($recipes as $index => $recipe) {
-			if ($errmsg = $this->add_recipe_post($recipe, $publish)) {
+			if ($errmsg = $this->add_recipe_post($recipe, $post_status)) {
 				echo '<li>' . $errmsg . '</li>';
 				$errmsg = sprintf(__('Error creating recipe %d.  Remainder of Import cancelled.', $this->domain), $index + 1);
 				break;
@@ -290,10 +296,10 @@ class hrecipe_importer {
 	 *	$recipe['published']     Date published in 'Y-m-d H:i:s' format
 	 *	$recipe['tag']           Comma separated list of tags
 	 *	$recipe['difficulty']    Recipe difficulty rating  [0-5]
-	 * @param boolean $publish   Should recipe be added in draft or published state?
+	 * @param int $status        0 ==> Draft, 1 ==> Publish, 2 ==> Private
 	 * @return false on success, error message on failure
 	 **/
-	private function add_recipe_post($recipe, $publish)	{
+	private function add_recipe_post($recipe, $status)	{
 		global $hrecipe_microformat;
 		
 		/**
@@ -304,13 +310,27 @@ class hrecipe_importer {
 		$recipe['published'] = $recipe['published'] ? $recipe['published'] : date('Y-m-d H:i:s'); // TODO Validate published date format
 		$recipe['difficulty'] = $recipe['difficulty'] ? $recipe['difficulty'] : '0';
 		
+		switch ($status) {
+			case 0:
+			default:
+			  $post_status = 'draft';
+				break;
+			case 1:
+				$post_status = 'publish';
+				break;
+			case 2:
+				$post_status = 'private';
+				break;
+		}
+		
 		/**
 		 * Add Recipe to the database
 		 */
 		$new_post = array(
 			'post_title' => $recipe['fn'],
       'post_content' => $this->build_post_content($recipe['content']),
-      'post_status' => $publish ? 'publish' : 'draft', 
+      'post_status' => $post_status, 
+			'post_password' => '',
       'post_type' => $hrecipe_microformat::post_type,
       'post_date' => $recipe['published'],
       'post_excerpt' => $recipe['summary'],
