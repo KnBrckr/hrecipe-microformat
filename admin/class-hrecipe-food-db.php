@@ -53,16 +53,16 @@ class hrecipe_food_db {
 	protected $table_prefix;
 	
 	/**
-	 * undocumented function
+	 * Class Constructor 
+	 * - sets up prefix to use for tables in DB
 	 *
 	 * @return void
-	 * @author Kenneth J. Brucker <ken.brucker@action-a-day.com>
 	 **/
-	function __construct()
+	function __construct($prefix)
 	{
 		global $table_prefix;
 
-		$this->table_prefix = $table_prefix . 'hrecipe_';		
+		$this->table_prefix = $table_prefix . $prefix;		
 	}
 	
 	/**

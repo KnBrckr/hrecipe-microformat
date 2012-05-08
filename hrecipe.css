@@ -161,6 +161,9 @@ tr.ingredient td, tr.ingredient:nth-child(2n) td {
 .ingredient .comment {
 	font-style: italic;
 }
+.ingredient .NDB_No {
+	display: none;
+}
 
 /* ================ */
 /* = Instructions = */

@@ -272,7 +272,7 @@ class hrecipe_admin
 		// Create foods database
 		$food_db = new hrecipe_food_db;
 		try {
-			$food_db->create_food_schema();		// Setup schema
+			$food_db->create_food_schema(self::prefix);		// Setup schema
 			$food_db->load_food_db(WP_PLUGIN_DIR . '/' . self::p . '/db/'); 				// Load USDA Standard Reference database			
 		} catch (Exception $e) {
 			$food_db->drop_food_schema();

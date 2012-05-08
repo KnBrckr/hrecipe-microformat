@@ -17,6 +17,8 @@ Requires PHP v5.3.6.  Use of unset in classes was a bug fixed in v5.3.6.
 
 Plugin makes use of wpautop handling!  Using plugins that change the handling could alter output from this plugin.
 
+Assumes plugin can locate wp-admin directory by popping up the directory stack
+
 == Frequently Asked Questions ==
 
 = A question that someone might have =

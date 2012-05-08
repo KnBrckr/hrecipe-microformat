@@ -76,9 +76,12 @@ class hrecipe_microformat extends hrecipe_admin {
 		wp_register_script('jquery.ui.stars', self::$url . 'lib/jquery.ui.stars-3.0/jquery.ui.stars.min.js', array('jquery-ui-core', 'jquery-ui-widget'), '3.0.1');
 		wp_register_style('jquery.ui.stars', self::$url . 'lib/jquery.ui.stars-3.0/jquery.ui.stars.min.css', array(), '3.0.1');
 		
-		// Setup AJAX handling for recipe ratings
+		// Register AJAX action for recipe ratings (action: hrecipe_recipe_rating)
 		add_action('wp_ajax_'. self::prefix .  'recipe_rating', array(&$this, 'ajax_recipe_rating'));
 		add_action('wp_ajax_nopriv_' . self::prefix . 'recipe_rating', array(&$this, 'ajax_recipe_rating'));
+		
+		// Register AJAX action used for ingredient name auto-completion
+		add_action('wp_ajax_' . self::prefix . 'ingrd_auto_complete', array(&$this, 'ajax_ingrd_auto_complete'));
 	}
 	
 	/**
@@ -664,6 +667,34 @@ class hrecipe_microformat extends hrecipe_admin {
 		header( "Content-Type: application/json" );
 		echo $response;
 		
+		exit;
+	}
+	
+	/**
+	 * Handle AJAX request for auto-completion information for an ingredient name
+	 *
+	 * @return does not return
+	 **/
+	function ajax_ingrd_auto_complete()
+	{
+		global $wpdb;
+		
+		// Escape incoming name to prevent SQL attack
+		$name_contains = esc_attr($_REQUEST['name_contains']);
+		
+		// Validate numeric
+		$max_rows = is_numeric($_REQUEST['maxRows']) ? $_REQUEST['maxRows'] : 12;
+		if ($max_rows < 1) $max_rows = 1;
+		
+		$rows = $wpdb->get_results("SELECT NDB_No,Long_Desc  FROM ps_hrecipe_food_des WHERE Long_Desc LIKE '%${name_contains}%' LIMIT 0,${max_rows}");
+		
+		// Response Output
+		$response = json_encode(array(
+			'list' => $rows,
+		));
+		
+		header( "Content-Type: application/json" );
+		echo $response;
 		exit;
 	}
 	

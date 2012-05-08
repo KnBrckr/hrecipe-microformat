@@ -82,7 +82,7 @@ var hrecipeIngredientListDialog = {
 			// For each ingredient in the document ...
 			var sourceRow = jQuery(this);
 			var clonedRow = hrecipeCloneRow(emptyRow, false); // Don't init autocomplete on clone
-			jQuery.each(['.value', '.type', '.ingrd', '.comment'], function(index,attr){
+			jQuery.each(['.value', '.type', '.ingrd', '.comment', '.NDB_No'], function(index,attr){
 				var attrVal = sourceRow.find(attr).text();
 				clonedRow.find(attr).val(attrVal);
 			});
@@ -98,7 +98,7 @@ var hrecipeIngredientListDialog = {
 		jQuery('tbody').sortable({ items: 'tr' });
 				
 		// Setup autocomplete for fields in the table
-		jQuery('.type').autocomplete({source: availableUnits});
+		hrecipeInitAutocomplete(jQuery('tbody'));
 	},
 
 	// Insert the contents from the input into the document
@@ -117,7 +117,6 @@ var hrecipeIngredientListDialog = {
 
 			// Add the section Title
 		val = jQuery('#ingrd-list-name').val().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); // Sanitize user text
-//		val = val != '' ? val : '&nbsp;' ;
 		ingredients.appendChild(z=ed.dom.create('thead'));
 		z.appendChild(z=ed.dom.create('tr'));
 		z.appendChild(z=ed.dom.create('th', {'colspan': 2}));
@@ -129,24 +128,31 @@ var hrecipeIngredientListDialog = {
 			haveIngrd = false;
 			fields = new Array;
 			row = jQuery(this);
-			ingrdRow = ed.dom.create('tr', {'class': 'ingredient'});
-			jQuery.each(['value', 'type', 'ingrd', 'comment'],function(index,attr){
-				if ('' != (val = row.find('.' + attr).val())) {
-					val = val.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); // Sanitize user text
+			jQuery.each(['value', 'type', 'ingrd', 'comment', 'NDB_No'],function(index,attr){
+				val = row.find('.' + attr).val();
+				val = typeof val == 'string' ? val : '';
+				if ('' != val) {
+					// Found ingredient content for this row; include in result
 					haveIngrd = true;
+					
+					// Sanitize User text
+					val = val.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+					// Generate SPAN for each component of ingredient row
+					fields[attr] = ed.dom.create('span', {'class': attr}, val);
 				}
-				// Generate SPAN for each component of ingredient row
-				fields[attr] = ed.dom.create('span', {'class': attr}, val);
 			});
 
 			// If at least one field specified, add to the result
 			if (haveIngrd) {
+				ingrdRow = ed.dom.create('tr', {'class': 'ingredient'});
 				td1 = ed.dom.create('td');
-				td1.appendChild(fields['value']);
-				td1.appendChild(fields['type']);
+				if ('value' in fields) { td1.appendChild(fields['value']); }
+				if ('type' in fields) { td1.appendChild(fields['type']); }
 				td2 = ed.dom.create('td');
-				td2.appendChild(fields['ingrd']);
-				td2.appendChild(fields['comment']);
+				if ('ingrd' in fields) { td2.appendChild(fields['ingrd']); }
+				if ('NDB_No' in fields) { td2.appendChild(fields['NDB_No']); }
+				if ('comment' in fields) { td2.appendChild(fields['comment']); }
 				ingrdRow.appendChild(td1);
 				ingrdRow.appendChild(td2);
 				ingrdList.appendChild(ingrdRow);
@@ -202,10 +208,56 @@ function hrecipeCloneRow(row, autoinit) {
 
 	if (autoinit) {
 		// Setup autocomplete for the new row elements
-		clonedRow.find('.type').autocomplete({source: availableUnits});		
+		hrecipeInitAutocomplete(clonedRow);
 	}
 	
 	return clonedRow;
+}
+
+//
+// Init Autocomplete on a jQuery object
+//
+// target (jQuery Object)
+//
+// return void
+function hrecipeInitAutocomplete(target) {
+	// Autocomplete for the type (unit) column of ingredient list
+	jQuery(target).find('.type').autocomplete({source: availableUnits});
+	
+	// Autocomplete for the ingredient column of ingredient list
+	// NOTE: the URL below assumes a standard WP install.  If wp-admin is in a different location, this won't work
+	jQuery(target).find('.ingrd').autocomplete({
+		source: function( request, response ) {
+			jQuery.ajax({
+				url: "../../../../../../wp-admin/admin-ajax.php",
+				dataType: "json",
+				data: {
+					action: 'hrecipe_ingrd_auto_complete',
+					maxRows: 12,
+					name_contains: request.term
+				},
+				success: function( data ) {
+					response( jQuery.map( data.list, function(item){
+						return {
+							label: item.Long_Desc,
+							NDB_No: item.NDB_No
+						} ;
+					}));
+				}
+			});
+		},
+		minLength: 2,
+		select: function( event, ui ) {
+			if (ui.item) {
+				jQuery(this).addClass('.sr_linked').siblings('.NDB_No').val(ui.item.NDB_No);				
+			} else {
+				jQuery(this).removeClass('.sr_linked').siblings('.NDB_No').val('');
+			}
+		}
+		// FIXME If ingredient from SR not selected, need to unlink ingredient and DB
+	});
+	
+	return;
 }
 
 tinyMCEPopup.onInit.add(hrecipeIngredientListDialog.init, hrecipeIngredientListDialog);

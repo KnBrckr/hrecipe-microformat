@@ -51,6 +51,9 @@
 .ingredient .comment:before {
 	content: "{Comment}";
 }
+.ingredient .NDB_No {
+	display: none;
+}
 .hrecipe-hint:before {
 	content: "{Hint}";
 }
