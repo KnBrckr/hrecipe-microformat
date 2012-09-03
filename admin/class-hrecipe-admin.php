@@ -265,7 +265,7 @@ class hrecipe_admin
 	 **/
 	function on_activation()
 	{
-		// FIXME On failure activation is run 3 times!
+		// FIXME On failure, activation is run 3 times!
 		self::register_taxonomies();  // Register the needed taxonomies so they can be populated
 		self::create_post_type();			// Create the hrecipe post type so that rewrite rules can be flushed.
 		
