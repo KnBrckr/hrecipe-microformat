@@ -666,6 +666,9 @@ class hrecipe_admin
 		
 		// Add custom styles
 		add_filter( 'tiny_mce_before_init', array(&$this, 'tinymce_init_array'));
+		
+		// Add I18N support
+		add_filter('mce_external_languages', array( &$this, 'add_tinymce_langs') );
 	}
 	
 	/**
@@ -1018,6 +1021,18 @@ class hrecipe_admin
 		$mce_css .= self::$url . 'admin/css/editor.css';
 		$mce_css .= ',' . self::$url . 'admin/css/jquery-ui.css';
 		return $mce_css; 
+	}
+	
+	/**
+	 * Add tinyMCE language support for dialog boxes
+	 *
+	 * @return updated array of language files
+	 **/
+	function add_tinymce_langs($langs)
+	{
+	    // File system path to MCE plugin languages PHP script
+	    $langs['hrecipeMicroformat'] = self::$dir . 'admin/TinyMCE-plugins/hrecipeMicroformat/langs/langs.php';
+	    return $langs;
 	}
 	
 	/**
