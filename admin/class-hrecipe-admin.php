@@ -477,9 +477,12 @@ class hrecipe_admin
 				    'add_new_item' => __('Add New Recipe Type', self::p),
 				    'new_item_name' => __('New Recipe Type Name', self::p),
 					),
+					'show_in_nav_menus' => true,
+					'show_tagcloud' => true,
 					'query_var' => self::prefix . 'category',
 					'rewrite' => true,
 					'show_ui' => true,
+					'update_count_callback' => '_update_post_term_count'
 				)
 			);			
 		}
@@ -495,6 +498,7 @@ class hrecipe_admin
 		// Register the Recipe post type
 		register_post_type(self::post_type,
 			array(
+				'description' => __('Post Type for publishing of Recipes', self::p),
 				'labels' => array (
 					'name' => _x('Recipes', 'post type general name', self::p),
 					'singular_name' => _x('Recipe', 'post type singular name', self::p),
@@ -508,7 +512,11 @@ class hrecipe_admin
 					'not_found_in_trash' => __('No recipes found in Trash', self::p),
 					'menu_name' => __('Recipes', self::p),
 				),
+				'show_ui' => true,
 				'public' => true,
+				'show_in_nav_menus' => true,
+				'show_in_menu' => true,
+				// TODO 'menu_icon' => ICON URL
 				'has_archive' => true,
 				'rewrite' => array('slug' => 'Recipes'),
 				'menu_position' => 7,
