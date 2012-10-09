@@ -3,7 +3,7 @@
 Plugin Name: hRecipe Microformat
 Plugin URI: http://action-a-day.com/hrecipe-microformat
 Description: TinyMCE add-in to supply hRecipe Microformat editing
-Version: 0.1
+Version: 0.2
 Author: Kenneth J. Brucker
 Author URI: http://action-a-day.com
 License: GPL2
@@ -36,47 +36,48 @@ if (!defined('WP_PLUGIN_DIR')) {
 
 global $hrecipe_microformat;
 
+function hrecipe_microformat_plugin_activation() {
+	global $hrecipe_microformat;
+		
+	$hrecipe_microformat->plugin_activation();
+}
+
+function hrecipe_microformat_plugin_deactivation() {
+	global $hrecipe_microformat;
+
+	$hrecipe_microformat->plugin_deactivation();
+}
+
 /**
  * Load the required libraries - use a sub-scope to protect global variables
  *		- meta-box class used to create new post type
  *		- Plugin options class
  **/		
-$required_libs = array('class-hrecipe-microformat.php');
+$required_libs = array('class-hrecipe-microformat.php', 'class-hrecipe-food-db.php');
+if (is_admin()) {
+	// For admin pages, setup the extended admin class
+	$required_libs[] = 'admin/class-hrecipe-admin.php';
+}
 foreach ($required_libs as $lib) {
 	if (!include_once($lib)) {
-		hrecipe_microformat_error_log('Unable to load required library:  "' . $lib . '"');
-		return;  // A required module is not available
+		die('Unable to load required library:  "' . $lib . '"');
 	}
 }
 
-$hrecipe_microformat = new hrecipe_microformat();
-
-function hrecipe_microformat_error_log($msg) {
-	global $hrecipe_microformat_errors;
-
-	if ( ! is_array( $hrecipe_microformat_errors ) ) {
-		add_action('admin_footer', 'hrecipe_microformat_error_log_display'); // TODO Change to use WordPress Notice formatting
-		$hrecipe_microformat_errors = array();
-	}
-	
-	array_push($hrecipe_microformat_errors, $msg);
+if (is_admin()) {
+	$hrecipe_microformat = new hrecipe_admin();
+	$hrecipe_microformat->register_admin();
+} else {
+	$hrecipe_microformat = new hrecipe_microformat();
 }
 
-// Display errors logged when the plugin options module is not available.
-function hrecipe_microformat_error_log_display() {
-	global $hrecipe_microformat_errors;
-	
-	echo "<div class='error'><p><a href='plugins.php'>hrecipe-microformat</a> unable to initialize correctly.  Error(s):<br />";
-	foreach ($hrecipe_microformat_errors as $line) {
-		echo "$line<br/>\n";
-	}
-	echo "</p></div>";
-}
+// Register callbacks with WP
+$hrecipe_microformat->register();
 
 // Setup plugin activation function to populate the taxonomies
-register_activation_hook( __FILE__, array('hrecipe_microformat', 'plugin_activation'));
+register_activation_hook( __FILE__, 'hrecipe_microformat_plugin_activation');
 
 // Setup plugin de-activation function to cleanup rewrite rules
-register_deactivation_hook(__FILE__, array('hrecipe_microformat', 'plugin_deactivation'));
+register_deactivation_hook(__FILE__, 'hrecipe_microformat_plugin_deactivation');
 
 ?>

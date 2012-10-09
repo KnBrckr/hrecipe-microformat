@@ -25,6 +25,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  **/
 
+// FIXME Handle Re-activation of plugin when database files already exist
+
 // Protect from direct execution
 if (!defined('WP_PLUGIN_DIR')) {
 	header('Status: 403 Forbidden');
@@ -36,7 +38,7 @@ if (is_admin()) {
 	require_once(ABSPATH . 'wp-admin/includes/upgrade.php'); // Need dbDelta to manipulate DB Tables
 	
 	// Load plugin libs that are needed
-	$required_libs = array('class-hrecipe-usda-sr-txt.php');
+	$required_libs = array('admin/class-hrecipe-usda-sr-txt.php');
 	foreach ($required_libs as $lib) {
 		if (!include_once($lib)) {
 			return false;
@@ -46,11 +48,28 @@ if (is_admin()) {
 
 class hrecipe_food_db {
 	/**
+	 * Version of Nutrient Database Standard Reference loaded with plugin
+	 *
+	 * @var constant string
+	 * @access public
+	 **/
+	const db_release = 24;
+	
+	/**
 	 * Wordpress DB table prefix for Food DB tables
 	 *
 	 * @var string
+	 * @access protected
 	 **/
 	protected $table_prefix;
+	
+	/**
+	 * version of DB loaded in WP
+	 *
+	 * @var int
+	 * @access protected
+	 **/
+	protected $loaded_ver;
 	
 	/**
 	 * Class Constructor 
@@ -58,25 +77,33 @@ class hrecipe_food_db {
 	 *
 	 * @return void
 	 **/
-	function __construct($prefix)
+	function __construct($prefix, $loaded_ver)
 	{
 		global $table_prefix;
 
-		$this->table_prefix = $table_prefix . $prefix;		
+		$this->table_prefix = $table_prefix . $prefix;
+		$this->loaded_ver = $loaded_ver;
 	}
 	
 	/**
 	 * Create the food DB using content from USDA National Nutrient Database for Standard Reference
 	 *
-	 * Table descriptions are taken from sr24_doc.pdf
+	 * Table descriptions are taken from sr24_doc.pdf (contained in the documents downloaded from USDA)
 	 *
+	 * @param $loaded_ver Version of the DB that is loaded in WP tables
 	 * @return void
 	 **/
 	function create_food_schema()
 	{
 		global $charset_collate;
+		
+		// If the loaded version matches what's delivered with this version of the plugin, no need to update tables
+		if ($this->loaded_ver == self::db_release) return;
 
 		$prefix = $this->table_prefix;
+		
+		// Drop tables that already exist - New versions will be loaded
+		self::drop_food_schema();
 				
 		/**
 		 * Food Description Table
@@ -345,7 +372,7 @@ class hrecipe_food_db {
 	 *
 	 * @return void
 	 **/
-	function drop_food_schema()
+	static function drop_food_schema()
 	{
 		global $wpdb;
 		
@@ -359,13 +386,16 @@ class hrecipe_food_db {
 	 * Load USDA Standard Reference into the DB
 	 *
 	 * @param string $db_path Path to Standard Reference files
-	 * @return void
+	 * @return version of the DB table loaded
 	 **/
 	function load_food_db($db_path)
 	{
 		// TODO Handle Condition when tables already populated
 		global $wpdb;
 		
+		// If the loaded version matches what's delivered with this version of the plugin, no need to update tables
+		if ($this->loaded_ver == self::db_release) return self::db_release;
+
 		// Table food_des
 		$sr = new hrecipe_usda_sr_txt($db_path . 'FOOD_DES.txt');
 		
@@ -448,6 +478,9 @@ class hrecipe_food_db {
 			);
 		}		
 		unset($sr); // Trigger __destructor() for class		
+		
+		// Return DB version loaded
+		return self::db_release;
 	}
 } // End class hrecipe_food_db
 ?>

@@ -33,61 +33,20 @@ if (!defined('WP_PLUGIN_DIR')) {
   exit();
 }
 
-// On admin screens, load additional classes
-if (is_admin()) {
-	$required_libs = array('class-hrecipe-importer.php', 'class-hrecipe-food-db.php');
-	foreach ($required_libs as $lib) {
-		if (!include_once($lib)) {
-			return false;
-		}
+// Load additional classes
+foreach (array('class-hrecipe-importer.php') as $lib) {
+	if (!include_once($lib)) {
+		return false;
 	}
 }
 
-class hrecipe_admin
+class hrecipe_admin extends hrecipe_microformat
 {
 	/**
 	 * Define some shorthand
 	 */
-	const p = 'hrecipe-microformat';  // Plugin name
-	const prefix = 'hrecipe_';				// prefix for ids, names, etc.
-	const post_type = 'hrecipe';				// Applied to entry as a class
-	const settings = 'hrecipe_microformat_settings';
 	const settings_page = 'hrecipe_microformat_settings_page';
-	const required_db_ver = 1;
 	
-	protected static $dir; // Base directory for Plugin
-	protected static $url; // Base URL for plugin directory
-	
-	/**
-	 * Array holding plugin options
-	 *	'database_ver'     :  Database Structure version in use - Used to upgrade old versions to new format as required
-	 *	'display_in_home'  :  True if recipes should be displayed in the home page
-	 *	'display_in_feed'  :  True if recipes should be displayed in the main feed
-	 *  'add_post_class' : True if the 'post' class should be added to recipe posts
-	 *	'recipe_head_fields' : Ordered list of fields to include in the recipe head
-	 *	'recipe_footer_fields' : Ordered list of fields to include in the recipe footer
-	 *	'debug_log_enabled' : True if logging plugin debug messages
-	 *	'debug_log' : Array of debug messages when debug_log_enabled is true
-	 *
-	 * @var array of strings
-	 **/
-	protected $options;
-	
-	/**
-	 * Array of default option values
-	 *
-	 * @var array
-	 **/
-	var $options_defaults;
-	
-	/**
-	 * Array of taxonomy names registered by the plugin
-	 *
-	 * @var Array
-	 * @access protected
-	 **/
-	protected static $taxonomies;
-		
 	/**
 	 * Errors and warnings to display on admin screens
 	 *
@@ -95,21 +54,6 @@ class hrecipe_admin
 	 **/
 	protected $admin_notices;  // Update level (Yellow)
 	protected $admin_notice_errors;  // Error messages (Red)
-	
-	/**
-	 * Map internal field names to displayed names, description
-	 *
-	 * Index into the primary array is the hrecipe microformat field name
-	 *
-	 * Each row contains:
-	 *	label - Name to use to label the related value
-	 *  description - 1-line description of the field
-	 *  format - data storage format:  tax --> Taxonomy, meta --> Post Metadata, nutrition --> Special class of Post Meta
-	 *  type - HTML INPUT format to use
-	 *
-	 * @var array of arrays
-	 **/
-	protected $recipe_field_map;
 	
 	/**
 	 * Description text for each level of recipe difficulty
@@ -121,140 +65,38 @@ class hrecipe_admin
 	/**
 	 * Setup plugin defaults and register with WordPress for use in Admin screens
 	 **/
-	function setup()
+	function __construct()
 	{
-		// TODO Move init required for all pages out of admin section to speed init time
-		self::$dir = WP_PLUGIN_DIR . '/' . self::p . '/' ;
-		self::$url =  plugins_url(self::p) . '/' ;
+		// Do parent class work too!
+		parent::__construct();
+		
 		$this->admin_notices = array();
 		$this->admin_notice_errors = array();
 
-		/**
-		 *	Define Recipe meta data fields
-		 **/
-		$this->recipe_field_map = array(
-			'fn' 				 => array( 'label' => __('Recipe Title', self::p),
-														 'description' => __('Recipe Title', self::p),
-														 'id' => self::prefix . 'fn',
-														 'metabox' => 'info',
-														 'type' => 'text'),
-			'yield'      => array( 'label' => __('Yield', self::p), # TODO Use value, unit for yield (x cookies, x servings, ...)?
-														 'description' => __('Amount the recipe produces, generally the number of servings.', self::p),
-														 'type' => 'text',
-														 'id' => self::prefix . 'yield',
-														 'metabox' => 'info',
-														 'format' => 'text'),
-			'difficulty' => array( 'label' => __('Difficulty', self::p),
-														 'description' => __('Difficulty or complexity of the recipe.', self::p),
-														 'type' => 'radio',
-														 'id' => self::prefix . 'difficulty',
-														 'metabox' => 'info',
-														 'options' => array(
-																'1' => __('Basic', self::p),
-																'2' => __('Easy', self::p),
-																'3' => __('Average', self::p),
-																'4' => __('Hard', self::p),
-																'5' => __('Challenging', self::p)
-															),
-															'option_descriptions' => array(
-																'0' => __('The difficulty of this recipe has not been entered.', self::p),
-																'1' => __('Basic recipe with a few common ingredients, no alcohol, a few simple steps and no heat source required.  This is a safe recipe that can be done by children with limited assistance.', self::p),
-																'2' => __('Easy recipe with easy to find ingredients and a small number of steps that might contain alcohol and may require a heat source.  The recipe might be able to be made by older children and is generally appropriate for someone with little cooking experience.', self::p),
-																'3' => __('Average difficulty that might require some skills (chopping, dicing, slicing, measuring, small appliances, etc.).  Ingredients are available to most home cooks at their local grocery store.  Cooking time is usually no more than about an hour.', self::p),
-																'4' => __('Above Average recipes might contain harder to find ingredients (specialty stores), advanced cooking techniques or unusual tools not found in the typical home kitchen.  Some recipes in this category might use basic ingredients while requiring advanced techniques or special tools.  These recipes might have significantly more preparation steps, longer processes or difficult assembly steps.', self::p),
-																'5' => __('These are challenging recipes, particularly for the home cook.  Special techniques or tools might be required and recipes might contain multiple hard to find ingredients.', self::p)
-															),
-														 'format' => 'difficulty'),
-			'rating'     => array( 'label' => __('Rating', self::p),
-														 'description' => __('Rating of the recipe out of five stars.', self::p),
-														 'metabox' => '',
-														 'format' => 'rating'),
-			'category'   => array( 'label' => __('Category', self::p),
-														 'description' => __('Type of recipe', self::p),
-														 'metabox' => 'category',
-														 'format' => 'tax'),
-			'duration'   => array( 'label' => __('Duration', self::p),
-														 'description' => __('Total time it takes to make the recipe.', self::p),
-														 'type' => 'text',
-														 'id' => self::prefix . 'duration',
-														 'metabox' => 'info',
-														 'format' => 'text'),
-			'preptime'   => array( 'label' => __('Prep Time', self::p),
-														 'description' => __('Time it takes in the preparation step of the recipe.', self::p),
-														 'type' => 'text',
-														 'id' => self::prefix . 'preptime',
-														 'metabox' => 'info',
-														 'format' => 'text'),
-			'cooktime'   => array( 'label' => __('Cook Time', self::p),
-														 'description' => __('Time it takes in the cooking step of the recipe.', self::p),
-														 'type' => 'text',
-														 'id' => self::prefix . 'cooktime',
-														 'metabox' => 'info',
-														 'format' => 'text'),
-			'published'  => array( 'label' => __('Published', self::p),
-														 'description' => __('Date of publication of the recipe', self::p),
-														 'type' => 'text',
-														 'id' => self::prefix . 'published',
-														 'metabox' => 'info',
-														 'format' => 'text'),
-			'author'     => array( 'label' => __('Author', self::p),
-														 'description' => __('Recipe Author, if different from person posting the recipe.', self::p),
-														 'type' => 'text',
-														 'id' => self::prefix . 'author',
-														 'metabox' => 'info',
-														 'format' => 'text'),
-			'nutrition'  => array( 'label' => __('Nutrition', self::p),
-														 'description' => __('Recipe nutrition information', self::p),
-														 'metabox' => 'nutrition', // TODO How is nutrition managed?
-														 'format' => 'nutrition'),
-		);
-		
-		$options_defaults = array(
-			'database_ver' => self::required_db_ver,
-			'display_in_home' => true,
-			'display_in_feed' => true,
-			'add_post_class' => true,
-			'recipe_head_fields' => 'yield,difficulty,rating,category,duration,preptime,cooktime',
-			'recipe_footer_fields' => 'published,author,nutrition',
-			'debug_log_enabled' => false,
-			'debug_log' => array(),
-		);
-		
-		// Retrieve Plugin Options
-		$this->options = (array) wp_parse_args(get_option(self::settings), $options_defaults);
-		
 		// If database version does not match, an upgrade is needed
 		if (self::required_db_ver != $this->options['database_ver']) {
 			$this->handle_database_ver($this->options['database_ver']);
 		}
-		
-		// // Make sure the database version is available in the options
-		// if (! array_key_exists('database_ver', $options)) {
-		// 	$options['database_ver'] = self::required_db_ver;
-		// }
-		// 
-		// If logging is enabled, warn admin as it affects DB performance
-		if ($this->options['debug_log_enabled']) {
-			$this->admin_notice_errors[] = sprintf(__('%s logging is enabled.  If left enabled, this can affect database performance.', self::p),'<a href="options.php?page=' . self::settings_page . '">' . self::p . '</a>');
-		}
-		
-		// Perform plugin actions needed during WP init
-		add_action('init', array(&$this, 'plugin_init'));
-		
-		add_action( 'after_setup_theme', array( $this, 'add_featured_image_support' ), 11 );
-		
-		// When displaying admin screens ...
-		if ( is_admin() ) {
-			// Add menu item for plugin options page
-			add_action('admin_menu', array(&$this, 'admin_menu'));
+	}
+	
+	/**
+	 * register callbacks with WP
+	 *
+	 * @return void
+	 **/
+	function register_admin()
+	{
+		// Add menu item for plugin options page
+		add_action('admin_menu', array(&$this, 'admin_menu'));
 
-			add_action('admin_init', array( &$this, 'admin_init'));
-		}		
-		
-		// If logging is enabled, setup save in the footers.
+		add_action('admin_init', array( &$this, 'admin_init'));
+
+		// If logging is enabled, setup save in the footer.
 		if ($this->options['debug_log_enabled']) {
+			// If logging is enabled, warn admin as it affects DB performance
+			$this->admin_notice_errors[] = sprintf(__('%s logging is enabled.  If left enabled, this can affect database performance.', self::p),'<a href="options.php?page=' . self::settings_page . '">' . self::p . '</a>');
+
 			add_action('admin_footer', array( &$this, 'save_debug_log'));
-			add_action('wp_footer', array( &$this, 'save_debug_log'));				
 		}
 	}
 	
@@ -265,18 +107,25 @@ class hrecipe_admin
 	 **/
 	function on_activation()
 	{
-		// FIXME On failure, activation is run 3 times!
-		self::register_taxonomies();  // Register the needed taxonomies so they can be populated
-		self::create_post_type();			// Create the hrecipe post type so that rewrite rules can be flushed.
-		
-		// Create foods database
-		$food_db = new hrecipe_food_db;
+		/*
+		 * Setup the Food Database
+		 */
 		try {
-			$food_db->create_food_schema(self::prefix);		// Setup schema
-			$food_db->load_food_db(WP_PLUGIN_DIR . '/' . self::p . '/db/'); 				// Load USDA Standard Reference database			
+			// Setup DB schema
+			$this->food_db->create_food_schema();
+			
+			// Load USDA Standard Reference database			
+			$loaded_ver = $this->food_db->load_food_db(WP_PLUGIN_DIR . '/' . self::p . '/db/');
+
+			// If the loaded version of the food DB changed, record new version in options
+			if ($loaded_ver != $this->options['loaded_food_db_ver']) {
+				$options = get_option(self::settings);
+				$options['loaded_food_db_ver'] = $loaded_ver;
+				update_option(self::settings, $options);
+			}
 		} catch (Exception $e) {
-			$food_db->drop_food_schema();
-			throw new Exception('Unable to load USDA SR, caught exception: ' . $e->getMessage());
+			$this->food_db->drop_food_schema();
+			throw new Exception('Unable to load USDA Standard Reference DB; caught exception: ' . $e->getMessage());
 		}
 		
 		// Only insert terms if the category taxonomy doesn't already exist.
@@ -302,20 +151,6 @@ class hrecipe_admin
 		flush_rewrite_rules();
 	}
 	
-	/**
-	 * Run during WP init phase
-	 *
-	 * @return void
-	 **/
-	function plugin_init()
-	{
-		// Register custom taxonomies
-		self::register_taxonomies();
-
-		// Add recipe custom post type
-		self::create_post_type();
-	}
-
 	/**
 	 * Create admin menu item and fields of the options page
 	 *
@@ -446,105 +281,6 @@ class hrecipe_admin
 		add_action('save_post' , array(&$this, 'save_post_meta')); // Save the post metadata
 	}
 	
-	/**
-	 * Register the custom taxonomies for recipes
-	 *
-	 * @return void
-	 **/
-	static function register_taxonomies()
-	{
-		if (!isset(self::$taxonomies)) {
-			self::$taxonomies = array();
-			
-			// Create a taxonomy for the Recipe Category
-			self::$taxonomies[] = self::prefix . 'category';
-			register_taxonomy(
-				self::prefix . 'category',
-				self::post_type,
-				array(
-					'hierarchical' => true,
-					'label' => __('Recipe Category', self::p),
-					'labels' => array(
-						'name' => _x('Recipe Types', 'taxonomy general name', self::p),
-						'singular_name' => _x('Recipe Type', 'taxonomy singular name', self::p),
-						'search_items' => __('Search Recipe Types', self::p),
-						'popular_items' => __('Popular Recipe Types', self::p),
-				    'all_items' => __('All Recipe Types', self::p),
-				    'parent_item' => __('Parent Recipe Type', self::p),
-				    'parent_item_colon' => __('Parent Recipe Type:', self::p),
-				    'edit_item' => __('Edit Recipe Type', self::p),
-				    'update_item' => __('Update Recipe Type', self::p),
-				    'add_new_item' => __('Add New Recipe Type', self::p),
-				    'new_item_name' => __('New Recipe Type Name', self::p),
-					),
-					'show_in_nav_menus' => true,
-					'show_tagcloud' => true,
-					'query_var' => self::prefix . 'category',
-					'rewrite' => true,
-					'show_ui' => true,
-					'update_count_callback' => '_update_post_term_count'
-				)
-			);			
-		}
-	}
-	
-	/**
-	 * Create recipe post type and associated panels in the edit screen
-	 *
-	 * @return void
-	 **/
-	function create_post_type()
-	{		
-		// Register the Recipe post type
-		register_post_type(self::post_type,
-			array(
-				'description' => __('Post Type for publishing of Recipes', self::p),
-				'labels' => array (
-					'name' => _x('Recipes', 'post type general name', self::p),
-					'singular_name' => _x('Recipe', 'post type singular name', self::p),
-					'add_new' => _x('Add Recipe', 'recipe', self::p),
-					'add_new_item' => __('Add New Recipe', self::p),
-					'edit_item' => __('Edit Recipe', self::p),
-					'new_item' => __('New Recipe', self::p),
-					'view_item' => __('View Recipe', self::p),
-					'search_items' => __('Search Recipes', self::p),
-					'not_found' => __('No recipes found', self::p),
-					'not_found_in_trash' => __('No recipes found in Trash', self::p),
-					'menu_name' => __('Recipes', self::p),
-				),
-				'show_ui' => true,
-				'public' => true,
-				'show_in_nav_menus' => true,
-				'show_in_menu' => true,
-				// TODO 'menu_icon' => ICON URL
-				'has_archive' => true,
-				'rewrite' => array('slug' => 'Recipes'),
-				'menu_position' => 7,
-				'supports' => array('title', 'editor', 'excerpt', 'author', 'thumbnail', 'trackbacks', 'comments', 'revisions'),
-				'taxonomies' => array('post_tag'), // TODO Setup Taxonomy to allow only a single selection
-			)
-		);
-	}
-	
-	/**
-	 * Enabled featured images (post thumbnail) for Recipe Post type
-	 *
-	 * @access public
-	 * @return void
-	 */
-	public function add_featured_image_support()
-	{
-		$supported_types = get_theme_support( 'post-thumbnails' );
-
-		if( $supported_types === false )
-			add_theme_support( 'post-thumbnails', array( self::post_type ) );               
-		elseif( is_array( $supported_types ) )
-		{
-			$supported_types[0][] = self::post_type;
-			add_theme_support( 'post-thumbnails', $supported_types[0] );
-		}
-	}
-
 	/**
 	 * Add the metaboxes needed in the admin screens
 	 *   Use add_meta_box( $id, $title, $callback, $page, $context, $priority, $callback_args )
@@ -1240,6 +976,7 @@ class hrecipe_admin
 		}
 		
 		/** Delete taxonomies **/
+		// FIXME -- Need to sort out how to do this without doing a register - If that's possible
 		self::register_taxonomies();  // Need to register the taxonmies so the uninstall can find them to remove
 		foreach (self::$taxonomies as $taxonomy) {
 			global $wp_taxonomies;
@@ -1253,7 +990,7 @@ class hrecipe_admin
 		}
 		
 		/** Drop nutritional tables **/
-		// FIXME Drop nutritional tables
+		hrecipe_food_db::drop_food_schema();
 	}
 	
 	/**
