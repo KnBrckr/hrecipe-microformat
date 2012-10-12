@@ -237,7 +237,7 @@ class hrecipe_microformat {
 		// Add recipe custom post type
 		$this->create_post_type();
 		
-		// Put recipes into the stream if requested in configuration
+		// Adjust WP Query
 		add_filter('pre_get_posts', array(&$this, 'pre_get_posts_filter'));
 		
 		// Do template setup after posts have been loaded
@@ -310,7 +310,7 @@ class hrecipe_microformat {
 		if ($this->options['add_post_class']) {
 			add_filter('post_class', array(&$this, 'post_class'));			
 		}
-
+		
 		// When displaying a single recipe, add the recipe header and footer content
 		// TODO Need to process content any time a recipe is displayed
 		if (is_single()) {
@@ -416,16 +416,18 @@ class hrecipe_microformat {
 	}
 	
 	/**
-	 * Update the WP query to include additional post types as needed
+	 * Update the WP query
 	 *
 	 * @param object $query WP query
 	 * @return object Updated WP query
 	 **/
 	function pre_get_posts_filter($query)
 	{
-		// Add plugin post type only on main query - don't add if filters should be suppressed
-		if ((!array_key_exists('suppress_filters', $query->query_vars) || !$query->query_vars['suppress_filters']) 
-		&& ((is_home() && $this->options['display_in_home']) || (is_feed() && $this->options['display_in_feed']))) {
+		// If not main query or on admin page, bail
+		if ( !is_main_query() || is_admin() ) return $query;
+		
+		// Add plugin post type to home and feed queries
+		if ((is_home() && $this->options['display_in_home']) || (is_feed() && $this->options['display_in_feed'])) {
 			$query_post_type = $query->get('post_type');
 			if (is_array($query_post_type)) {
 				$query_post_type[] = self::post_type;
@@ -434,7 +436,17 @@ class hrecipe_microformat {
 				$query_post_type = array($query_post_type, self::post_type);
 			}
 			$query->set('post_type', $query_post_type);
-		} 
+		}
+		
+		/**
+		 * Display 30 recipe titles per recipe archive page, sorted by title in ascending order
+		 */
+		if ( is_post_type_archive('hrecipe') ) {
+			$query->set( 'posts_per_page', $this->options['posts_per_page'] );
+			$query->set( 'orderby', 'title' );
+			$query->set( 'order', 'ASC' );
+		}
+		
 		return $query;
 	}
 	
@@ -789,17 +801,6 @@ class hrecipe_microformat {
 	function sc_step($atts, $content = '')
 	{
 		return '<div class="step">' . do_shortcode($content) . '</div>';
-	}
-	
-	/**
-	 * Provide number of recipes to include on an index page
-	 *
-	 * @return int
-	 * @author Kenneth J. Brucker <ken.brucker@action-a-day.com>
-	 **/
-	function posts_per_page()
-	{
-		return $this->options['posts_per_page'];
 	}
 	
 	/**

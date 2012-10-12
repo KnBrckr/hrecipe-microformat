@@ -290,7 +290,7 @@ class hrecipe_importer {
 	 *	$recipe['preptime']      Amount of prep time
 	 *	$recipe['cooktime']      Cooking time for recipe
 	 *	$recipe['author']        Recipe Author
-	 *	$recipe['category']      Recipe Category
+	 *	$recipe['category']      Recipe Category // FIXME Process category - add a create new option, map to recipe types
 	 *	$recipe['content']       array of recipe content elements
 	 *	$recipe['summary']       Summary or introduction text
 	 *	$recipe['published']     Date published in 'Y-m-d H:i:s' format
