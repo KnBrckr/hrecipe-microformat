@@ -307,7 +307,7 @@ class hrecipe_importer {
 		 */
 		$recipe['yield'] = $recipe['yield'] != '0' ? $recipe['yield'] : '';
 		$recipe['summary'] = wpautop($recipe['summary']);
-		$recipe['published'] = $recipe['published'] ? $recipe['published'] : date('Y-m-d H:i:s'); // TODO Validate published date format
+		$recipe['published'] = $recipe['published'] ? $recipe['published'] : current_time('mysql');
 		$recipe['difficulty'] = $recipe['difficulty'] ? $recipe['difficulty'] : '0';
 		
 		switch ($status) {
