@@ -209,6 +209,15 @@ class hrecipe_admin extends hrecipe_microformat
 			$settings_section
 		);
 		
+		// How many recipes to display in an index page
+		add_settings_field(
+			self::settings . '[posts_per_page]',
+			__('Recipes per page', self::p),
+			array($this, 'posts_per_page_html'),
+			self::settings_page,
+			$settings_section
+		);
+		
 		/**
 	   * Add section to configure recipe header and footer
 	   */
@@ -481,6 +490,9 @@ class hrecipe_admin extends hrecipe_microformat
 		// Add post class to recipes?
 		$options['add_post_class'] = self::sanitize_an_option($options, 'add_post_class', 'bool');
 		
+		// Posts per page?
+		$options['posts_per_page'] = self::sanitize_an_option($options, 'posts_per_page', 'int');
+		
 		// Recipe Header content (ordered list)
 		$options['recipe_head_fields'] = self::sanitize_an_option($options, 'recipe_head_fields', 'text');
 		
@@ -505,13 +517,18 @@ class hrecipe_admin extends hrecipe_microformat
 	 **/
 	function sanitize_an_option($options, $key, $type)
 	{
+		if ( !array_key_exists($key, $options) ) return false;
+
 		switch($type) {
 			case 'bool' :
-			  return array_key_exists($key, $options) && $options[$key] ? true : false;
+			  return $options[$key] ? true : false;
 			
 			case 'text' :
-				$val = array_key_exists($key, $options) && $options[$key] ? $options[$key] : '';
+				$val = $options[$key] ? $options[$key] : '';
 				return wp_filter_nohtml_kses($val);  // HTML not allowed in options
+				
+			case 'int' :
+				return intval($options[$key]);
 		}
 	}
 		
@@ -586,6 +603,17 @@ class hrecipe_admin extends hrecipe_microformat
 	}
 	
 	/**
+	 * Emit HTML for number of recipes to display on an index page
+	 *
+	 * @return void
+	 **/
+	function posts_per_page_html()
+	{
+		self::integer_html( self::settings . '[posts_per_page]', $this->options['posts_per_page']);
+		_e('How many Recipes should be displayed on index pages', self::p);
+	}
+	
+	/**
 	 * Emit HTML section used for configuring Recipe header and footer content
 	 *
 	 * @return void
@@ -625,7 +653,7 @@ class hrecipe_admin extends hrecipe_microformat
 		echo '<div id="recipe_head_foot_fields">';
 		foreach ($sections as $row) {
 			// Emit the HTML for each section
-			echo '<div id="' . $row['field'] . '" class="recipe-fields">';
+			echo '<div id="' . $row['field-name'] . '" class="recipe-fields">';
 			echo '<h4>' . $row['title'] . '</h4>';
 			self::input_hidden_html($row['field-name'], join(',', $row['list']));
 			echo '<ul>';
@@ -688,6 +716,18 @@ class hrecipe_admin extends hrecipe_microformat
 	function text_html($field, $value)
 	{
 		echo '<input type="text" name="' . $field . '" value="' . esc_attr($value) . '" />';
+	}
+	
+	/**
+	 * Emit HTML for an integer field
+	 *
+	 * @param string $field Name of field
+	 * @param string $value Default value for the input field
+	 * @return void
+	 **/
+	function integer_html($field, $value)
+	{
+		echo '<input type="number" name="' . $field . '" value="' . esc_attr($value) . '" />';
 	}
 	
 	/**

@@ -72,6 +72,7 @@ class hrecipe_microformat {
 	 *  'add_post_class' : True if the 'post' class should be added to recipe posts
 	 *	'recipe_head_fields' : Ordered list of fields to include in the recipe head
 	 *	'recipe_footer_fields' : Ordered list of fields to include in the recipe footer
+	 *  'posts_per_page' : Number of recipes to display on an index page
 	 *	'debug_log_enabled' : True if logging plugin debug messages
 	 *	'debug_log' : Array of debug messages when debug_log_enabled is true
 	 *
@@ -197,6 +198,7 @@ class hrecipe_microformat {
 			'recipe_head_fields' => 'yield,difficulty,rating,category,duration,preptime,cooktime',
 			'recipe_footer_fields' => 'published,author,nutrition',
 			'debug_log_enabled' => false,
+			'posts_per_page' => 30,
 			'debug_log' => array(),
 		);
 		
@@ -787,6 +789,17 @@ class hrecipe_microformat {
 	function sc_step($atts, $content = '')
 	{
 		return '<div class="step">' . do_shortcode($content) . '</div>';
+	}
+	
+	/**
+	 * Provide number of recipes to include on an index page
+	 *
+	 * @return int
+	 * @author Kenneth J. Brucker <ken.brucker@action-a-day.com>
+	 **/
+	function posts_per_page()
+	{
+		return $this->options['posts_per_page'];
 	}
 	
 	/**
