@@ -31,7 +31,7 @@
 	margin: 5px 0;
 	clear: both;
 }
-.hrecipe-head-field, .hrecipe-footer-field {
+.hrecipe-field {
 	display: inline-block;
 	width: 30%;
 	padding: 3px;
@@ -87,7 +87,8 @@
 }
 
 /* Rated Recipe */
-.recipe-stars-off, .recipe-stars-on {
+.recipe-stars-off,
+.recipe-stars-on {
 	position: relative;
 	height: 16px;
 	width: 80px;
@@ -100,9 +101,11 @@
 .recipe-stars .recipe-avg-rating {
 	display: inherit;
 }
-.recipe-stars .recipe-unrated {
-	display: none;
+
+.recipe-unrated {
+	display:none;
 }
+
 .recipe-stars .thank-you {
 	display: none;
 	position: absolute;

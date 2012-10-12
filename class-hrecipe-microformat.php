@@ -272,15 +272,7 @@ class hrecipe_microformat {
 	function wp()
 	{
 		global $post;
-		
-		// When query does not include recipes, not necessary to do the related processing
-		if ( ! ( is_singular(self::post_type) 
-						|| is_post_type_archive(self::post_type) 
-						|| (is_home() && $this->options['display_in_home']) 
-						|| (is_feed() && $this->options['display_in_feed'])) ) {
-			return;
-		}
-		
+
 		// Include Ratings JS module
 		wp_enqueue_script('jquery.ui.stars');
 		wp_enqueue_style('jquery.ui.stars');
@@ -311,26 +303,22 @@ class hrecipe_microformat {
 			add_filter('post_class', array(&$this, 'post_class'));			
 		}
 		
-		// When displaying a single recipe, add the recipe header and footer content
-		// TODO Need to process content any time a recipe is displayed
-		if (is_single()) {
-			// declare the URL to the file that handles the AJAX request (wp-admin/admin-ajax.php)
-			wp_localize_script( 
-				self::prefix . 'js', 
-				'HrecipeMicroformat', 
-				array( 
-					'ajaxurl' => admin_url( 'admin-ajax.php' ),
-					'ratingAction' => self::prefix . 'recipe_rating',
-					'postID' => $post->ID,
-					'userRating' => self::user_rating($post->ID),
-					'ratingNonce' => wp_create_nonce(self::prefix . 'recipe-rating-nonce')
-				) 
-			);
+		// declare the URL to the file that handles the AJAX request (wp-admin/admin-ajax.php)
+		wp_localize_script( 
+			self::prefix . 'js', 
+			'HrecipeMicroformat', 
+			array( 
+				'ajaxurl' => admin_url( 'admin-ajax.php' ),
+				'ratingAction' => self::prefix . 'recipe_rating',
+				'postID' => $post->ID,
+				'userRating' => self::user_rating($post->ID),
+				'ratingNonce' => wp_create_nonce(self::prefix . 'recipe-rating-nonce')
+			) 
+		);
 
-			// Add recipe meta data to the post content
-			add_filter('the_content', array(&$this, 'the_content'));			
-		}
-		
+		// Add recipe meta data to the post content
+		add_filter('the_content', array(&$this, 'the_content'));			
+
 		/*
 		 * Register plugin supported shortcodes
 		 */
@@ -441,7 +429,7 @@ class hrecipe_microformat {
 		/**
 		 * Display 30 recipe titles per recipe archive page, sorted by title in ascending order
 		 */
-		if ( is_post_type_archive('hrecipe') ) {
+		if ( is_post_type_archive(self::post_type) || is_tax(self::prefix . 'category')) {
 			$query->set( 'posts_per_page', $this->options['posts_per_page'] );
 			$query->set( 'orderby', 'title' );
 			$query->set( 'order', 'ASC' );
@@ -581,7 +569,7 @@ class hrecipe_microformat {
 	{
 		$content = '<div class="' . self::post_type . '-' . $section . '">';
 		foreach (explode(',', $list) as $field) {
-			$content .= $this->recipe_field_html($field, $section);
+			$content .= $this->recipe_field_html($field);
 		}
 		$content .= '</div>';
 		
@@ -593,10 +581,9 @@ class hrecipe_microformat {
 	 *
 	 * @uses $post When called within The Loop, $post will contain the data for the active post
 	 * @param $field recipe meta data field name
-	 * @param $section 'head' or 'footer'
 	 * @return string HTML
 	 **/
-	function recipe_field_html($field, $section)
+	function recipe_field_html($field)
 	{
 		global $post;
 		if (empty($this->recipe_field_map[$field]) || ! isset($this->recipe_field_map[$field]['format'])) return;
@@ -621,22 +608,22 @@ class hrecipe_microformat {
 				break;
 				
 			case 'difficulty': // Recipe difficulty
-				$value = $this->recipe_difficulty($post->ID);
+				$value = $this->recipe_difficulty();
 				break;
 			
 			case 'rating': // Recipe rating based on reader response
-				$value = $this->recipe_rating_html($post->ID);
+				$value = $this->recipe_rating_html();
 				break;
 				
 			case 'nutrition': // Recipe nutrition as calculated from ingredients
-				$value = $this->nutrition_html($post->ID);
+				$value = $this->nutrition_html();
 				break;
 				
 			default:
 				$value = '';
 		}
 
-		$content =  '<div class="' . self::post_type . '-' . $section . '-field ' . self::prefix . $field . '">';
+		$content =  '<div class="' . self::post_type . '-field ' . self::prefix . $field . '">';
 		$content .= $this->recipe_field_map[$field]['label'] . ': <span class="' . $field . '">' . $value . '</span>';
 		$content .= '</div>';
 		
@@ -644,14 +631,19 @@ class hrecipe_microformat {
 	}
 	
 	/**
-	 * undocumented function
+	 * Format Recipe Difficulty
 	 *
-	 * @return void
+	 * Must be used in context of The Loop
+	 *
+	 * @uses $post
+	 * @return HTML
 	 * @author Kenneth J. Brucker <ken@pumastudios.com>
 	 **/
-	function recipe_difficulty($post_id)
+	function recipe_difficulty()
 	{
-		$difficulty = get_post_meta($post_id, self::prefix . 'difficulty', true) | 0;
+		global $post;
+		
+		$difficulty = get_post_meta($post->ID, self::prefix . 'difficulty', true) | 0;
 		$description = $this->recipe_field_map['difficulty']['option_descriptions'][$difficulty] | '';
 		
 		// Microformat encoding of difficulty (x out of 5)
@@ -667,13 +659,17 @@ class hrecipe_microformat {
 	/**
 	 * Generate HTML for recipe rating and provide method for user to vote
 	 *
-	 * @param $post_id
+	 * Must be used in context of The Loop
+	 *
+	 * @uses $post
 	 * @return string HTML
 	 **/
-	function recipe_rating_html($post_id)
+	function recipe_rating_html()
 	{
+		global $post;
+		
 		// Get rating votes from meta data if available
-		$ratings = get_post_meta($post_id, self::prefix . 'ratings', true);
+		$ratings = get_post_meta($post->ID, self::prefix . 'ratings', true);
 		if ($ratings) {
 			$ratings = json_decode($ratings);
 			$avg = self::rating_avg($ratings);
@@ -687,7 +683,7 @@ class hrecipe_microformat {
 		// Microformat encoding of the recipe rating (x out of 5)
 		$content = '<span class="value-title" title="' . $avg['avg'] . '/5"></span>';
 
-		$content .= '<div id="recipe-stars-' . $post_id . '" class="recipe-stars' . $unrated . '">';
+		$content .= '<div id="recipe-stars-' . $post->ID . '" class="recipe-stars' . $unrated . '">';
 		$content .= '<div class="recipe-avg-rating">';
 		
 		// Display average # of stars
@@ -695,22 +691,25 @@ class hrecipe_microformat {
 		$content .= '<div class="recipe-stars-off"><div class="recipe-stars-on" style="width:' . $stars_on_width . 'px"></div></div>';
 		
 		// Text based display of average rating and vote count
-		$content .= sprintf('<span class="recipe-stars-avg">%.2f</span> (<span class="recipe-stars-cnt">%d</span> %s)', 
+		$content .= sprintf('<div class="recipe-stars-text"><span class="recipe-stars-avg">%.2f</span> (<span class="recipe-stars-cnt">%d</span> %s)</div>', 
 			$avg['avg'], $avg['cnt'],  _n('vote','votes', $avg['cnt']));
-		$content .= '</div>';
+		$content .= '</div>'; // End <div class="recipe-avg-rating">
 		
 		// In the event the recipe is unrated...
 		$content .= sprintf('<div class="recipe-unrated">%s</div>', __("Unrated", self::p));
 		
-		// Give user a way to rate the recipe		
-		$content .= '<form class="recipe-user-rating"><div>';
-		$content .= __('Your Rating: ', self::p) . '<select name="recipe-rating">';
-		$user_rating = self::user_rating($post_id);
-		for ($i=1; $i <= 5; $i++) {
-			$selected = ($user_rating == $i) ? 'selected' : ''; // Show user rating
-			$content .= '<option value="' . $i .'"'. $selected . '>' . sprintf(_n('%d star', '%d stars', $i, self::p), $i) . '</option>';
+		if (is_single()) {
+			// Give user a way to rate the recipe		
+			$content .= '<form class="recipe-user-rating"><div>';
+			$content .= __('Your Rating: ', self::p) . '<select name="recipe-rating">';
+			$user_rating = self::user_rating($post->ID);
+			for ($i=1; $i <= 5; $i++) {
+				$selected = ($user_rating == $i) ? 'selected' : ''; // Show user rating
+				$content .= '<option value="' . $i .'"'. $selected . '>' . sprintf(_n('%d star', '%d stars', $i, self::p), $i) . '</option>';
+			}
+			$content .= '</select><div class="thank-you">' . __('Thank you for your vote!', self::p) . '</div></div></form>';			
 		}
-		$content .= '</select><div class="thank-you">' . __('Thank you for your vote!', self::p) . '</div></div></form>';
+		
 		$content .= '</div>'; // Close entire ratings div
 		return $content;
 	}
@@ -718,11 +717,16 @@ class hrecipe_microformat {
 	/**
 	 * Retrieve the user rating for a recipe from cookies
 	 *
+	 * Must be used in context of The Loop
+	 *
+	 * @uses $post
 	 * @return int rating value 0-5
 	 **/
-	function user_rating($post_id)
+	function user_rating()
 	{
-		$index = 'recipe-rating-' . $post_id;
+		global $post;
+		
+		$index = 'recipe-rating-' . $post->ID;
 		return isset($_COOKIE[$index]) ? $_COOKIE[$index] : 0;
 	}
 	
@@ -746,10 +750,15 @@ class hrecipe_microformat {
 	/**
 	 * Generate HTML for recipe nutrition block
 	 *
+	 * Must be used in context of The Loop
+	 *
+	 * @uses $post
 	 * @return string HTML
 	 **/
-	function nutrition_html($post_id)
+	function nutrition_html()
 	{
+		global $post;
+		
 		// TODO Add nutrition calculation on save		
 		return '';
 	}
@@ -961,7 +970,7 @@ class hrecipe_microformat {
 					'show_in_nav_menus' => true,
 					'show_tagcloud' => true,
 					'query_var' => self::prefix . 'category',
-					'rewrite' => array( 'slug' => 'Recipes', 'hierarchical' => true),
+					'rewrite' => array( 'slug' => 'recipe-type', 'hierarchical' => true),
 					'show_ui' => true,
 					'update_count_callback' => '_update_post_term_count'
 				)
@@ -999,7 +1008,7 @@ class hrecipe_microformat {
 				'show_in_menu' => true,
 				// TODO 'menu_icon' => ICON URL
 				'has_archive' => true,
-				'rewrite' => array('slug' => 'Recipes'),
+				 'rewrite' => array('slug' => 'Recipes'),
 				'menu_position' => 7,
 				'supports' => array('title', 'editor', 'excerpt', 'author', 'thumbnail', 'trackbacks', 'comments', 'revisions'),
 				'taxonomies' => array('post_tag'), // TODO Setup Taxonomy to allow only a single selection
