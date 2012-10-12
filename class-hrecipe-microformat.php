@@ -961,7 +961,7 @@ class hrecipe_microformat {
 					'show_in_nav_menus' => true,
 					'show_tagcloud' => true,
 					'query_var' => self::prefix . 'category',
-					'rewrite' => true,
+					'rewrite' => array( 'slug' => 'Recipes', 'hierarchical' => true),
 					'show_ui' => true,
 					'update_count_callback' => '_update_post_term_count'
 				)
