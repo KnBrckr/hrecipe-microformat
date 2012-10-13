@@ -216,9 +216,7 @@ class hrecipe_microformat {
 	function register()
 	{
 		add_action('init', array(&$this, 'wp_init'));
-		
-		add_action( 'after_setup_theme', array( $this, 'add_featured_image_support' ), 11 );
-		
+
 		// If logging is enabled, setup save in the footers.
 		if ($this->options['debug_log_enabled']) {
 			add_action('wp_footer', array( &$this, 'save_debug_log'));				
@@ -272,6 +270,9 @@ class hrecipe_microformat {
 	function wp()
 	{
 		global $post;
+		
+		// Not needed on admin pages
+		if (is_admin()) return;
 
 		// Include Ratings JS module
 		wp_enqueue_script('jquery.ui.stars');
@@ -303,18 +304,20 @@ class hrecipe_microformat {
 			add_filter('post_class', array(&$this, 'post_class'));			
 		}
 		
-		// declare the URL to the file that handles the AJAX request (wp-admin/admin-ajax.php)
-		wp_localize_script( 
-			self::prefix . 'js', 
-			'HrecipeMicroformat', 
-			array( 
-				'ajaxurl' => admin_url( 'admin-ajax.php' ),
-				'ratingAction' => self::prefix . 'recipe_rating',
-				'postID' => $post->ID,
-				'userRating' => self::user_rating($post->ID),
-				'ratingNonce' => wp_create_nonce(self::prefix . 'recipe-rating-nonce')
-			) 
-		);
+		if (is_single()) {
+			// declare the URL to the file that handles the AJAX request (wp-admin/admin-ajax.php)
+			wp_localize_script( 
+				self::prefix . 'js', 
+				'HrecipeMicroformat', 
+				array( 
+					'ajaxurl' => admin_url( 'admin-ajax.php' ),
+					'ratingAction' => self::prefix . 'recipe_rating',
+					'postID' => $post->ID,
+					'userRating' => self::user_rating($post->ID),
+					'ratingNonce' => wp_create_nonce(self::prefix . 'recipe-rating-nonce')
+				) 
+			);			
+		}
 
 		// Add recipe meta data to the post content
 		add_filter('the_content', array(&$this, 'the_content'));			
@@ -452,13 +455,16 @@ class hrecipe_microformat {
 	}
 	
 	/**
-	 * Add recipe head and footer to post content
+	 * Add recipe head and footer to recipe content
 	 *
 	 * @param $content string post content
 	 * @return string Updated post content
 	 **/
 	function the_content($content)
 	{
+		// Only do this for recipe posts
+		if (get_post_type() != self::post_type) return $content;
+		
 		$result = '<article class="hrecipe">';
 		$result .= $this->recipe_meta_html('head', $this->options['recipe_head_fields']);
 		$result .= '<section class="instructions">' . $content . '</section>';
@@ -1014,25 +1020,6 @@ class hrecipe_microformat {
 				'taxonomies' => array('post_tag'), // TODO Setup Taxonomy to allow only a single selection
 			)
 		);
-	}
-	
-	/**
-	 * Enabled featured images (post thumbnail) for Recipe Post type
-	 *
-	 * @access public
-	 * @return void
-	 */
-	public function add_featured_image_support()
-	{
-		$supported_types = get_theme_support( 'post-thumbnails' );
-
-		if( $supported_types === false )
-			add_theme_support( 'post-thumbnails', array( self::post_type ) );               
-		elseif( is_array( $supported_types ) )
-		{
-			$supported_types[0][] = self::post_type;
-			add_theme_support( 'post-thumbnails', $supported_types[0] );
-		}
 	}
 }
 

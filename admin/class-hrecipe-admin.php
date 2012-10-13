@@ -856,19 +856,20 @@ class hrecipe_admin extends hrecipe_microformat
 		global $wp_query;
 		
 		// Make sure we're working with a listing
-		if ($typenow='listing') {
+		if ($typenow='listing' && $wp_query->query['post_type'] == self::post_type ) {
 			$taxonomy = self::prefix . 'category';
 			$category_taxonomy = get_taxonomy($taxonomy);
 			$selected = array_key_exists($taxonomy, $wp_query->query) ? $wp_query->query[$taxonomy] : '';
 			wp_dropdown_categories(array(
 				'show_option_all' => __("Show all {$category_taxonomy->label}", self::p),
+// TODO How to get uncategorized to show up?				'show_option_none' => __("Show uncategorized", self::p),
 				'taxonomy' => $taxonomy,
 				'name' => $taxonomy,
 				'orderby' => 'name',
 				'selected' => $selected,
 				'hierarchical' => true,
 				'depth' => 2,
-				'show_count' => true, // Show count of recipes in the category
+				'show_count' => false, // Show count of recipes in the category
 				'hide_empty' => true // Don't show categories with no recipes
 			));
 		}
