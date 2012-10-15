@@ -63,6 +63,14 @@ class hrecipe_admin extends hrecipe_microformat
 	protected $difficulty_description;
 	
 	/**
+	 * Recipe Importer Instance
+	 *
+	 * @access private
+	 * @var object
+	 **/
+	private $recipe_importer;
+	
+	/**
 	 * Setup plugin defaults and register with WordPress for use in Admin screens
 	 **/
 	function __construct()
@@ -76,6 +84,11 @@ class hrecipe_admin extends hrecipe_microformat
 		// If database version does not match, an upgrade is needed
 		if (self::required_db_ver != $this->options['database_ver']) {
 			$this->handle_database_ver($this->options['database_ver']);
+		}
+		
+		if(function_exists('register_importer')) {
+			$hrecipe_import = new hrecipe_importer(self::p, $this->recipe_category_taxonomy);
+			register_importer($hrecipe_import->id, $hrecipe_import->name, $hrecipe_import->desc, array ($hrecipe_import, 'dispatch'));
 		}
 	}
 	
@@ -1017,7 +1030,7 @@ class hrecipe_admin extends hrecipe_microformat
 		}
 		
 		/** Delete taxonomies **/
-		// FIXME -- Need to sort out how to do this without doing a register - If that's possible
+		// TODO -- Need to sort out how to do this without doing a register - If that's possible
 		self::register_taxonomies();  // Need to register the taxonmies so the uninstall can find them to remove
 		foreach (self::$taxonomies as $taxonomy) {
 			global $wp_taxonomies;

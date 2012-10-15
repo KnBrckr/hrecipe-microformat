@@ -114,7 +114,7 @@ class import_shopncook {
 		$recipe['preptime'] = $this->scx_string($scx['RECIPEHEADER']['PREPTIME']);
 		$recipe['cooktime'] = ''; // Not present in ShopNCook files
 		$recipe['author'] = $this->scx_string($scx['RECIPEHEADER']['SOURCE']);
-		$recipe['category'] = $this->scx_string($scx['RECIPEHEADER']['CATEGORY']);
+		$recipe['category'] = preg_split( '/\|/', $this->scx_string($scx['RECIPEHEADER']['CATEGORY']) );
 		$recipe['summary'] = ''; // Not present in ShopNCook files
 		$recipe['published'] = ''; // Not present in ShopNCook files
 		$recipe['tag'] = ''; // Not present in ShopNCook files

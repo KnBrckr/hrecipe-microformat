@@ -89,13 +89,21 @@ class hrecipe_microformat {
 	protected static $taxonomies;
 	
 	/**
+	 * Name of recipe category taxonomy
+	 *
+	 * @access protected
+	 * @var string
+	 **/
+	protected $recipe_category_taxonomy;
+	
+	/**
 	 * Container for government database of food nutritional information
 	 *
 	 * @access protected
 	 * @var instance of class hrecipe_food_db
 	 **/
 	protected $food_db;
-	
+		
 	/**
 	 * Class contructor
 	 *
@@ -105,6 +113,7 @@ class hrecipe_microformat {
 	function __construct() {
 		self::$dir = WP_PLUGIN_DIR . '/' . self::p . '/' ;
 		self::$url =  plugins_url(self::p) . '/' ;
+		$this->recipe_category_taxonomy = self::prefix . 'category';
 		
 		/**
 		 *	Define Recipe meta data fields
@@ -887,11 +896,11 @@ class hrecipe_microformat {
 		$name_contains = esc_attr($_REQUEST['name_contains']);
 		
 		// Validate numeric
-		$max_rows = is_numeric($_REQUEST['maxRows']) ? $_REQUEST['maxRows'] : 12;
+		$max_rows = is_numeric($_REQUEST['maxRows']) ? intval($_REQUEST['maxRows']) : 12;
 		if ($max_rows < 1) $max_rows = 1;
 		
-		// FIXME Move knowledge of DB into DB class
-		$rows = $wpdb->get_results("SELECT NDB_No,Long_Desc  FROM ps_hrecipe_food_des WHERE Long_Desc LIKE '%${name_contains}%' LIMIT 0,${max_rows}");
+		// Retrieve food names matching incoming string
+		$rows = $food_db->get_name( $name_contains, $max_rows );
 		
 		// Response Output
 		$response = json_encode(array(
@@ -911,7 +920,7 @@ class hrecipe_microformat {
 	 **/
 	function plugin_activation()
 	{
-		// FIXME On failure, activation is run 3 times!
+		// TODO On failure, activation is run 3 times!
 		global $wp_version;
 
 		// Enforce minimum PHP version requirements
@@ -953,9 +962,9 @@ class hrecipe_microformat {
 			$this->taxonomies = array();
 			
 			// Create a taxonomy for the Recipe Category
-			$this->taxonomies[] = self::prefix . 'category';
+			$this->taxonomies[] = $this->recipe_category_taxonomy;
 			register_taxonomy(
-				self::prefix . 'category',
+				$this->recipe_category_taxonomy,
 				self::post_type,
 				array(
 					'hierarchical' => true,

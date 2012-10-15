@@ -56,14 +56,31 @@ class hrecipe_importer {
 	private $domain;
 	
 	/**
+	 * Name of Recipe Category Taxonomy
+	 *
+	 * @access private
+	 * @var string
+	 **/
+	private $category_taxonomy;
+	
+	/**
+	 * Transient ID used in multi-step form handling to save recipe data
+	 *
+	 * @var string
+	 **/
+	private $transient_id;
+	
+	/**
 	 * Class Constructor
 	 *
 	 */
-	function __construct($domain) {
+	function __construct($domain, $category) {
 		$this->id = $domain . '-importer';
 		$this->name = __('Import Recipes', $domain);
 		$this->desc = __('Import recipes from supported formats as a Recipe Post Type.', $domain);
 		$this->domain = $domain;
+		$this->category_taxonomy = $category;
+		$this->transient_id = $domain . '-recipes_import'; // FIXME Use a session var for concurrency?
 	}
 	
 	/**
@@ -87,24 +104,26 @@ class hrecipe_importer {
 			// TODO Provide form for import of multiple recipes to set difficulty etc.?
 
 			// Retrieve which step is active in import process
-			if (empty ($_POST['step']))
-				$step = 0;
-			else
-				$step = (int) $_POST['step'];
-
+			$step = empty ($_POST['step']) ? 0 : intval($_POST['step']);
+			
+			// What is requested post status
+			$post_status = empty ( $_POST['post_status'] ) ? 'draft' : $_POST['post_status'];
+			
 			// 0 = Display upload form
 			// 1 = Import entire file contents
 			// 2 = Select recipes to upload from file
 			// 3 = Import selected recipes
 			switch ($step) {
 				case 0 :
+				  // Destroy Transient data if it exists
+				  delete_transient($this->transient_id);
 					// Display Upload form
 					$this->upload_form();
 					break;
 				case 1 :
 					// Import all recipes in the uploaded file
 					check_admin_referer($this->id);
-					$this->import_all();
+					$this->import_all($post_status);
 					break;
 				case 2:
 					// Select recipes from file to be imported
@@ -153,9 +172,18 @@ class hrecipe_importer {
 		</p>
 		<p>
 			<label for="publish"><h4><?php _e( 'Imported Recipes should be ... ', $this->domain );?></h4></label>
-			<input type="radio" name="status" value="0" checked><?php _e ( 'Drafts', $this->domain ); ?>
-			<input type="radio" name="status" value="1"><?php _e ( 'Published', $this->domain ); ?>
-			<input type="radio" name="status" value="2"><?php _e ( 'Private (only visible to Editors and Administrators)', $this->domain); ?>
+			<ul>
+				<li><input type="radio" name="post_status" value="draft" checked><?php _e ( 'Drafts', $this->domain ); ?></li>
+				<li><input type="radio" name="post_status" value="publish"><?php _e ( 'Published', $this->domain ); ?></li>
+				<li><input type="radio" name="post_status" value="private"><?php _e ( 'Private (only visible to Editors and Administrators)', $this->domain); ?></li>
+			<?php
+			if (WP_DEBUG) {
+				?>
+				<li><input type="radio" name="post_status" value="debug">Debug Mode - Trace VAR ONLY	</li>
+				<?php
+			}
+			?>
+			</ul>
 		</p>
 		<!-- TODO Implement ability to select recipes to import from larger file
 		<p>
@@ -172,44 +200,179 @@ class hrecipe_importer {
 	/**
 	 * Handle import request from dispatcher
 	 *
-	 * @param int $_POST['status']  0 ==> Add Recipes as Drafts, 1 ==> Publish on Add, 2 ==> Private on Add
+	 * @param int $post_status  0 ==> Add Recipes as Drafts, 1 ==> Publish on Add, 2 ==> Private on Add
 	 * @access private
 	 * @return void
 	 */
-	private function import_all() {
-		// Normalize uploaded file into internal format for processing
-		$recipes = $this->normalize_file();
+	private function import_all($post_status) {
+		// Clean the input array up before using it
+		$unknown_category = empty($_POST['unknown_category']) ? array() : array_map('intval', $_POST['unknown_category']);
+		
+		/**
+		 * If transient data is available, use it.  File was recently uploaded
+		 */
+		if (false === ($recipes = get_transient($this->transient_id))) {
+			// Normalize uploaded file into internal format for processing
+			$recipes = $this->normalize_file();	
 
-		if (isset($recipes['error'])) {
-			echo $recipes['error'];
-			return;
+			if (isset($recipes['error'])) {
+				echo $recipes['error'];
+				return;
+			}
+			
+			/**
+			 * Validate incoming recipe categories - redirect if needed to map to existing categories
+			 */
+			if ( ! $this->validate_categories($post_status, $recipes) ) {
+				return; // validate created a form to handle mappings
+			}			
+		}
+		
+		/**
+		 * For any unknown categories in the import data, create any needed entries in the taxonomy 
+		 */
+		foreach ($unknown_category as $category => $target) {
+			// Value of 0 indicates that the named category should be created in the taxonomy
+			if ( 0 == $target ) {
+				$term = wp_insert_term($category, $this->category_taxonomy);
+				$unknown_category[$category] = $term['term_id'];
+			}
 		}
 		
 		/**
 		 * For each recipe, create a new post
-		 */
-		
-		$post_status = $_POST['status'];
-		
+		 */		
 		echo '<h3>' . sprintf(__('Importing %d Recipe(s):', $this->domain), count($recipes)) . '</h3>';
 		echo '<ol>';
 		foreach ($recipes as $index => $recipe) {
-			if ($errmsg = $this->add_recipe_post($recipe, $post_status)) {
+			if ($errmsg = $this->add_recipe_post($post_status, $recipe, $unknown_category)) {
 				echo '<li>' . $errmsg . '</li>';
 				$errmsg = sprintf(__('Error creating recipe %d.  Remainder of Import cancelled.', $this->domain), $index + 1);
-				break;
+				break;					
 			}
 			echo '<li>' . esc_attr($recipe['fn']) . '</li>';
 		}
 		echo '</ol>';
 
-		if (isset($errmsg)) {
+		if ($errmsg) {
 			echo '<h3>' . $errmsg . '</h3>';
 		} else {
 			echo '<h3>' . sprintf(__('Recipe Import Complete.', $this->domain)) . '</h3>';			
 		}
 		
+		// Destroy Transient data if it exists
+	  delete_transient($this->transient_id);
+	  
 		return;
+	}
+	
+	/**
+	 * Identify any unknown categories, prompt for how to handle
+	 *
+	 * @param string $post_status Status to use when posting
+	 * @param array $recipes Array of normalized recipe data
+	 * @return false if handling form was needed
+	 **/
+	function validate_categories($post_status, $recipes)
+	{
+		/**
+		 * Walk the recipes and find all categories being used
+		 */
+		$incoming_categories = array();
+		foreach ($recipes as $recipe) {
+			if (is_array($recipe['category'])) {
+				foreach ($recipe['category'] as $category) {
+					$incoming_categories[$category] = 1;
+				}
+			}
+		}
+		
+		/**
+		 * Look for any unknown categories
+		 */
+		$unknown = array();
+		foreach ($incoming_categories as $category => $value) {
+			if (!term_exists($category, $this->category_taxonomy)) {
+				$unknown[] = $category;
+			}
+		}
+		
+		/**
+		 * If there are unknown categories, ask user what to do with them
+		 */
+		if (count($unknown)) {
+			$this->map_category_form($post_status, $recipes, $unknown);
+			return false;
+		}
+		
+		return true;
+	}
+	
+	/**
+	 * Display form to map unknown categories to known ones
+	 *
+	 * @param string $post_status Post status to use on add
+	 * @param array $recipes Array of recipes to import
+	 * @param array $unknown array of category names not found in taxonomy
+	 * @return void
+	 **/
+	function map_category_form($post_status,$recipes,$unknown)
+	{
+		/**
+		 * Save the transient recipe data for 1 hour (60*60 seconds)
+		 */
+		set_transient($this->transient_id, $recipes, 3600);
+		
+		/**
+		 * Setup for Taxonomy query and emit the form
+		 */
+		$dropdown_args = array (
+			'hierarchical' => true,
+			'taxonomy' => $this->category_taxonomy,
+			'hide_if_empty' => false,
+			'hide_empty' => false,
+			'name' => 'use_category[]',
+			'echo' => 1
+			);
+		?>
+		<form enctype="multipart/form-data" id="import-upload-form" method="post" 
+					action="<?php echo esc_attr(wp_nonce_url('admin.php?import=' . $this->id, $this->id)); ?>">
+					
+			<input type="hidden" name="step" value="1" />
+			<input type="hidden" name="post_status" value="<?php echo $post_status ?>">
+			<h3>Define recipe categories for import</h3>
+			Unknown categories were found in the imported file.  Please indicate how each one should be created in the table below.
+			<table>
+				<caption>Define Mapping</caption>
+				<thead>
+					<tr>
+						<th>Unknown Name</th><th>Category to Use</th>
+					</tr>
+				</thead>
+				<tbody>
+					<?php
+					foreach ($unknown as $index => $category) {
+						?>
+						<tr>
+							<td><?php echo $category ?></td>
+							<td><?php
+							  /**
+							   * Display dropdown form containing the available category names
+							   */
+								$dropdown_args['show_option_all'] = 'Create ' . $category;
+								$dropdown_args['id'] = 'use-category-' . $index;
+								$dropdown_args['name'] = 'unknown_category[' . $category. ']';
+								wp_dropdown_categories($dropdown_args);
+							?></td>
+						</tr>
+						<?php
+					}
+					?>
+				</tbody>
+			</table>
+			<?php submit_button( __('Finish Import', $this->domain), 'button' ); ?>
+		</form>
+	<?php
 	}
 	
 	/**
@@ -283,6 +446,7 @@ class hrecipe_importer {
 	/**
 	 * From normalized recipe array, create a recipe post
 	 *
+	 * @param string $post_status Post Publication status
 	 * @param array $recipe
 	 *  $recipe['fn']            Recipe Title
 	 *	$recipe['yield']         Recipe Yield
@@ -290,16 +454,16 @@ class hrecipe_importer {
 	 *	$recipe['preptime']      Amount of prep time
 	 *	$recipe['cooktime']      Cooking time for recipe
 	 *	$recipe['author']        Recipe Author
-	 *	$recipe['category']      Recipe Category // FIXME Process category - add a create new option, map to recipe types
+	 *	$recipe['category']      Recipe Category
 	 *	$recipe['content']       array of recipe content elements
 	 *	$recipe['summary']       Summary or introduction text
 	 *	$recipe['published']     Date published in 'Y-m-d H:i:s' format
 	 *	$recipe['tag']           Comma separated list of tags
 	 *	$recipe['difficulty']    Recipe difficulty rating  [0-5]
-	 * @param int $status        0 ==> Draft, 1 ==> Publish, 2 ==> Private
+	 * @param array $unknown_category maps unknown categories to known elements
 	 * @return false on success, error message on failure
 	 **/
-	private function add_recipe_post($recipe, $status)	{
+	private function add_recipe_post($post_status, $recipe, $unknown_category)	{
 		global $hrecipe_microformat;
 		
 		/**
@@ -309,19 +473,6 @@ class hrecipe_importer {
 		$recipe['summary'] = wpautop($recipe['summary']);
 		$recipe['published'] = $recipe['published'] ? $recipe['published'] : current_time('mysql');
 		$recipe['difficulty'] = $recipe['difficulty'] ? $recipe['difficulty'] : '0';
-		
-		switch ($status) {
-			case 0:
-			default:
-			  $post_status = 'draft';
-				break;
-			case 1:
-				$post_status = 'publish';
-				break;
-			case 2:
-				$post_status = 'private';
-				break;
-		}
 		
 		/**
 		 * Add Recipe to the database
@@ -336,6 +487,22 @@ class hrecipe_importer {
       'post_excerpt' => $recipe['summary'],
 			'tags_input' => $recipe['tag'], // string of Comma separated tags 
 		);
+		
+		/**
+		 * Map incoming categories into the recipe category taxonomy
+		 */
+		$tax_input = $this->set_recipe_categories($recipe['category'], $unknown_category);
+		if ( $tax_input ) {
+			$new_post['tax_input'] = $tax_input;
+		}
+		
+		// IF in debug mode
+		if (WP_DEBUG && 'debug' == $post_status ) {
+			echo "<li>";
+			print_r($new_post);
+			echo "</li>";
+			return false;
+		}
 		
 		// Insert post
 		$post_id = wp_insert_post($new_post);
@@ -353,6 +520,8 @@ class hrecipe_importer {
 		
 		return false;
 	}
+	
+	
 	
 	/**
 	 * Build post content from array of ingredients and instruction text
@@ -396,14 +565,44 @@ class hrecipe_importer {
 		
 		return $text;
 	}
+	
+	/**
+	 * Filter imported recipe categories into format ready to add to new recipe post.
+	 * Because the category taxonomy is hierarchical, term_id's must be used in the tax_input array
+	 *
+	 * @param array $categories Array of recipe categories from imported data
+	 * @param array $unknown_category Array mapping unknown category to term_id to use on add
+	 * @return array of categories to be used as tax_input for post creation or false if category list is empty
+	 **/
+	function set_recipe_categories($categories, $unknown_category)
+	{
+		$new_categories = array();
+
+		// If terms must already exist, filter out those that don't
+		foreach ($categories as $category) {
+			if ($term_id = term_exists($category, $this->category_taxonomy)) {
+				$new_categories[] = $term_id['term_id'];				
+			} else {
+				// If a mapping for the undefined category exists, use it
+				if (!empty($unknown_category[$category])) {
+					$new_categories[] = $unknown_category[$category];
+				}
+			}
+		}			
+		
+		if (empty($new_categories)) {
+			return false;
+		}
+		
+		$tax_input = array();
+		$tax_input[$this->category_taxonomy] = $new_categories;
+		
+		return $tax_input;
+	}
 } // End hrecipe_importer class
 
 /**
  * Register the importer with Wordpress - must include the import module as it's not included by default
  */
 include_once(ABSPATH . 'wp-admin/includes/import.php');
-if(function_exists('register_importer')) {
-	$hrecipe_import = new hrecipe_importer(hrecipe_admin::p);
-	register_importer($hrecipe_import->id, $hrecipe_import->name, $hrecipe_import->desc, array ($hrecipe_import, 'dispatch'));
-}
 ?>

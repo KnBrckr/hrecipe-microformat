@@ -480,5 +480,24 @@ class hrecipe_food_db {
 		// Return DB version loaded
 		return self::db_release;
 	}
+	
+	/**
+	 * Retrieve matching food names
+	 *
+	 * @uses $wpdb
+	 * @param $name_contains string - String to match for food name
+	 * @param $max_rows int - maximum number of rows to return
+	 * @return array of names retrieved
+	 **/
+	function get_name()
+	{
+		global $wpdb;
+		
+		$db_name = $this->table_prefix . 'food_des';
+		
+		$rows = $wpdb->get_results("SELECT NDB_No,Long_Desc  FROM ' . $db_name . ' WHERE Long_Desc LIKE '%${name_contains}%' LIMIT 0,${max_rows}");
+		
+		return $rows;
+	}
 } // End class hrecipe_food_db
 ?>
