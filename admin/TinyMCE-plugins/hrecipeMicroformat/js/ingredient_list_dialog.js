@@ -41,7 +41,9 @@ var availableUnits=[ // TODO Setup for i18n, pull from database
 	'pinch',
 	'pound',
 	'quart',
+	'tablespoon',
 	'tbs',
+	'teaspoon',
 	'tsp'
 ];
 
