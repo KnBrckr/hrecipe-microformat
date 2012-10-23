@@ -233,6 +233,7 @@ class hrecipe_importer {
 		 */
 		foreach ($unknown_category as $category => $target) {
 			// Value of 0 indicates that the named category should be created in the taxonomy
+			//          -1 ==> skip assigning this unknown category
 			if ( 0 == $target ) {
 				$term = wp_insert_term($category, $this->category_taxonomy);
 				$unknown_category[$category] = $term['term_id'];
@@ -359,6 +360,7 @@ class hrecipe_importer {
 							  /**
 							   * Display dropdown form containing the available category names
 							   */
+								$dropdown_args['show_option_none'] = 'Ignore ' . $category;
 								$dropdown_args['show_option_all'] = 'Create ' . $category;
 								$dropdown_args['id'] = 'use-category-' . $index;
 								$dropdown_args['name'] = 'unknown_category[' . $category. ']';
@@ -578,12 +580,15 @@ class hrecipe_importer {
 	{
 		$new_categories = array();
 
-		// If terms must already exist, filter out those that don't
+		/**
+		 * Build array of taxonmy id's to assign to the imported recipe.
+		 * Filter out terms that don't exist that are not being remapped.
+		 */
 		foreach ($categories as $category) {
 			if ($term_id = term_exists($category, $this->category_taxonomy)) {
 				$new_categories[] = $term_id['term_id'];				
 			} else {
-				// If a mapping for the undefined category exists, use it
+				// If a mapping for the undefined category exists, use it.  Otherwise it's being ignored.
 				if (!empty($unknown_category[$category])) {
 					$new_categories[] = $unknown_category[$category];
 				}
