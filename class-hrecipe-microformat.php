@@ -261,11 +261,11 @@ class hrecipe_microformat {
 		wp_register_style('jquery.ui.stars', self::$url . 'lib/jquery.ui.stars-3.0/jquery.ui.stars.min.css', array(), '3.0.1');
 		
 		// Register AJAX action for recipe ratings (action: hrecipe_recipe_rating)
-		add_action('wp_ajax_'. self::prefix .  'recipe_rating', array(&$this, 'ajax_recipe_rating'));
-		add_action('wp_ajax_nopriv_' . self::prefix . 'recipe_rating', array(&$this, 'ajax_recipe_rating'));
+		add_action('wp_ajax_'. self::p .  '_recipe_rating', array(&$this, 'ajax_recipe_rating'));
+		add_action('wp_ajax_nopriv_' . self::p . '_recipe_rating', array(&$this, 'ajax_recipe_rating'));
 		
 		// Register AJAX action used for ingredient name auto-completion
-		add_action('wp_ajax_' . self::prefix . 'ingrd_auto_complete', array(&$this, 'ajax_ingrd_auto_complete'));
+		add_action('wp_ajax_' . self::p . '_ingrd_auto_complete', array(&$this, 'ajax_ingrd_auto_complete'));
 	}
 	
 	/**
@@ -320,7 +320,7 @@ class hrecipe_microformat {
 				'HrecipeMicroformat', 
 				array( 
 					'ajaxurl' => admin_url( 'admin-ajax.php' ),
-					'ratingAction' => self::prefix . 'recipe_rating',
+					'ratingAction' => self::p . '_recipe_rating',
 					'postID' => $post->ID,
 					'userRating' => self::user_rating($post->ID),
 					'ratingNonce' => wp_create_nonce(self::prefix . 'recipe-rating-nonce')
@@ -334,10 +334,11 @@ class hrecipe_microformat {
 		/*
 		 * Register plugin supported shortcodes
 		 */
-		add_shortcode(self::prefix . 'title', array(&$this, 'sc_title'));
-		add_shortcode('instructions', array(&$this, 'sc_instructions'));
-		add_shortcode('step', array(&$this, 'sc_step'));
-		add_shortcode('instruction', array(&$this, 'sc_step'));  // Allow instruction shortcode as an alternate
+		add_shortcode(self::p . '-title', array($this, 'sc_title'));
+		add_shortcode('instructions', array($this, 'sc_instructions'));
+		add_shortcode('step', array($this, 'sc_step'));
+		add_shortcode('instruction', array($this, 'sc_step'));  // Allow instruction shortcode as an alternate
+		add_shortcode(self::p . '-category-list', array($this, 'sc_category_list'));
 	}
 	
 	/**
@@ -828,6 +829,36 @@ class hrecipe_microformat {
 	}
 	
 	/**
+	 * Generate list of recipe categories
+	 * Example usage:
+	 *  [hrecipe-category-list]    <-- Lists all defined Recipe Categories
+	 *
+	 * @param array $atts shortcode attributes
+	 * @param string $content shortcode contents
+	 * @return string HTML
+	 **/
+	function sc_category_list($atts, $content='')
+	{
+		
+		// $terms = get_terms( $this->recipe_category_taxonomy, array('orderby' => 'name'));
+		// $content = "List: <ul>";
+		// foreach ($terms as $term) {
+		// 	$content .= "<li>" . $term->name . "</li>";
+		// }
+		// $content .= "</ul>";
+		// 
+		// return $content;
+		
+		$content = wp_list_categories( array(
+			'echo' => false,
+			'taxonomy' => $this->recipe_category_taxonomy,
+			'title_li' => '',
+			) );
+		
+		return $content;
+	}
+	
+	/**
 	 * Process AJAX request to rate recipes, save user's rating in cookie
 	 *
 	 * TODO If cookies can't be saved, don't allow voting by the user - test for WP test cookie presence
@@ -985,7 +1016,7 @@ class hrecipe_microformat {
 					'show_in_nav_menus' => true,
 					'show_tagcloud' => true,
 					'query_var' => self::prefix . 'category',
-					'rewrite' => array( 'slug' => 'recipe-type', 'hierarchical' => true),
+					'rewrite' => array( 'slug' => 'hrecipe-type', 'hierarchical' => true),
 					'show_ui' => true,
 					'update_count_callback' => '_update_post_term_count'
 				)
