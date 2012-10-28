@@ -309,9 +309,7 @@ class hrecipe_microformat {
 		add_action('wp_footer', array(&$this, 'wp_footer'));
 		
 		// Update the post class as required
-		if ($this->options['add_post_class']) {
-			add_filter('post_class', array(&$this, 'post_class'));			
-		}
+		add_filter('post_class', array(&$this, 'post_class'));			
 		
 		if (is_single()) {
 			// declare the URL to the file that handles the AJAX request (wp-admin/admin-ajax.php)
@@ -461,6 +459,7 @@ class hrecipe_microformat {
 		if ($this->options['add_post_class']) {
 			$classes[] = "post";
 		}
+		
 		return $classes;
 	}
 	
