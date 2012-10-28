@@ -142,22 +142,22 @@ class hrecipe_admin extends hrecipe_microformat
 		}
 		
 		// Only insert terms if the category taxonomy doesn't already exist.
-		if (0 == count(get_terms(self::prefix . 'category', 'hide_empty=0&number=1'))) {
-			wp_insert_term(__('Appetizer', self::p), self::prefix . 'category');
-			wp_insert_term(__('Soup', self::p), self::prefix . 'category');
-			wp_insert_term(__('Salad', self::p), self::prefix . 'category');
-			wp_insert_term(__('Side Dish', self::p), self::prefix . 'category');
+		if (0 == count(get_terms($this->recipe_category_taxonomy, 'hide_empty=0&number=1'))) {
+			wp_insert_term(__('Appetizer', self::p), $this->recipe_category_taxonomy);
+			wp_insert_term(__('Soup', self::p), $this->recipe_category_taxonomy);
+			wp_insert_term(__('Salad', self::p), $this->recipe_category_taxonomy);
+			wp_insert_term(__('Side Dish', self::p), $this->recipe_category_taxonomy);
 			
-			wp_insert_term(__('Entrée', self::p), self::prefix . 'category');
-			$entree_term = term_exists( __('Entrée', self::p), self::prefix . 'category');
+			wp_insert_term(__('Entrée', self::p), $this->recipe_category_taxonomy);
+			$entree_term = term_exists( __('Entrée', self::p), $this->recipe_category_taxonomy);
 			$entree_term_id = $entree_term['term_id'];
-			wp_insert_term(__('Pasta', self::p), self::prefix . 'category', array('parent' => $entree_term_id));
-			wp_insert_term(__('Meat', self::p), self::prefix . 'category', array('parent' => $entree_term_id));
-			wp_insert_term(__('Fish', self::p), self::prefix . 'category', array('parent' => $entree_term_id));
-			wp_insert_term(__('Poultry', self::p), self::prefix . 'category', array('parent' => $entree_term_id));
-			wp_insert_term(__('Vegetarian', self::p), self::prefix . 'category', array('parent' => $entree_term_id));
+			wp_insert_term(__('Pasta', self::p), $this->recipe_category_taxonomy, array('parent' => $entree_term_id));
+			wp_insert_term(__('Meat', self::p), $this->recipe_category_taxonomy, array('parent' => $entree_term_id));
+			wp_insert_term(__('Fish', self::p), $this->recipe_category_taxonomy, array('parent' => $entree_term_id));
+			wp_insert_term(__('Poultry', self::p), $this->recipe_category_taxonomy, array('parent' => $entree_term_id));
+			wp_insert_term(__('Vegetarian', self::p), $this->recipe_category_taxonomy, array('parent' => $entree_term_id));
 			
-			wp_insert_term(__('Dessert', self::p), self::prefix . 'category');
+			wp_insert_term(__('Dessert', self::p), $this->recipe_category_taxonomy);
 		}
 		
 		// On activation, flush rewrite rules to make sure plugin is setup correctly. 
@@ -870,7 +870,7 @@ class hrecipe_admin extends hrecipe_microformat
 		
 		// Make sure we're working with a listing
 		if ($typenow='listing' && $wp_query->query['post_type'] == self::post_type ) {
-			$taxonomy = self::prefix . 'category';
+			$taxonomy = $this->recipe_category_taxonomy;
 			$category_taxonomy = get_taxonomy($taxonomy);
 			$selected = array_key_exists($taxonomy, $wp_query->query) ? $wp_query->query[$taxonomy] : '';
 			wp_dropdown_categories(array(
@@ -909,14 +909,14 @@ class hrecipe_admin extends hrecipe_microformat
 	}
 	
 	/**
-	 * Add the recipe category to the post listings column
+	 * Add the recipe category column to the Admin screen post listings
 	 *
 	 * @param array $list_columns Array of columns for listing
 	 * @return array Updated array of columns
 	 **/
 	function add_recipe_category_to_recipe_list($list_columns)
 	{
-		$taxonomy = self::prefix . 'category';
+		$taxonomy = $this->recipe_category_taxonomy;
 		if (!isset($list_columns['author'])) {
 			$new_list_columns = $list_columns;
 		} else {
@@ -942,7 +942,7 @@ class hrecipe_admin extends hrecipe_microformat
 		global $typenow;
 		
 		if ('listing' == $typenow) {
-			$taxonomy = self::prefix . 'category';
+			$taxonomy = $this->recipe_category_taxonomy;
 			switch ($column_name) {
 			case $taxonomy:
 				$categories = get_the_terms($post_id, $taxonomy);

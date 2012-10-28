@@ -438,9 +438,9 @@ class hrecipe_microformat {
 		}
 		
 		/**
-		 * Display 30 recipe titles per recipe archive page, sorted by title in ascending order
+		 * Display specified number of recipe titles per recipe archive page, sorted by title in ascending order
 		 */
-		if ( is_post_type_archive(self::post_type) || is_tax(self::prefix . 'category')) {
+		if ( is_post_type_archive(self::post_type) || is_tax($this->recipe_category_taxonomy)) {
 			$query->set( 'posts_per_page', $this->options['posts_per_page'] );
 			$query->set( 'orderby', 'title' );
 			$query->set( 'order', 'ASC' );
@@ -521,7 +521,7 @@ class hrecipe_microformat {
 		
 		// Retrieves tag list of current post, separated by commas.
 		$tag_list = get_the_tag_list( '', ', ' );
-		$recipe_category = get_the_term_list( $post->ID, self::prefix . 'category', '', ', ', '' );
+		$recipe_category = get_the_term_list( $post->ID, $this->recipe_category_taxonomy, '', ', ', '' );
 		if ( $tag_list ) {
 			$posted_in = __( 'This recipe is posted in %1$s and tagged %2$s. Bookmark the <a href="%3$s" title="Permalink to %4$s" rel="bookmark">permalink</a>.', self::p );
 		} elseif (!empty($recipe_category)) {
@@ -614,7 +614,7 @@ class hrecipe_microformat {
 				$terms = get_the_terms($post->ID, self::prefix . $field);
 				if (is_array($terms)) {
 					foreach ($terms as $term) {
-						$names[] = $term->name;
+						$names[] = '<a href="' . get_term_link($term->slug, $this->recipe_category_taxonomy) . '">' . $term->name . '</a>';
 					}
 					$value = implode(', ', $names);	
 				} else {
@@ -837,17 +837,7 @@ class hrecipe_microformat {
 	 * @return string HTML
 	 **/
 	function sc_category_list($atts, $content='')
-	{
-		
-		// $terms = get_terms( $this->recipe_category_taxonomy, array('orderby' => 'name'));
-		// $content = "List: <ul>";
-		// foreach ($terms as $term) {
-		// 	$content .= "<li>" . $term->name . "</li>";
-		// }
-		// $content .= "</ul>";
-		// 
-		// return $content;
-		
+	{		
 		$content = wp_list_categories( array(
 			'echo' => false,
 			'taxonomy' => $this->recipe_category_taxonomy,
@@ -1014,7 +1004,7 @@ class hrecipe_microformat {
 					),
 					'show_in_nav_menus' => true,
 					'show_tagcloud' => true,
-					'query_var' => self::prefix . 'category',
+					'query_var' => $this->recipe_category_taxonomy,
 					'rewrite' => array( 'slug' => 'hrecipe-type', 'hierarchical' => true),
 					'show_ui' => true,
 					'update_count_callback' => '_update_post_term_count'
