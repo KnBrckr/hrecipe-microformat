@@ -69,7 +69,6 @@ class hrecipe_microformat {
 	 *  'loaded_food_db_ver' : Version of US Nutrional Food DB loaded in WP tables
 	 *	'display_in_home'  :  True if recipes should be displayed in the home page
 	 *	'display_in_feed'  :  True if recipes should be displayed in the main feed
-	 *  'add_post_class' : True if the 'post' class should be added to recipe posts
 	 *	'include_metadata' : True if recipe meta data should be added to content section
 	 *	'recipe_head_fields' : Ordered list of fields to include in the recipe head
 	 *	'recipe_footer_fields' : Ordered list of fields to include in the recipe footer
@@ -213,7 +212,6 @@ class hrecipe_microformat {
 			'loaded_food_db_ver' => 0,
 			'display_in_home' => true,
 			'display_in_feed' => true,
-			'add_post_class' => false,
 			'include_metadata' => true,
 			'recipe_head_fields' => 'yield,difficulty,rating,category,duration,preptime,cooktime',
 			'recipe_footer_fields' => 'published,author,nutrition',
@@ -318,10 +316,7 @@ class hrecipe_microformat {
 
 		// During handling of footer in the body ...
 		add_action('wp_footer', array($this, 'wp_footer'));
-		
-		// Update the post class as required
-		add_filter('post_class', array($this, 'post_class'));			
-		
+				
 		if (is_single()) {
 			// declare the URL to the file that handles the AJAX request (wp-admin/admin-ajax.php)
 			// FIXME -move this to beginning of The Loop!
@@ -384,7 +379,7 @@ class hrecipe_microformat {
 	}
 	
 	/**
-	 * Use template provided page templates as defaults
+	 * Use plugin provided page templates as defaults
 	 *
 	 * @return void
 	 **/
@@ -392,8 +387,7 @@ class hrecipe_microformat {
 	{
 		global $post;
 		
-		if (!$this->options['add_post_class'] && is_singular(self::post_type)) {
-			// Don't format as a post TODO Provide a template to format single recipes
+		if (is_singular(self::post_type)) {
 			$template_name = 'single-' . get_post_type($post);
 		} elseif ( is_post_type_archive(self::post_type) ) {
 			$template_name = 'archive-' . get_post_type($post); 
@@ -464,21 +458,7 @@ class hrecipe_microformat {
 		
 		return $query;
 	}
-	
-	/**
-	 * Update the classes assigned to a post if required
-	 *
-	 * @return array list of post classes
-	 **/
-	function post_class($classes)
-	{
-		if ($this->options['add_post_class']) {
-			$classes[] = "post";
-		}
 		
-		return $classes;
-	}
-	
 	/**
 	 * Add span to title to mark it as a recipe title
 	 *

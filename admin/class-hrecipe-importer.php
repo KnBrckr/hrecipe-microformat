@@ -80,7 +80,7 @@ class hrecipe_importer {
 		$this->desc = __('Import recipes from supported formats as a Recipe Post Type.', $domain);
 		$this->domain = $domain;
 		$this->category_taxonomy = $category;
-		$this->transient_id = $domain . '-recipes_import'; // FIXME Use a session var for concurrency?
+		$this->transient_id = $domain . '-recipes_import'; // TODO Use a session var for concurrency?
 	}
 	
 	/**

@@ -22,27 +22,29 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  **/
 
-// TODO Format the Recipe Archive - Use recipe summary when available
-
 get_header(); ?>
 FIXME Using archive-hrecipe
 		<div id="container">
 			<section id="content" role="main">
 				<?php 
 				if ( have_posts() ) {
-					// FIXME Add navigation
 					?>
+					<nav class="nav-content nav-content-top">
+						<span class="float-left"><?php previous_posts_link('&laquo; Previous Entries') ?></span>
+						<span class="float-right"><?php next_posts_link('Next Entries &raquo;') ?></span>
+					</nav>
+					
 					<article>
 						<header>
 							<h1 class="entry-title">Recipes</h1>
 						</header>
 						<div class="entry-content">
-							<ul class="recipe-list">
+							<ul class="hrecipe-list">
 								<?php
 								while ( have_posts() ) : the_post(); ?>
 									<li>
-										<div id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
-											<span class="entry-title"><a href="<?php the_permalink() ?>" rel="bookmark" title="Permanent Link to <?php the_title(); ?>"><?php the_title(); ?></a></span>
+										<div id="post-<?php the_ID(); ?>" class="hrecipe-list-entry">
+											<span class="entry-title"><a href="<?php the_permalink() ?>" rel="bookmark" title="Permanent Link to <?php echo strip_tags(the_title('','',false)); ?>"><?php the_title(); ?></a></span>
 											<?php
 										 	/* FIXME enable reporting of ratings echo $hrecipe_microformat->recipe_rating_html(); */ 
 											edit_post_link('Edit', '', '');
@@ -55,8 +57,12 @@ FIXME Using archive-hrecipe
 							</ul>
 						</div><!-- .entry-content -->
 					</article>
+
+					<nav class="nav-content nav-content-bottom">
+						<span class="float-left"><?php previous_posts_link('&laquo; Previous Entries') ?></span>
+						<span class="float-right"><?php next_posts_link('Next Entries &raquo;') ?></span>
+					</nav>					
 					<?php
-					// FIXME Add navigation
 				} ?>
 			</section><!-- #content -->
 		</div><!-- #container -->

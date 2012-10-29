@@ -213,15 +213,6 @@ class hrecipe_admin extends hrecipe_microformat
 			$settings_section 
 		);
 		
-		// Add post class field
-		add_settings_field(
-			self::settings . '[add_post_class]',
-			__('Recipe Format', self::p),
-			array(&$this, 'add_post_class_html'),
-			self::settings_page,
-			$settings_section
-		);
-		
 		// How many recipes to display in an index page
 		add_settings_field(
 			self::settings . '[posts_per_page]',
@@ -500,9 +491,6 @@ class hrecipe_admin extends hrecipe_microformat
 		// Display Recipes in main feed?  -- Default to true
 		$options['display_in_feed'] = self::sanitize_an_option($options, 'display_in_feed', 'bool');
 		
-		// Add post class to recipes?
-		$options['add_post_class'] = self::sanitize_an_option($options, 'add_post_class', 'bool');
-		
 		// Posts per page?
 		$options['posts_per_page'] = self::sanitize_an_option($options, 'posts_per_page', 'int');
 		
@@ -606,18 +594,7 @@ class hrecipe_admin extends hrecipe_microformat
 		echo ' ';
 		_e('This change might not take effect for a client until a new post or recipe is added.', self::p);
 	}
-	
-	/**
-	 * Emit HTML for plugin field
-	 *
-	 * @return void
-	 **/
-	function add_post_class_html()
-	{
-		self::checkbox_html(self::settings . '[add_post_class]', $this->options['add_post_class']);
-		_e('Format Recipes like Posts.', self::p);
-	}
-	
+		
 	/**
 	 * Emit HTML for number of recipes to display on an index page
 	 *

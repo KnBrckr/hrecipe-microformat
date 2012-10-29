@@ -21,6 +21,26 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  **/
 
+.float-left {
+	float: left;
+}
+
+.float-right {
+	float: right;
+}
+
+/* ================ */
+/* = Recipe Lists = */
+/* ================ */
+
+.hrecipe-list {
+	list-style-type: square;
+	/* TODO Make index card graphic to use for recipe list bullet */
+}
+
+.hrecipe-list .post-edit-link {
+	font-size: 80%;
+}
 
 /* ================================ */
 /* = Recipe Header/Footer content = */
