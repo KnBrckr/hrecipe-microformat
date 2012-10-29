@@ -30,19 +30,21 @@ get_header(); ?>
 			<div id="content" role="main">
 				
 				<?php if ( have_posts() ) while ( have_posts() ) : the_post(); ?>
-								<div id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
-									<h1 class="entry-title"><?php the_title(); ?></h1>
-									<div class="entry-meta">
-										<?php $hrecipe_microformat->posted_on(); ?>
-									</div><!-- .entry-meta -->
+								<article id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
+									<header class="entry-header">
+										<hgroup>
+											<h1 class="entry-title"><a href="<?php the_permalink() ?>" rel="bookmark" title="Permanent Link to <?php echo strip_tags(the_title('','',false)); ?>"><?php the_title(); ?></a></h1>
+											<h2 class="entry-posted-on"><?php $hrecipe_microformat->posted_on(); ?></h2>
+										</hgroup>
+									</header>
 									<div class="entry-content">
 										<?php the_content(); ?>
 									</div><!-- .entry-content -->
-									<div class="entry-utility">
+									<footer class="entry-footer">
 										<?php $hrecipe_microformat->posted_in(); ?>
-										<?php edit_post_link( __( 'Edit', hrecipe_microformat::p), '<span class="edit-link">', '</span>' ); ?>
-									</div><!-- .entry-utility -->
-								</div><!-- #post-## -->
+										<?php edit_post_link('Edit', '<nav class="nav-content">', '</nav>'); ?>
+									</footer>
+								</article><!-- #post-## -->
 
 								<?php comments_template( '', true ); ?>
 
