@@ -506,6 +506,9 @@ class hrecipe_admin extends hrecipe_microformat
 		// Posts per page?
 		$options['posts_per_page'] = self::sanitize_an_option($options, 'posts_per_page', 'int');
 		
+		// Include Recipe Metadata (Header/Footer) in Content?
+		$options['include_metadata'] = self::sanitize_an_option($options, 'include_metadata', 'bool');
+		
 		// Recipe Header content (ordered list)
 		$options['recipe_head_fields'] = self::sanitize_an_option($options, 'recipe_head_fields', 'text');
 		
@@ -664,6 +667,10 @@ class hrecipe_admin extends hrecipe_microformat
 		);
 		
 		echo '<div id="recipe_head_foot_fields">';
+
+		self::checkbox_html(self::settings . '[include_metadata]', $this->options['include_metadata']);
+		_e('Include Header and Footer Recipe Metadata in Content.', self::p);
+		
 		foreach ($sections as $row) {
 			// Emit the HTML for each section
 			echo '<div id="' . $row['field-name'] . '" class="recipe-fields">';

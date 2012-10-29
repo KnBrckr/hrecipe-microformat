@@ -22,6 +22,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  **/
 
+global $hrecipe_microformat;
+
 get_header(); ?>
 
 		<div id="container">
@@ -31,15 +33,13 @@ get_header(); ?>
 								<div id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
 									<h1 class="entry-title"><?php the_title(); ?></h1>
 									<div class="entry-meta">
-										<?php hrecipe_microformat::posted_on(); ?>
+										<?php $hrecipe_microformat->posted_on(); ?>
 									</div><!-- .entry-meta -->
-									<?php hrecipe_microformat::recipe_head(); ?>
 									<div class="entry-content">
 										<?php the_content(); ?>
 									</div><!-- .entry-content -->
-									<?php hrecipe_microformat::recipe_footer();?>
 									<div class="entry-utility">
-										<?php hrecipe_microformat::posted_in(); ?>
+										<?php $hrecipe_microformat->posted_in(); ?>
 										<?php edit_post_link( __( 'Edit', hrecipe_microformat::p), '<span class="edit-link">', '</span>' ); ?>
 									</div><!-- .entry-utility -->
 								</div><!-- #post-## -->

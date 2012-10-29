@@ -513,7 +513,7 @@ class hrecipe_importer {
 		}
 		
 		// Save Recipe meta-data
-		$meta_fields = array('fn', 'yield', 'duration', 'preptime', 'cooktime', 'author', 'difficulty');
+		$meta_fields = array('yield', 'duration', 'preptime', 'cooktime', 'author', 'difficulty');
 		foreach ($meta_fields as $field) {
 			if (isset($recipe[$field]) && $recipe[$field] != '' && ($post_meta_key = $hrecipe_microformat->post_meta_key($field))) {
 				add_post_meta($post_id, $post_meta_key, $recipe[$field]);

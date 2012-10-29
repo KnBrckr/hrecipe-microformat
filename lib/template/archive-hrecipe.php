@@ -25,27 +25,40 @@
 // TODO Format the Recipe Archive - Use recipe summary when available
 
 get_header(); ?>
-
+FIXME Using archive-hrecipe
 		<div id="container">
-			<div id="content" role="main">
-				<?php if ( have_posts() ) while ( have_posts() ) : the_post(); ?>
-
-								<div id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
-									<h1 class="entry-title"><a href="<?php the_permalink(); ?>" title="<?php printf( esc_attr__( 'Permalink to %s', hrecipe_microformat::p ), the_title_attribute( 'echo=0' ) ); ?>" rel="bookmark"><?php the_title(); ?></a></h1>
-
-									<div class="entry-content">
-										<?php if ( has_post_thumbnail() ) { // check if the post has a Post Thumbnail assigned to it.
-										  the_post_thumbnail();
-										}
-										// TODO Add 'the_content' filter to remove Ingredients tables before generating excerpt
-										the_excerpt(); ?>
-									</div><!-- .entry-content -->
-								</div><!-- #post-## -->
-
-								<?php comments_template( '', true ); ?>
-
-				<?php endwhile; // end of the loop. ?>
-			</div><!-- #content -->
+			<section id="content" role="main">
+				<?php 
+				if ( have_posts() ) {
+					// FIXME Add navigation
+					?>
+					<article>
+						<header>
+							<h1 class="entry-title">Recipes</h1>
+						</header>
+						<div class="entry-content">
+							<ul class="recipe-list">
+								<?php
+								while ( have_posts() ) : the_post(); ?>
+									<li>
+										<div id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
+											<span class="entry-title"><a href="<?php the_permalink() ?>" rel="bookmark" title="Permanent Link to <?php the_title(); ?>"><?php the_title(); ?></a></span>
+											<?php
+										 	/* FIXME enable reporting of ratings echo $hrecipe_microformat->recipe_rating_html(); */ 
+											edit_post_link('Edit', '', '');
+											?>
+										</div>
+									</li><!-- #post-## -->
+									<?php
+								endwhile; // end of the loop.
+								?>
+							</ul>
+						</div><!-- .entry-content -->
+					</article>
+					<?php
+					// FIXME Add navigation
+				} ?>
+			</section><!-- #content -->
 		</div><!-- #container -->
 
 <?php get_sidebar(); ?>

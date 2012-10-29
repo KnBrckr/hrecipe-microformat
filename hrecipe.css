@@ -132,8 +132,7 @@
 /* =================================== */
 .ingredients {
 	clear: both;
-	width: 625px;
-	margin: 5px 25px;
+	margin: 5px 0px;
 	padding: 5px;
 	border: black solid 1px;
 	font-family: 'Annie Use Your Telescope', arial, serif;

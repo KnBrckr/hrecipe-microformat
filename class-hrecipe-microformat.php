@@ -70,6 +70,7 @@ class hrecipe_microformat {
 	 *	'display_in_home'  :  True if recipes should be displayed in the home page
 	 *	'display_in_feed'  :  True if recipes should be displayed in the main feed
 	 *  'add_post_class' : True if the 'post' class should be added to recipe posts
+	 *	'include_metadata' : True if recipe meta data should be added to content section
 	 *	'recipe_head_fields' : Ordered list of fields to include in the recipe head
 	 *	'recipe_footer_fields' : Ordered list of fields to include in the recipe footer
 	 *  'posts_per_page' : Number of recipes to display on an index page
@@ -103,6 +104,14 @@ class hrecipe_microformat {
 	 * @var instance of class hrecipe_food_db
 	 **/
 	protected $food_db;
+	
+	/**
+	 * For single pages, remember the post ID for processing in widgets
+	 *
+	 * @access protected
+	 * @var integer
+	 **/
+	protected $post_id;
 		
 	/**
 	 * Class contructor
@@ -119,6 +128,7 @@ class hrecipe_microformat {
 		 *	Define Recipe meta data fields
 		 **/
 		$this->recipe_field_map = array(
+			// FIXME Treat Recipe Post title as the Recipe Title - Delete this obsolete field
 			'fn' 				 => array( 'label' => __('Recipe Title', self::p),
 														 'description' => __('Recipe Title', self::p),
 														 'id' => self::prefix . 'fn',
@@ -203,7 +213,8 @@ class hrecipe_microformat {
 			'loaded_food_db_ver' => 0,
 			'display_in_home' => true,
 			'display_in_feed' => true,
-			'add_post_class' => true,
+			'add_post_class' => false,
+			'include_metadata' => true,
 			'recipe_head_fields' => 'yield,difficulty,rating,category,duration,preptime,cooktime',
 			'recipe_footer_fields' => 'published,author,nutrition',
 			'debug_log_enabled' => false,
@@ -297,22 +308,23 @@ class hrecipe_microformat {
 		wp_enqueue_script(self::prefix . 'js');
 
 		// During handling of the header ...
-		add_action('wp_head', array(&$this, 'wp_head'));
+		add_action('wp_head', array($this, 'wp_head'));
 		
 		// Update classes applied to <body> element
-		add_filter('body_class', array (&$this, 'body_class'),10,2);
+		add_filter('body_class', array ($this, 'body_class'),10,2);
 		
 		// Hook template redirect to provide default page templates within the plugin
-		add_action('template_redirect', array(&$this, 'template_redirect'));
+		add_action('template_redirect', array($this, 'template_redirect'));
 
 		// During handling of footer in the body ...
-		add_action('wp_footer', array(&$this, 'wp_footer'));
+		add_action('wp_footer', array($this, 'wp_footer'));
 		
 		// Update the post class as required
-		add_filter('post_class', array(&$this, 'post_class'));			
+		add_filter('post_class', array($this, 'post_class'));			
 		
 		if (is_single()) {
 			// declare the URL to the file that handles the AJAX request (wp-admin/admin-ajax.php)
+			// FIXME -move this to beginning of The Loop!
 			wp_localize_script( 
 				self::prefix . 'js', 
 				'HrecipeMicroformat', 
@@ -325,6 +337,9 @@ class hrecipe_microformat {
 				) 
 			);			
 		}
+		
+		// Must mark recipe titles with appropriate hrecipe microformat class
+		add_filter('the_title', array($this, 'the_title'), 10, 2); // priority 10 (WP default), 2 arguments
 
 		// Add recipe meta data to the post content
 		add_filter('the_content', array(&$this, 'the_content'));			
@@ -332,7 +347,6 @@ class hrecipe_microformat {
 		/*
 		 * Register plugin supported shortcodes
 		 */
-		add_shortcode(self::p . '-title', array($this, 'sc_title'));
 		add_shortcode('instructions', array($this, 'sc_instructions'));
 		add_shortcode('step', array($this, 'sc_step'));
 		add_shortcode('instruction', array($this, 'sc_step'));  // Allow instruction shortcode as an alternate
@@ -373,7 +387,6 @@ class hrecipe_microformat {
 	 * Use template provided page templates as defaults
 	 *
 	 * @return void
-	 * @author Kenneth J. Brucker <ken.brucker@action-a-day.com>
 	 **/
 	function template_redirect()
 	{
@@ -381,14 +394,17 @@ class hrecipe_microformat {
 		
 		if (!$this->options['add_post_class'] && is_singular(self::post_type)) {
 			// Don't format as a post TODO Provide a template to format single recipes
-			$template_name = 'single-';
-		} elseif (is_post_type_archive(self::post_type)) {
-			$template_name = 'archive-';
+			$template_name = 'single-' . get_post_type($post);
+		} elseif ( is_post_type_archive(self::post_type) ) {
+			$template_name = 'archive-' . get_post_type($post); 
+		} elseif ( is_tax($this->recipe_category_taxonomy) ) {
+			$template_name = 'taxonomy-' . $this->recipe_category_taxonomy;
 		} else {
 			return;
 		}
 		
-		$template_name .= get_post_type($post) . '.php';
+		$template_name .= '.php';
+		
 		// Look for available templates
 		$template = locate_template(array($template_name), true);
 		if (empty($template)) {
@@ -464,20 +480,48 @@ class hrecipe_microformat {
 	}
 	
 	/**
+	 * Add span to title to mark it as a recipe title
+	 *
+	 * @param string $title Post title
+	 * @param integer $post_id Post ID
+	 * @return string Updated title string
+	 **/
+	function the_title($title, $post_id)
+	{
+		// Only do this for single recipe posts, must be in the main loop!
+		if ( !in_the_loop() || !is_single() || get_post_type($post_id) != self::post_type ) return $title;
+		
+		$title = '<span class="fn">' . $title . "</span>";
+		return $title;
+	}
+	
+	/**
 	 * Add recipe head and footer to recipe content
 	 *
+	 * Save post_id for widgets if this is a single post page
+	 *
+	 * @uses $post
 	 * @param $content string post content
 	 * @return string Updated post content
 	 **/
 	function the_content($content)
 	{
+		global $post;
+		
 		// Only do this for recipe posts
 		if (get_post_type() != self::post_type) return $content;
 		
+		// Save post id for later processing by widgets
+		if (is_single()) $this->post_id = $post->ID;
+		
 		$result = '<article class="hrecipe">';
-		$result .= $this->recipe_meta_html('head', $this->options['recipe_head_fields']);
+		if ($this->options['include_metadata']) {
+			$result .= $this->recipe_meta_html('head', $this->options['recipe_head_fields']);
+		}
 		$result .= '<section class="instructions">' . $content . '</section>';
-		$result .= $this->recipe_meta_html('footer', $this->options['recipe_footer_fields']);
+		if ($this->options['include_metadata']) {
+			$result .= $this->recipe_meta_html('footer', $this->options['recipe_footer_fields']);
+		}
 		$result .= '</article>';
 		
 		return $result;
@@ -574,17 +618,56 @@ class hrecipe_microformat {
 
 		return $link;
 	}
+	
+	/**
+	 * Return recipe post type
+	 *
+	 * @return string Recipe Post Type
+	 **/
+	public function get_post_type()
+	{
+		return self::post_type;
+	}
+	
+	/**
+	 * Return saved post_id
+	 *
+	 * @return integer Post ID
+	 **/
+	public function get_post_id()
+	{
+		return isset( $this->post_id ) ? $this->post_id : false;
+	}
+	
+	/**
+	 * Provide list of available recipe fields
+	 *
+	 * @return array "recipe-field" => "label"
+	 **/
+	public function get_recipe_fields()
+	{
+		$retval = array();
+		foreach ($this->recipe_field_map as $index => $field) {
+			$retval[$index] = $field['label'];
+		}
+		
+		return $retval;
+	}
 		
 	/**
-	 * Generate recipe meta data section
+	 * Generate recipe meta data section when called with The Loop
 	 *
+	 * @access private
+	 * @uses $post
 	 * @return string HTML
 	 **/
-	function recipe_meta_html($section, $list)
+	private function recipe_meta_html($section, $list)
 	{
+		global $post;
+		
 		$content = '<div class="' . self::post_type . '-' . $section . '">';
 		foreach (explode(',', $list) as $field) {
-			$content .= $this->recipe_field_html($field);
+			$content .= $this->get_recipe_field_html($field, $post->ID);
 		}
 		$content .= '</div>';
 		
@@ -594,24 +677,24 @@ class hrecipe_microformat {
 	/**
 	 * Provide HTML for a named recipe field
 	 *
-	 * @uses $post When called within The Loop, $post will contain the data for the active post
+	 * @access public
 	 * @param $field recipe meta data field name
+	 * @param $post_id Post ID
 	 * @return string HTML
 	 **/
-	function recipe_field_html($field)
+	public function get_recipe_field_html($field, $post_id)
 	{
-		global $post;
-		if (empty($this->recipe_field_map[$field]) || ! isset($this->recipe_field_map[$field]['format'])) return;
+		if (empty($this->recipe_field_map[$field]) || ! isset($this->recipe_field_map[$field]['format'])) return '';
 		
 		// Produce the field value based on format of the meta data
 		switch ($this->recipe_field_map[$field]['format']) {
 			case 'text':  // default Post Meta Data
-				$value = get_post_meta($post->ID, self::prefix . $field, true);
+				$value = get_post_meta($post_id, self::prefix . $field, true);
 				$value = esc_attr($value);
 				break;
 				
 			case 'tax': // Taxonomy data
-				$terms = get_the_terms($post->ID, self::prefix . $field);
+				$terms = get_the_terms($post_id, self::prefix . $field);
 				if (is_array($terms)) {
 					foreach ($terms as $term) {
 						$names[] = '<a href="' . get_term_link($term->slug, $this->recipe_category_taxonomy) . '">' . $term->name . '</a>';
@@ -623,15 +706,15 @@ class hrecipe_microformat {
 				break;
 				
 			case 'difficulty': // Recipe difficulty
-				$value = $this->recipe_difficulty();
+				$value = $this->get_recipe_difficulty_html($post_id);
 				break;
 			
 			case 'rating': // Recipe rating based on reader response
-				$value = $this->recipe_rating_html();
+				$value = $this->get_recipe_rating_html($post_id);
 				break;
 				
 			case 'nutrition': // Recipe nutrition as calculated from ingredients
-				$value = $this->nutrition_html();
+				$value = $this->get_nutrition_html($post_id);
 				break;
 				
 			default:
@@ -648,17 +731,13 @@ class hrecipe_microformat {
 	/**
 	 * Format Recipe Difficulty
 	 *
-	 * Must be used in context of The Loop
-	 *
-	 * @uses $post
+	 * @access private
+	 * @param $post_id Post ID
 	 * @return HTML
-	 * @author Kenneth J. Brucker <ken@pumastudios.com>
 	 **/
-	function recipe_difficulty()
+	private function get_recipe_difficulty_html($post_id)
 	{
-		global $post;
-		
-		$difficulty = get_post_meta($post->ID, self::prefix . 'difficulty', true) | 0;
+		$difficulty = get_post_meta($post_id, self::prefix . 'difficulty', true) | 0;
 		$description = $this->recipe_field_map['difficulty']['option_descriptions'][$difficulty] | '';
 		
 		// Microformat encoding of difficulty (x out of 5)
@@ -674,17 +753,14 @@ class hrecipe_microformat {
 	/**
 	 * Generate HTML for recipe rating and provide method for user to vote
 	 *
-	 * Must be used in context of The Loop
-	 *
-	 * @uses $post
+	 * @access private
+	 * @param $post_id Post ID
 	 * @return string HTML
 	 **/
-	function recipe_rating_html()
+	private function get_recipe_rating_html($post_id)
 	{
-		global $post;
-		
 		// Get rating votes from meta data if available
-		$ratings = get_post_meta($post->ID, self::prefix . 'ratings', true);
+		$ratings = get_post_meta($post_id, self::prefix . 'ratings', true);
 		if ($ratings) {
 			$ratings = json_decode($ratings);
 			$avg = self::rating_avg($ratings);
@@ -698,7 +774,7 @@ class hrecipe_microformat {
 		// Microformat encoding of the recipe rating (x out of 5)
 		$content = '<span class="value-title" title="' . $avg['avg'] . '/5"></span>';
 
-		$content .= '<div id="recipe-stars-' . $post->ID . '" class="recipe-stars' . $unrated . '">';
+		$content .= '<div id="recipe-stars-' . $post_id . '" class="recipe-stars' . $unrated . '">';
 		$content .= '<div class="recipe-avg-rating">';
 		
 		// Display average # of stars
@@ -717,7 +793,7 @@ class hrecipe_microformat {
 			// Give user a way to rate the recipe		
 			$content .= '<form class="recipe-user-rating"><div>';
 			$content .= __('Your Rating: ', self::p) . '<select name="recipe-rating">';
-			$user_rating = self::user_rating($post->ID);
+			$user_rating = self::user_rating($post_id);
 			for ($i=1; $i <= 5; $i++) {
 				$selected = ($user_rating == $i) ? 'selected' : ''; // Show user rating
 				$content .= '<option value="' . $i .'"'. $selected . '>' . sprintf(_n('%d star', '%d stars', $i, self::p), $i) . '</option>';
@@ -765,35 +841,14 @@ class hrecipe_microformat {
 	/**
 	 * Generate HTML for recipe nutrition block
 	 *
-	 * Must be used in context of The Loop
-	 *
-	 * @uses $post
+	 * @access private
+	 * @param $post_id Post ID
 	 * @return string HTML
 	 **/
-	function nutrition_html()
+	private function get_nutrition_html($post_id)
 	{
-		global $post;
-		
 		// TODO Add nutrition calculation on save		
 		return '';
-	}
-	
-	/**
-	 * Generate HTML for the recipe title shortcode
-	 *
-	 * @param array $atts shortcode attributes
-	 * @param string $content shortcode contents
-	 * @return string HTML formatted title string
-	 **/
-	function sc_title($atts, $content = '')
-	{
-		global $post;
-		if ($title = get_post_meta($post->ID, self::prefix . 'fn', true)) {
-			$result = '<div class="fn">' . esc_attr($title) . '</div>';
-		} else {
-			$result = '';
-		}
-		return $result;
 	}
 	
 	/**

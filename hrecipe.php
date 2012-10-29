@@ -53,7 +53,10 @@ function hrecipe_microformat_plugin_deactivation() {
  *		- meta-box class used to create new post type
  *		- Plugin options class
  **/		
-$required_libs = array('class-hrecipe-microformat.php', 'class-hrecipe-food-db.php');
+$required_libs = array(
+	'class-hrecipe-microformat.php', 
+	'class-hrecipe-food-db.php',
+	'class-hrecipe-widget.php');
 if (is_admin()) {
 	// For admin pages, setup the extended admin class
 	$required_libs[] = 'admin/class-hrecipe-admin.php';
