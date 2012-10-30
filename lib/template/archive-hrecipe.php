@@ -23,7 +23,6 @@
  **/
 
 get_header(); ?>
-FIXME Using archive-hrecipe
 		<div id="container">
 			<section id="content" role="main">
 				<?php 
@@ -46,7 +45,7 @@ FIXME Using archive-hrecipe
 										<div id="post-<?php the_ID(); ?>" class="hrecipe-list-entry">
 											<span class="entry-title"><a href="<?php the_permalink() ?>" rel="bookmark" title="Permanent Link to <?php echo strip_tags(the_title('','',false)); ?>"><?php the_title(); ?></a></span>
 											<?php
-										 	/* FIXME enable reporting of ratings echo $hrecipe_microformat->recipe_rating_html(); */ 
+										 	/* TODO enable reporting of ratings echo $hrecipe_microformat->recipe_rating_html(); */ 
 											edit_post_link('Edit', '', '');
 											?>
 										</div>

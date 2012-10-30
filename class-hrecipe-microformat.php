@@ -127,7 +127,7 @@ class hrecipe_microformat {
 		 *	Define Recipe meta data fields
 		 **/
 		$this->recipe_field_map = array(
-			// FIXME Treat Recipe Post title as the Recipe Title - Delete this obsolete field
+			// FIXME Treat Recipe Post title as the Recipe Title - Delete this obsolete field and cleanup database
 			'fn' 				 => array( 'label' => __('Recipe Title', self::p),
 														 'description' => __('Recipe Title', self::p),
 														 'id' => self::prefix . 'fn',
@@ -955,7 +955,8 @@ class hrecipe_microformat {
 		if ($max_rows < 1) $max_rows = 1;
 		
 		// Retrieve food names matching incoming string
-		$rows = $food_db->get_name( $name_contains, $max_rows );
+		// FIXME Improve autocomplete name matching, needs to be more relevant
+		$rows = $this->food_db->get_name( $name_contains, $max_rows );
 		
 		// Response Output
 		$response = json_encode(array(

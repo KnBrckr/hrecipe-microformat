@@ -489,13 +489,12 @@ class hrecipe_food_db {
 	 * @param $max_rows int - maximum number of rows to return
 	 * @return array of names retrieved
 	 **/
-	function get_name()
+	function get_name($name_contains, $max_rows)
 	{
 		global $wpdb;
 		
 		$db_name = $this->table_prefix . 'food_des';
-		
-		$rows = $wpdb->get_results("SELECT NDB_No,Long_Desc  FROM ' . $db_name . ' WHERE Long_Desc LIKE '%${name_contains}%' LIMIT 0,${max_rows}");
+		$rows = $wpdb->get_results("SELECT NDB_No,Long_Desc  FROM ${db_name} WHERE Long_Desc LIKE '%${name_contains}%' LIMIT 0,${max_rows}");
 		
 		return $rows;
 	}

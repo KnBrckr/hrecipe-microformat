@@ -31,7 +31,7 @@ if (!defined('WP_UNINSTALL_PLUGIN')) {
   exit();
 }
 
-// FIXME Uninstall is borked
+// TODO Uninstall is borked
 
 if (is_admin() && current_user_can('manage_options') && current_user_can('install_plugins')) {
 	require_once(WP_PLUGIN_DIR . '/hrecipe-microformat/admin/options-class.php');

@@ -88,19 +88,7 @@
 			ed.onBeforeSetContent.add(function(ed, o) {
 				o.content = o.content.replace(/(\[hrecipe_title\])/,'<h3 class="fn">$1</h3>');
       });
-			
-
-			// // On content change, 
-			// ed.onChange.add(function(ed, l) {
-			//               console.debug('Editor contents was modified. Contents: ' + l.content);
-			//       });
-			
-			// ==============
-			// = Ingredient =
-			// ==============
-			
-			// TODO Implement Ingredient Button
-			
+						
 			// ===================
 			// = Ingredient List =
 			// ===================

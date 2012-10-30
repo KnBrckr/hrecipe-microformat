@@ -21,7 +21,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  **/
 
-// Setup autocomplete for fields
+// Autocomplete list for Units
 var availableUnits=[ // TODO Setup for i18n, pull from database
 	'cup',
 	'cups',
@@ -46,8 +46,6 @@ var availableUnits=[ // TODO Setup for i18n, pull from database
 	'teaspoon',
 	'tsp'
 ];
-
-// TODO Autocomplete for ingredient name
 
 // Setup Insert and Delete Row functions
 jQuery(document).ready( function($) {
@@ -227,39 +225,48 @@ function hrecipeInitAutocomplete(target) {
 	jQuery(target).find('.type').autocomplete({source: availableUnits});
 	
 	// Autocomplete for the ingredient column of ingredient list
-	// NOTE: the URL below assumes a standard WP install.  If wp-admin is in a different location, this won't work
+	// TODO the URL below assumes a standard WP install.  If wp-admin is in a different location, this won't work
 	jQuery(target).find('.ingrd').autocomplete({
 		source: function( request, response ) {
 			jQuery.ajax({
 				url: "../../../../../../wp-admin/admin-ajax.php",
 				dataType: "json",
 				data: {
-					action: 'hrecipe_ingrd_auto_complete',
+					action: 'hrecipe-microformat_ingrd_auto_complete',
 					maxRows: 12,
 					name_contains: request.term
 				},
+				// When Ajax returns successfully, process the retrieved data
 				success: function( data ) {
-					response( jQuery.map( data.list, function(item){
-						return {
-							label: item.Long_Desc,
-							NDB_No: item.NDB_No
-						} ;
-					}));
+					response(hrecipeAjaxAutocompleteSuccess(data));
 				}
 			});
 		},
 		minLength: 2,
-		select: function( event, ui ) {
+		// change triggered when field is blurred if the value has changed
+		change: function( event, ui ) {
 			if (ui.item) {
-				jQuery(this).addClass('.sr_linked').siblings('.NDB_No').val(ui.item.NDB_No);				
+				// If an item was selected, record the food database record number
+				jQuery(this).addClass('sr_linked').siblings('.NDB_No').val(ui.item.NDB_No);				
 			} else {
-				jQuery(this).removeClass('.sr_linked').siblings('.NDB_No').val('');
+				// No matching item, clear food database record number
+				jQuery(this).removeClass('sr_linked').siblings('.NDB_No').val('');
 			}
 		}
-		// FIXME If ingredient from SR not selected, need to unlink ingredient and DB
 	});
 	
 	return;
+}
+
+function hrecipeAjaxAutocompleteSuccess(data) {
+	if (0 == data) return null;
+	
+	return(jQuery.map( data.list, function(item){
+		return {
+			label: item.Long_Desc,
+			NDB_No: item.NDB_No
+		} ;
+	}));
 }
 
 tinyMCEPopup.onInit.add(hrecipeIngredientListDialog.init, hrecipeIngredientListDialog);

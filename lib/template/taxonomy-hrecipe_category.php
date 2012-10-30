@@ -7,7 +7,6 @@
 $term = get_term_by( 'slug', get_query_var( 'term' ), get_query_var( 'taxonomy' ) );
 
 get_header(); ?>
-FIXME taxonomy-hrecipe_category
 	<section id="content" role="main">
 		<?php 
 		if (have_posts()) {
@@ -32,7 +31,7 @@ FIXME taxonomy-hrecipe_category
 									<div id="post-<?php the_ID(); ?>"  class="hrecipe-list-entry">
 										<span class="entry-title"><a href="<?php the_permalink() ?>" rel="bookmark" title="Permanent Link to <?php echo strip_tags(the_title('','',false)); ?>"><?php the_title(); ?></a></span>
 										<?php
-									 	/* FIXME enable reporting of ratings echo $hrecipe_microformat->recipe_rating_html(); */ 
+									 	/* TODO enable reporting of ratings echo $hrecipe_microformat->recipe_rating_html(); */ 
 										edit_post_link('Edit', '', '');
 										?>
 									</div>
