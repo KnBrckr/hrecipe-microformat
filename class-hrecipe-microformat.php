@@ -302,18 +302,18 @@ class hrecipe_microformat {
 		// Hook template redirect to provide default page templates within the plugin
 		add_action('template_redirect', array($this, 'template_redirect'));
 
-		// During handling of footer in the body ...
-		add_action('wp_footer', array($this, 'wp_footer'));
+		// Hook into the post processing to localize elements needing access to $post
+		add_action( 'the_post', array($this, 'plugin_the_post') );
 		
 		// Must mark recipe titles with appropriate hrecipe microformat class
 		add_filter('the_title', array($this, 'the_title'), 10, 2); // priority 10 (WP default), 2 arguments
 		
-		// Hook into the post processing to localize elements needing access to $post
-		add_action( 'the_post', array($this, 'plugin_the_post') );
-
 		// Add recipe meta data to the post content
 		add_filter('the_content', array(&$this, 'the_content'));			
 
+		// During handling of footer in the body ...
+		add_action('wp_footer', array($this, 'wp_footer'));
+		
 		/*
 		 * Register plugin supported shortcodes
 		 */
@@ -517,7 +517,8 @@ class hrecipe_microformat {
 		// Save post id for later processing by widgets
 		if (is_single()) $this->post_id = $post->ID;
 		
-		$result = '<article class="hrecipe">';
+		$result = '';
+		
 		if ($this->options['include_metadata']) {
 			$result .= $this->recipe_meta_html('head', $this->options['recipe_head_fields']);
 		}
@@ -525,7 +526,6 @@ class hrecipe_microformat {
 		if ($this->options['include_metadata']) {
 			$result .= $this->recipe_meta_html('footer', $this->options['recipe_footer_fields']);
 		}
-		$result .= '</article>';
 		
 		return $result;
 	}	
