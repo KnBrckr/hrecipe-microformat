@@ -22,6 +22,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  **/
 
+// TODO Display Admin notice when settings have been saved
 // TODO Add cuisine types - mexican, spanish, indian, etc.
 // TODO Create admin widget for Recipe Categories - only allow one category to be selected
 // TODO Phone-home with error log
@@ -488,25 +489,25 @@ class hrecipe_admin extends hrecipe_microformat
 		$valid_options = array();
 		
 		// Display Recipes on home page? -- Default to true
-		$valid_options['display_in_home'] = self::sanitize_an_option($options, 'display_in_home', 'bool');
+		$valid_options['display_in_home'] = self::sanitize_an_option($options['display_in_home'], 'bool');
 		
 		// Display Recipes in main feed?  -- Default to true
-		$valid_options['display_in_feed'] = self::sanitize_an_option($options, 'display_in_feed', 'bool');
+		$valid_options['display_in_feed'] = self::sanitize_an_option($options['display_in_feed'], 'bool');
 		
 		// Posts per page?
-		$valid_options['posts_per_page'] = self::sanitize_an_option($options, 'posts_per_page', 'int');
+		$valid_options['posts_per_page'] = self::sanitize_an_option($options['posts_per_page'], 'int');
 		
 		// Include Recipe Metadata (Header/Footer) in Content?
-		$valid_options['include_metadata'] = self::sanitize_an_option($options, 'include_metadata', 'bool');
+		$valid_options['include_metadata'] = self::sanitize_an_option($options['include_metadata'], 'bool');
 		
 		// Recipe Header content (ordered list)
-		$valid_options['recipe_head_fields'] = self::sanitize_an_option($options, 'recipe_head_fields', 'text');
+		$valid_options['recipe_head_fields'] = self::sanitize_an_option($options['recipe_head_fields'], 'text');
 		
 		// Recipe Footer content (ordered list)
-		$valid_options['recipe_footer_fields'] = self::sanitize_an_option($options, 'recipe_footer_fields', 'text');
+		$valid_options['recipe_footer_fields'] = self::sanitize_an_option($options['recipe_footer_fields'], 'text');
 		
 		// Init value for debug log
-		$valid_options['debug_log_enabled'] = self::sanitize_an_option($options, 'debug_log_enabled', 'bool');
+		$valid_options['debug_log_enabled'] = self::sanitize_an_option($options['debug_log_enabled'], 'bool');
 
 		// Cleanup error log if it's disabled
 		$valid_options['debug_log'] = $valid_options['debug_log_enabled'] ? $options['debug_log'] : array();
@@ -517,23 +518,21 @@ class hrecipe_admin extends hrecipe_microformat
 	/**
 	 * Sanitize an option based on field type
 	 *
-	 * @return value to use for empty option
+	 * @param $val Value of option to clean
+	 * @param $type Option type (text, bool, etc.)
+	 * @return sanitized option value
 	 **/
-	// FIXME Pass value and type only
-	function sanitize_an_option($options, $key, $type)
+	function sanitize_an_option($val, $type)
 	{
-		if ( !array_key_exists($key, $options) ) return false;
-
 		switch($type) {
 			case 'bool' :
-			  return $options[$key] ? true : false;
+			  return $val ? true : false;
 			
 			case 'text' :
-				$val = $options[$key] ? $options[$key] : '';
 				return wp_filter_nohtml_kses($val);  // HTML not allowed in options
 				
 			case 'int' :
-				return intval($options[$key]);
+				return intval($val);
 		}
 	}
 		
