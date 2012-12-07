@@ -64,7 +64,7 @@ class hrecipe_microformat {
 	protected $recipe_field_map;
 	
 	/**
-	 * Array holding plugin options
+	 * Hash holding plugin options
 	 *	'database_ver'     :  Database Structure version in use - Used to upgrade old versions to new format as required
 	 *  'loaded_food_db_ver' : Version of US Nutrional Food DB loaded in WP tables
 	 *	'display_in_home'  :  True if recipes should be displayed in the home page
@@ -76,7 +76,7 @@ class hrecipe_microformat {
 	 *	'debug_log_enabled' : True if logging plugin debug messages
 	 *	'debug_log' : Array of debug messages when debug_log_enabled is true
 	 *
-	 * @var array of strings
+	 * @var hash of option values
 	 **/
 	protected $options;
 	

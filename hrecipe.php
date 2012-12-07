@@ -46,9 +46,7 @@ function hrecipe_microformat_plugin_deactivation() {
 }
 
 /**
- * Load the required libraries - use a sub-scope to protect global variables
- *		- meta-box class used to create new post type
- *		- Plugin options class
+ * Load the required libraries
  **/		
 $required_libs = array(
 	'class-hrecipe-microformat.php', 
