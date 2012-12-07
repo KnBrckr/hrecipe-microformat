@@ -262,8 +262,8 @@ class hrecipe_microformat {
 		// Register Plugin CSS
 		wp_register_style(self::prefix . 'style', self::$url . 'hrecipe.css');
 		
-		// Register Plugin javascript
-		wp_register_script(self::prefix . 'js', self::$url . 'js/hrecipe.js', array('jquery'));
+		// Register Plugin javascript, but put it in the footer so that it can be localized if needed
+		wp_register_script(self::prefix . 'js', self::$url . 'js/hrecipe.js', array('jquery'), false, true);
 		
 		// Register jQuery UI plugin for Ratings
 		wp_register_script('jquery.ui.stars', self::$url . 'lib/jquery.ui.stars-3.0/jquery.ui.stars.min.js', array('jquery-ui-core', 'jquery-ui-widget'), '3.0.1');
@@ -287,23 +287,11 @@ class hrecipe_microformat {
 	 **/
 	function wp()
 	{
-		global $post;
-		
 		// Not needed on admin pages
 		if (is_admin()) return;
-
-		// Include Ratings JS module
-		wp_enqueue_script('jquery.ui.stars');
-		wp_enqueue_style('jquery.ui.stars');
 		
-		// Include JSON processing javascript module
-		wp_enqueue_script('json2');
-				
-		// Include the plugin styling
-		wp_enqueue_style(self::prefix . 'style');
-		
-		// Load plugin javascript
-		wp_enqueue_script(self::prefix . 'js');
+		// Enqueue scripts and style sheets
+		add_action( 'wp_enqueue_scripts', array($this, 'plugin_enqueue_scripts') );
 
 		// During handling of the header ...
 		add_action('wp_head', array($this, 'wp_head'));
@@ -316,25 +304,12 @@ class hrecipe_microformat {
 
 		// During handling of footer in the body ...
 		add_action('wp_footer', array($this, 'wp_footer'));
-				
-		if (is_single()) {
-			// declare the URL to the file that handles the AJAX request (wp-admin/admin-ajax.php)
-			// FIXME -move this to beginning of The Loop!
-			wp_localize_script( 
-				self::prefix . 'js', 
-				'HrecipeMicroformat', 
-				array( 
-					'ajaxurl' => admin_url( 'admin-ajax.php' ),
-					'ratingAction' => self::p . '_recipe_rating',
-					'postID' => $post->ID,
-					'userRating' => self::user_rating($post->ID),
-					'ratingNonce' => wp_create_nonce(self::prefix . 'recipe-rating-nonce')
-				) 
-			);			
-		}
 		
 		// Must mark recipe titles with appropriate hrecipe microformat class
 		add_filter('the_title', array($this, 'the_title'), 10, 2); // priority 10 (WP default), 2 arguments
+		
+		// Hook into the post processing to localize elements needing access to $post
+		add_action( 'the_post', array($this, 'plugin_the_post') );
 
 		// Add recipe meta data to the post content
 		add_filter('the_content', array(&$this, 'the_content'));			
@@ -346,6 +321,27 @@ class hrecipe_microformat {
 		add_shortcode('step', array($this, 'sc_step'));
 		add_shortcode('instruction', array($this, 'sc_step'));  // Allow instruction shortcode as an alternate
 		add_shortcode(self::p . '-category-list', array($this, 'sc_category_list'));
+	}
+	
+	/**
+	 * Enqueues scripts for delivery on front-end
+	 *
+	 * @return void
+	 **/
+	function plugin_enqueue_scripts()
+	{
+		// Include Ratings JS module
+		wp_enqueue_script('jquery.ui.stars');
+		wp_enqueue_style('jquery.ui.stars');
+		
+		// Include JSON processing javascript module
+		wp_enqueue_script('json2');
+				
+		// Include the plugin styling
+		wp_enqueue_style(self::prefix . 'style');
+		
+		// Load plugin javascript
+		wp_enqueue_script(self::prefix . 'js');
 	}
 	
 	/**
@@ -405,6 +401,33 @@ class hrecipe_microformat {
 			include(self::$dir . 'lib/template/' . $template_name);
 		}
 		exit();
+	}
+	
+	/**
+	 * Action Hook for the_post processing
+	 *
+	 * @return void
+	 **/
+	function plugin_the_post()
+	{
+		global $post;
+		
+		if (is_single()) {
+			/**
+			 * Provide some data to javascript for browser handling
+			 */
+			wp_localize_script( 
+				self::prefix . 'js', 
+				'HrecipeMicroformat', 
+				array( 
+					'ajaxurl' => admin_url( 'admin-ajax.php' ), 	// URL to file handling AJAX request (wp-admin/admin-ajax.php)
+					'ratingAction' => self::p . '_recipe_rating', // AJAX Action
+					'postID' => $post->ID,
+					'userRating' => self::user_rating($post->ID), // How has the user rated this recipe?
+					'ratingNonce' => wp_create_nonce(self::prefix . 'recipe-rating-nonce')
+				) 
+			);			
+		}
 	}
 	
 	/**
