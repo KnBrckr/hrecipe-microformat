@@ -978,8 +978,7 @@ class hrecipe_microformat {
 		if ($max_rows < 1) $max_rows = 1;
 		
 		// Retrieve food names matching incoming string
-		// FIXME Improve autocomplete name matching, needs to be more relevant
-		$rows = $this->food_db->get_name( $name_contains, $max_rows );
+		$rows = $this->food_db->get_name( $name_contains, $max_rows );
 		
 		// Response Output
 		$response = json_encode(array(
