@@ -44,53 +44,6 @@
 		 * @param {string} url Absolute URL to where the plugin is located.
 		 */
 		init : function(ed, url) {
-			// =============================
-			// = Shortcode editor handling =
-			// =============================
-			// When cursor is in a shortcode, select the entire node
-			shortcodeClasses = ['fn'];
-			ed.onNodeChange.add(function(ed, cm, n, co) {
-				tinymce.each(shortcodeClasses, function(v,i) {
-					if (ed.dom.hasClass(n, v)) {
-						ed.selection.select(n);
-						return;
-					}
-				});
-			});
-			
-			// ================
-			// = Recipe Title =
-			// ================
-
-			// Register the commands so that they can be invoked by using tinyMCE.activeEditor.execCommand('mceExample');
-			ed.addCommand('mceHrecipeTitle', function() {
-				if (jQuery(ed.dom.doc.documentElement).find('*:contains("[hrecipe_title]")').length === 0) {
-					title = ed.dom.create('h3',{'class':'fn'},'[hrecipe_title]');
-					ed.selection.setNode(title);
-				} else {
-					alert('A recipe title is already in this document');
-					//XXX removed i18n alert(ed.getLang('hrecipeMicroformat.titlePresent'));
-				}
-			});
-
-			// Register buttons
-			ed.addButton('hrecipeTitle', {
-				title : 'Recipe Title',
-				cmd : 'mceHrecipeTitle',
-				image : url + '/img/hrecipeTitle.gif'
-			});
-			
-			// When switching to HTML editor, cleanup H3 content surrounding the title - only want to display the shortcode
-			jQuery('body').bind('afterPreWpautop', function(e, o){
-				o.data = o.data
-					.replace(/<h3[\s\S]+?\[hrecipe_title\]<\/h3>/g, '[hrecipe_title]');
-			});
-			
-			// When content is inserted, wrap [hrecipe_title] shortcode with <h3>
-			ed.onBeforeSetContent.add(function(ed, o) {
-				o.content = o.content.replace(/(\[hrecipe_title\])/,'<h3 class="fn">$1</h3>');
-      });
-						
 			// ===================
 			// = Ingredient List =
 			// ===================
