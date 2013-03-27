@@ -30,8 +30,9 @@
 // TODO Allow editor buttons to be manipulated by TinyMCE configuration panel(s)
 
 (function() {	
-	// Load plugin specific language pack	
-	tinymce.PluginManager.requireLangPack('hrecipeMicroformat');
+	// Load plugin specific language pack
+	// XXX Removed i18n at this level because it keeps breaking.  Might work on figuring it out later.
+	// tinymce.PluginManager.requireLangPack('hrecipeMicroformat');
 	
 	tinymce.create('tinymce.plugins.hrecipeMicroformatPlugin', {
 		/**
@@ -67,13 +68,14 @@
 					title = ed.dom.create('h3',{'class':'fn'},'[hrecipe_title]');
 					ed.selection.setNode(title);
 				} else {
-					alert(ed.getLang('hrecipeMicroformat.titlePresent'));
+					alert('A recipe title is already in this document');
+					//XXX removed i18n alert(ed.getLang('hrecipeMicroformat.titlePresent'));
 				}
 			});
 
 			// Register buttons
 			ed.addButton('hrecipeTitle', {
-				title : 'hrecipeMicroformat.buttonTitle',
+				title : 'Recipe Title',
 				cmd : 'mceHrecipeTitle',
 				image : url + '/img/hrecipeTitle.gif'
 			});
@@ -128,7 +130,7 @@
 
 			// Register Ingredient List button
 			ed.addButton('hrecipeIngredientList', {
-				title : 'hrecipeMicroformat.buttonIngrdList',
+				title : 'Add/Edit an Ingredient List',
 				cmd : 'mceHrecipeIngredientList',
 				image : url + '/img/hrecipeIngredientList.gif'
 			});
