@@ -86,22 +86,19 @@ class hrecipe_food_db {
 	/**
 	 * Create the food DB using content from USDA National Nutrient Database for Standard Reference
 	 *
-	 * Table descriptions are taken from sr24_doc.pdf (contained in the documents downloaded from USDA)
+	 * Table descriptions are taken from sr<version>_doc.pdf (contained in the documents downloaded from USDA)
 	 *
-	 * @param $loaded_ver Version of the DB that is loaded in WP tables
+	 * @access private
 	 * @return void
 	 **/
-	function create_food_schema()
+	private function create_food_schema()
 	{
 		global $charset_collate;
 		
-		// If the loaded version matches what's delivered with this version of the plugin, no need to update tables
-		if ($this->loaded_ver == self::db_release) return;
-
 		$prefix = $this->table_prefix;
 		
 		// Drop tables that already exist - New versions will be loaded
-		self::drop_food_schema();
+		$this->drop_food_schema();
 				
 		/**
 		 * Food Description Table
@@ -370,7 +367,7 @@ class hrecipe_food_db {
 	 *
 	 * @return void
 	 **/
-	static function drop_food_schema()
+	function drop_food_schema()
 	{
 		global $wpdb;
 		
@@ -381,23 +378,36 @@ class hrecipe_food_db {
 	}
 	
 	/**
-	 * Load USDA Standard Reference into the DB
+	 * Setup USDA Standard Reference into the DB
 	 *
 	 * @param string $db_path Path to Standard Reference files
 	 * @return version of the DB table loaded
 	 **/
-	function load_food_db($db_path)
+	function setup_food_db($db_path)
 	{
-		// TODO Handle Condition when tables already populated
 		global $wpdb;
 		
 		// If the loaded version matches what's delivered with this version of the plugin, no need to update tables
 		if ($this->loaded_ver == self::db_release) return self::db_release;
+		
+		// Setup DB schema
+		$this->create_food_schema();
 
 		// Table food_des
 		$sr = new hrecipe_usda_sr_txt($db_path . 'FOOD_DES.txt');
 		
+		// Food Groups that aren't needed in the ingredients table:
+		//  ~0300~^~Baby Foods~
+		//  ~2100~^~Fast Foods~
+		//  ~2200~^~Meals, Entrees, and Sidedishes~
+		//  ~3500~^~Ethnic Foods~
+		//  ~3600~^~Restaurant Foods~
+		$skip_food_groups = array('0300','2100','2200','3500','3600');
+		
 		while ($row = $sr->next()) {
+			// Skip rows for some food groups
+			if ( in_array( $row[1], $skip_food_groups ) ) continue; 
+			
 			// Insert $row into the table
 			$rows_affected = $wpdb->insert( $this->table_prefix . 'food_des', 
 				array(
@@ -425,6 +435,9 @@ class hrecipe_food_db {
 		$sr = new hrecipe_usda_sr_txt($db_path . 'LANGUAL.txt');
 		
 		while ($row = $sr->next()) {
+			// Skip any where NDB_No is not in food_des table (added above)
+			if (! $this->ndb_no_defined($row[0])) continue; 
+			
 			// Insert $row into the table
 			$rows_affected = $wpdb->insert( $this->table_prefix . 'langual', array( 'NDB_No' => $row[0], 'Factor_Code' => $row[1] ) );
 		}		
@@ -443,6 +456,9 @@ class hrecipe_food_db {
 		$sr = new hrecipe_usda_sr_txt($db_path . 'WEIGHT.txt');
 		
 		while ($row = $sr->next()) {
+			// Skip any where NDB_No is not in food_des table (added above)
+			if (! $this->ndb_no_defined($row[0])) continue;
+			
 			// Insert $row into the table
 			$rows_affected = $wpdb->insert( $this->table_prefix . 'weight', 
 				array(
@@ -459,6 +475,9 @@ class hrecipe_food_db {
 		$sr = new hrecipe_usda_sr_txt($db_path . 'ABBREV.txt');
 		
 		while ($row = $sr->next()) {
+			// Skip any where NDB_No is not in food_des table (added above)
+			if (! $this->ndb_no_defined($row[0])) continue;
+			
 			// Insert $row into the table
 			$rows_affected = $wpdb->insert( $this->table_prefix . 'abbrev', 
 				array(
@@ -479,6 +498,21 @@ class hrecipe_food_db {
 		
 		// Return DB version loaded
 		return self::db_release;
+	}
+	
+	/**
+	 * Perform lookup in food_des table for given NDB_No
+	 *
+	 * @param $ndb_no string
+	 * @return integer count of matching records (0 or 1)
+	 * @access private
+	 **/
+	private function ndb_no_defined($ndb_no)
+	{
+		global $wpdb;
+		
+		$db_name = $this->table_prefix . 'food_des';
+		return $wpdb->get_var( "SELECT COUNT(*) FROM ${db_name} WHERE NDB_No LIKE '${ndb_no}'");
 	}
 	
 	/**

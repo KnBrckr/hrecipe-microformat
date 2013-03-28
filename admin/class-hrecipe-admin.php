@@ -125,11 +125,9 @@ class hrecipe_admin extends hrecipe_microformat
 		 * Setup the Food Database
 		 */
 		try {
-			// Setup DB schema
-			$this->food_db->create_food_schema();
-			
-			// Load USDA Standard Reference database			
-			$loaded_ver = $this->food_db->load_food_db(WP_PLUGIN_DIR . '/' . self::p . '/db/');
+	   	 	// TODO New DB is only loaded during activation - Should it be this way?
+			// Setup USDA Standard Reference database			
+			$loaded_ver = $this->food_db->setup_food_db(WP_PLUGIN_DIR . '/' . self::p . '/db/');
 
 			// If the loaded version of the food DB changed, record new version in options
 			if ($loaded_ver != $this->options['loaded_food_db_ver']) {
@@ -1028,7 +1026,8 @@ class hrecipe_admin extends hrecipe_microformat
 		}
 		
 		/** Drop nutritional tables **/
-		hrecipe_food_db::drop_food_schema();
+		$food_db = new hrecipe_food_db;
+		$food_db->drop_food_schema();
 	}
 	
 	/**
