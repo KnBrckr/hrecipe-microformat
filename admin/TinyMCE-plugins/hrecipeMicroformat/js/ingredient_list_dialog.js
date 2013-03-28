@@ -22,9 +22,12 @@
  **/
 
 // Autocomplete list for Units
-var availableUnits=[ // TODO Setup for i18n, pull from database
+// TODO i18n
+var availableUnits=[ // TODO Dynamically pull from WEIGHT database?
 	'cup',
 	'cups',
+	'fl oz',
+	'fluid ounce',
 	'g',
 	'gallon',
 	'gram',
@@ -37,12 +40,14 @@ var availableUnits=[ // TODO Setup for i18n, pull from database
 	'litre',
 	'ml',
 	'ounce',
-	'oz.',
+	'oz',
 	'pinch',
 	'pound',
 	'quart',
+	'stick',
 	'tablespoon',
 	'tbs',
+	'tbsp',
 	'teaspoon',
 	'tsp'
 ];

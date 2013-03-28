@@ -754,8 +754,8 @@ class hrecipe_admin extends hrecipe_microformat
 	}
 	
 	function register_buttons($buttons) {
-	   array_push($buttons, 'hrecipeTitle', 'hrecipeIngredientList');
-	// TODO 'hrecipeIngredient', 'hrecipeInstructions'
+	   array_push($buttons, 'hrecipeIngredientList');
+	// TODO 'hrecipeInstructions'
 	   return $buttons;
 	}
  
