@@ -127,12 +127,6 @@ class hrecipe_microformat {
 		 *	Define Recipe meta data fields
 		 **/
 		$this->recipe_field_map = array(
-			// FIXME Treat Recipe Post title as the Recipe Title - Delete this obsolete field and cleanup database
-			'fn' 				 => array( 'label' => __('Recipe Title', self::p),
-														 'description' => __('Recipe Title', self::p),
-														 'id' => self::prefix . 'fn',
-														 'metabox' => 'info',
-														 'type' => 'text'),
 			'yield'      => array( 'label' => __('Yield', self::p), # TODO Use value, unit for yield (x cookies, x servings, ...)?
 														 'description' => __('Amount the recipe produces, generally the number of servings.', self::p),
 														 'type' => 'text',
@@ -483,7 +477,7 @@ class hrecipe_microformat {
 	}
 		
 	/**
-	 * Add span to title to mark it as a recipe title
+	 * Add span to Post Title to mark it as a recipe title
 	 *
 	 * @param string $title Post title
 	 * @param integer $post_id Post ID

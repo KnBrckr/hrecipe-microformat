@@ -84,7 +84,7 @@ class hrecipe_admin extends hrecipe_microformat
 
 		// If database version does not match, an upgrade is needed
 		if (self::required_db_ver != $this->options['database_ver']) {
-			$this->handle_database_ver($this->options['database_ver']);
+			$this->upgrade_database($this->options['database_ver']);
 		}
 		
 		if(function_exists('register_importer')) {
@@ -947,7 +947,7 @@ class hrecipe_admin extends hrecipe_microformat
 	 *
 	 * @return void
 	 **/
-	function handle_database_ver()
+	function upgrade_database()
 	{
 		$this->admin_notice_errors[] = sprintf(__('Recipe database version mismatch; using v%1$d, required v%2$d', self::p), $this->options['database_ver'], self::required_db_ver);
 	}
