@@ -884,7 +884,7 @@ class hrecipe_microformat {
 	/**
 	 * Generate list of recipe categories
 	 * Example usage:
-	 *  [hrecipe-category-list]    <-- Lists all defined Recipe Categories
+	 *  [hrecipe-microformat-category-list]    <-- Lists all defined Recipe Categories
 	 *
 	 * @param array $atts shortcode attributes
 	 * @param string $content shortcode contents
