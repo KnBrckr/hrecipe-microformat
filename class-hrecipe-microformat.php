@@ -218,8 +218,9 @@ class hrecipe_microformat {
 		
 		$this->options = (array) wp_parse_args(get_option(self::settings), $options_defaults);
 		
-		// Create foods database instance
+		// Create needed database instances
 		$this->food_db = new hrecipe_food_db(self::prefix, $this->options['loaded_food_db_ver']);
+		$this->ingrd_db = new hrecipe_ingrd_db(self::prefix);
 	}
 	
 	/**
@@ -988,7 +989,7 @@ class hrecipe_microformat {
 	/**
 	 * Perform Plugin Activation handling
 	 *  * Confirm that plugin environment requirements are met
-	 *	* Run parent class activation
+	 *	* FIXME - Relationship has been reversed! Run parent class activation
 	 *
 	 * @return void
 	 **/

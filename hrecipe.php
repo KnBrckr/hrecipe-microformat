@@ -51,6 +51,7 @@ function hrecipe_microformat_plugin_deactivation() {
 $required_libs = array(
 	'class-hrecipe-microformat.php', 
 	'class-hrecipe-food-db.php',
+	'class-hrecipe-ingrd-db.php',
 	'class-hrecipe-widget.php');
 if (is_admin()) {
 	// For admin pages, setup the extended admin class

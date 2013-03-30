@@ -137,9 +137,21 @@ class hrecipe_admin extends hrecipe_microformat
 			}
 		} catch (Exception $e) {
 			$this->food_db->drop_food_schema();
+			// FIXME Exception not getting handled correctly by WP - need proper method to catch
 			throw new Exception('Unable to load USDA Standard Reference DB; caught exception: ' . $e->getMessage());
 		}
 		
+		/*
+		 * Setup Ingredient Database
+		 */
+		try {
+			// Create the ingredient table if it doesn't exist
+			$this->ingrd_db->create_schema();
+		} catch (Exception $e) {
+			// FIXME See Exception above - do the same thing
+			throw new Exception('Unable to create Ingredient DB; caught exception: ' . $e->getMessage());
+		}
+			
 		// Only insert terms if the category taxonomy doesn't already exist.
 		if (0 == count(get_terms($this->recipe_category_taxonomy, 'hide_empty=0&number=1'))) {
 			wp_insert_term(__('Appetizer', self::p), $this->recipe_category_taxonomy);
@@ -1026,8 +1038,12 @@ class hrecipe_admin extends hrecipe_microformat
 		}
 		
 		/** Drop nutritional tables **/
-		$food_db = new hrecipe_food_db;
+		$food_db = new hrecipe_food_db(self::prefix,'');
 		$food_db->drop_food_schema();
+		
+		/** Drop ingredient table **/
+		$ingrd_db = new hrecipe_ingrd_db(self::prefix);
+		$ingrd_db->drop_schema();
 	}
 	
 	/**
