@@ -68,6 +68,7 @@ class hrecipe_ingrd_db {
 	function create_schema() {
 		global $charset_collate;
 		
+		// FIXME Should each row in the DB be a blob for a given ingredient list?  Reduces DB add/remove churn as list are updated
 		$sql = "CREATE TABLE IF NOT EXISTS " . $this->ingrds_table . " (
 			ingrd_id bigint(20) UNSIGNED NOT NULL,
 			post_id bigint(20) UNSIGNED NOT NULL,
