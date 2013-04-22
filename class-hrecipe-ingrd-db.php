@@ -134,8 +134,8 @@ class hrecipe_ingrd_db {
 	{
 		global $wpdb;
 		
-		$result = $wpdb->query($wpdb->prepare("SELECT NDB_No,quantity,unit,ingrd,comment FROM %s WHERE post_id LIKE %d AND ingrd_list_id LIKE %d SORTED BY list_order", $this->ingrds_table, $post_id, $ingrd_list_id));
-		
+		$result = $wpdb->get_results($wpdb->prepare("SELECT NDB_No,quantity,unit,ingrd,comment FROM " . $this->ingrds_table . " WHERE post_id LIKE %d AND ingrd_list_id LIKE %d ORDER BY list_order ASC", $post_id, $ingrd_list_id));
+
 		return $result;
 	}
 	
@@ -149,7 +149,7 @@ class hrecipe_ingrd_db {
 	{
 		global $wpdb;
 		
-		$result = $wpdb->query($wpdb->prepare("DELETE FROM %s WHERE post_id LIKE %d AND ingrd_list_id LIKE %d", $this->ingrds_table, $post_id, $ingrd_list_id));
+		$result = $wpdb->query($wpdb->prepare("DELETE FROM " . $this->ingrds_table . " WHERE post_id LIKE %d AND ingrd_list_id LIKE %d", $post_id, $ingrd_list_id));
 	}
 	
 	/**
@@ -163,7 +163,7 @@ class hrecipe_ingrd_db {
 	function delete_ingrds_for_post($post_id)
 	{
 		global $wpdb;
-		$result = $wpdb->query($wpdb->prepare("DELETE FROM %s WHERE post_id LIKE %d", $this->ingrds_table, $post_id));
+		$result = $wpdb->query($wpdb->prepare("DELETE FROM " . $this->ingrds_table . " WHERE post_id LIKE %d", $this->ingrds_table, $post_id));
 	}
 }
 endif; // End class hrecipe_ingrd_db

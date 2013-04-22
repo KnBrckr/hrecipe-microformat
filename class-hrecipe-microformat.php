@@ -930,15 +930,16 @@ class hrecipe_microformat {
 		
 		// Open Ingredients table and add header
 		$text .= '<table class="ingredients" id="ingredients-' . $id . '">';
-		$text .= '<thead><tr><th colspan="2"><span class="ingredients-title">' . __('Ingredients', $this->domain) . '</span></th></tr></thead>';
+		$text .= '<thead><tr><th colspan="2"><span class="ingredients-title">' . __('Ingredients', self::p) . '</span></th></tr></thead>';
 
 		// Add row for each ingredient
 		foreach ($ingrds as $d) {
+			// FIXME quantity is not converting as expected for imperial units
 			// array('value', 'type', 'ingrd', 'comment')
 			foreach (array('NDB_No','quantity','unit','ingrd','comment') as $i) {
-				$$i = isset($d[$i]) && $d[$i] ? '<span class="' . $i . '">' . $d[$i] . '</span>' : '';
+				$$i = isset($d->$i) && $d->$i ? '<span class="' . $i . '">' . $d->$i . '</span>' : '';
 			}
-			$text .= '<tr class="ingredient"><td>' . $NDB_No . $quantity . $unit . '</td><td>' . $ingrd . $comment . '</td></tr>';
+			$text .= '<tr class="ingredient"><td>' . $NDB_No . $quantity . ' ' . $unit . '</td><td>' . $ingrd . $comment . '</td></tr>';
 		}
 		
 		$text .= '</table>';
