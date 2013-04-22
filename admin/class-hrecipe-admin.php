@@ -88,7 +88,7 @@ class hrecipe_admin extends hrecipe_microformat
 		}
 		
 		if(function_exists('register_importer')) {
-			$hrecipe_import = new hrecipe_importer(self::p, $this->recipe_category_taxonomy);
+			$hrecipe_import = new hrecipe_importer(self::p, $this->recipe_category_taxonomy, $this->ingrd_db);
 			register_importer($hrecipe_import->id, $hrecipe_import->name, $hrecipe_import->desc, array ($hrecipe_import, 'dispatch'));
 		}
 	}
@@ -365,6 +365,7 @@ class hrecipe_admin extends hrecipe_microformat
 	{
 		global $post;
 		
+		// Don't save meta data on autosaves
 		if ( defined('DOING_AUTOSAVE') && DOING_AUTOSAVE ) 
 			return $post_id;
 			
@@ -379,6 +380,7 @@ class hrecipe_admin extends hrecipe_microformat
 			return $post_id;
 		}		
 		
+		// FIXME Sort out the right way to handle post revisions (http://pastebin.com/LAuBtmSZ, http://lud.icro.us/post-meta-revisions-wordpress)
 		$the_post = wp_is_post_revision($post_id);
 		if (! $the_post) $the_post = $post_id;
 

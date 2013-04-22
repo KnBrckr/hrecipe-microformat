@@ -74,13 +74,14 @@ class hrecipe_importer {
 	 * Class Constructor
 	 *
 	 */
-	function __construct($domain, $category) {
+	function __construct($domain, $category, $ingrd_db) {
 		$this->id = $domain . '-importer';
 		$this->name = __('Import Recipes', $domain);
 		$this->desc = __('Import recipes from supported formats as a Recipe Post Type.', $domain);
 		$this->domain = $domain;
 		$this->category_taxonomy = $category;
 		$this->transient_id = $domain . '-recipes_import'; // TODO Use a session var for concurrency?
+		$this->ingrd_db = $ingrd_db;
 	}
 	
 	/**
@@ -520,10 +521,33 @@ class hrecipe_importer {
 			}
 		}
 		
+		// Save recipe ingredients
+		$ingrd_list_id = 1; // Coorelates to short code ids added to content in build_post_content()
+		
+		foreach ($recipe['content'] as $index => $section) {
+			if ('ingrd-list' == $section['type']) {
+				// Add row to DB for each ingredient
+				$ingrds = array(); // Start with empty list
+				
+				foreach ($section['data'] as $d) {
+					$row['quantity'] = $d['value'];
+					$row['unit'] = $d['type'];
+					$row['ingrd'] = $d['ingrd'];
+					$row['comment'] = $d['comment'];
+					
+					$ingrds[] = $row; // Add row to the list
+				}
+				
+				// Add list to the DB
+				if ( count($ingrds) > 0 ) {
+					// FIXME Handle insert errors
+					$this->ingrd_db->insert_ingrds($post_id, $ingrd_list_id++, $ingrds);
+				}
+			} // End if ('ingrd-list')
+		} // End foreach ($content)
+		
 		return false;
 	}
-	
-	
 	
 	/**
 	 * Build post content from array of ingredients and instruction text
@@ -537,22 +561,17 @@ class hrecipe_importer {
 	{
 		$text = '';
 		
+		/*
+			Each ingredient list encountred will be added in order to the ingredients database later.
+			Add to the text flow using the short-code [ingrd-list #] to grab the ingredients from the
+			DB during recipe display processing.
+		*/
+		$ingrd_list_id = 1; 
+		
 		foreach ($content as $index => $section) {
 			switch ($section['type']) {
 				case 'ingrd-list':
-					// Open Ingredients table and add header
-					$text .= '<table class="ingredients">';
-					$text .= '<thead><tr><th colspan="2"><span class="ingredients-title">' . __('Ingredients', $this->domain) . '</span></th></tr></thead>';
-
-					// Add row for each ingredient
-					foreach ($section['data'] as $d) {
-						foreach (array('value', 'type', 'ingrd', 'comment') as $i) {
-							$$i = isset($d[$i]) && $d[$i] ? '<span class="' . $i . '">' . $d[$i] . '</span>' : '';
-						}
-						$text .= '<tr class="ingredient"><td>' . $value . $type . '</td><td>' . $ingrd . $comment . '</td></tr>';
-					}
-					
-					$text .= '</table>';
+					$text .= '[ingrd_list id="'. $ingrd_list_id++ . '"]';
 					break;
 					
 				case 'text':

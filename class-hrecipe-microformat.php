@@ -314,6 +314,7 @@ class hrecipe_microformat {
 		/*
 		 * Register plugin supported shortcodes
 		 */
+		add_shortcode('ingrd-list', array($this, 'sc_ingrd_list'));
 		add_shortcode('instructions', array($this, 'sc_instructions'));
 		add_shortcode('step', array($this, 'sc_step'));
 		add_shortcode('instruction', array($this, 'sc_step'));  // Allow instruction shortcode as an alternate
@@ -900,6 +901,49 @@ class hrecipe_microformat {
 			) );
 		
 		return $content;
+	}
+	
+	/**
+	 * Extract Ingredients from DB and create table for display in recipe
+	 * Example usage:
+	 *  [ingrd-list id=1] <-- Displays ingredient list 1 for recipe
+	 *
+	 * @param array $atts shortcode attributes
+	 * @param string $content shortcode contents
+	 * @uses $post
+	 * @return string HTML
+	 **/
+	function sc_ingrd_list($atts, $content='')
+	{
+		global $post;
+		
+		$text = ''; // Init Output HTML text
+		
+		extract( shortcode_atts( array(
+			'id' => 1,
+		), $atts ) );
+		// Sanitize input
+		$id = intval($id);
+		
+		$ingrds = $this->ingrd_db->get_ingrds($post->ID, $id);
+		// FIXME Check for empty return
+		
+		// Open Ingredients table and add header
+		$text .= '<table class="ingredients" id="ingredients-' . $id . '">';
+		$text .= '<thead><tr><th colspan="2"><span class="ingredients-title">' . __('Ingredients', $this->domain) . '</span></th></tr></thead>';
+
+		// Add row for each ingredient
+		foreach ($ingrds as $d) {
+			// array('value', 'type', 'ingrd', 'comment')
+			foreach (array('NDB_No','quantity','unit','ingrd','comment') as $i) {
+				$$i = isset($d[$i]) && $d[$i] ? '<span class="' . $i . '">' . $d[$i] . '</span>' : '';
+			}
+			$text .= '<tr class="ingredient"><td>' . $NDB_No . $quantity . $unit . '</td><td>' . $ingrd . $comment . '</td></tr>';
+		}
+		
+		$text .= '</table>';
+		
+		return $text;
 	}
 	
 	/**

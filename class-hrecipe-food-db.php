@@ -529,7 +529,8 @@ class hrecipe_food_db {
 		
 		// FIXME Improve name matching, needs to be more relevant
 		$db_name = $this->table_prefix . 'food_des';
-		$rows = $wpdb->get_results("SELECT NDB_No,Long_Desc  FROM ${db_name} WHERE Long_Desc LIKE '%${name_contains}%' LIMIT 0,${max_rows}");
+		$like = '%' . $name_contains . '%';
+		$rows = $wpdb->prepare("SELECT NDB_No,Long_Desc FROM ${db_name} WHERE Long_Desc LIKE %s LIMIT 0,%d", $like, $max_rows);
 		
 		return $rows;
 	}

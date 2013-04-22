@@ -68,9 +68,8 @@ class hrecipe_ingrd_db {
 	function create_schema() {
 		global $charset_collate;
 		
-		// FIXME Should each row in the DB be a blob for a given ingredient list?  Reduces DB add/remove churn as list are updated
 		$sql = "CREATE TABLE IF NOT EXISTS " . $this->ingrds_table . " (
-			ingrd_id bigint(20) UNSIGNED NOT NULL,
+			ingrd_id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
 			post_id bigint(20) UNSIGNED NOT NULL,
 			ingrd_list_id int(10) UNSIGNED NOT NULL,
 			list_order int(10) NOT NULL,
@@ -89,6 +88,7 @@ class hrecipe_ingrd_db {
 	
 	/**
 	 * Delete database table for ingredient lists (used for uninstall)
+	 * FIXME Call uninstall
 	 *
 	 * @return void
 	 **/
@@ -100,36 +100,71 @@ class hrecipe_ingrd_db {
 	}
 	
 	/**
-	 * Retrieve matching food names
+	 * Insert list of ingredients into table
+	 * Sort order will match initial row order
 	 *
-	 * @uses $wpdb
-	 * @param $name_contains string - String to match for food name
-	 * @param $max_rows int - maximum number of rows to return
-	 * @return array of names retrieved
+	 * @uses wpdb
+	 * @param $post_id
+	 * @param $ingrd_list_id
+	 * @param $ingrd_list array of rows of key/value pairs: NDB_No, quantity, unit, ingredient name and comment 
+	 * @return void
 	 **/
-	function get_name($name_contains, $max_rows)
+	function insert_ingrds($post_id, $ingrd_list_id, $ingrd_list)
 	{
 		global $wpdb;
 		
-		// FIXME Improve name matching, needs to be more relevant
-		$rows = $wpdb->get_results("SELECT NDB_No,quantity,unit,ingrd,comment FROM ${this->ingrds_table} WHERE post_id LIKE ${post_id} AND ingrd_list_id LIKE ${ingrd_list_id} SORTED BY list_order");
-		
-		return $rows;
+		$list_order = 0;  // Init the sort order counter; rows are added in the order received
+		foreach ($ingrd_list as $row) {
+			$row['post_id'] = $post_id;
+			$row['ingrd_list_id'] = $ingrd_list_id;
+			$row['list_order'] = $list_order++;
+			$result = $wpdb->insert($this->ingrds_table, $row);
+		}
 	}
 	
 	/**
 	 * Retrieve ingredients for a recipe post
 	 *
+	 * @uses $wpdb
 	 * @param $post_id Retrieve ingredients for post_id
 	 * @param $ingrd_list_id Which ingredient list in post to get
 	 * @return array of ingredient rows
 	 **/
 	function get_ingrds($post_id,$ingrd_list_id)
 	{
-		$db_name = $this->table_prefix . 'ingrds';
-		$rows
+		global $wpdb;
+		
+		$result = $wpdb->query($wpdb->prepare("SELECT NDB_No,quantity,unit,ingrd,comment FROM %s WHERE post_id LIKE %d AND ingrd_list_id LIKE %d SORTED BY list_order", $this->ingrds_table, $post_id, $ingrd_list_id));
+		
+		return $result;
 	}
 	
+	/**
+	 * Delete an ingredient list from a post
+	 *
+	 * @return null
+	 * @author Kenneth J. Brucker <ken.brucker@action-a-day.com>
+	 **/
+	function delete_ingrd_list($post_id, $ingrd_list_id)
+	{
+		global $wpdb;
+		
+		$result = $wpdb->query($wpdb->prepare("DELETE FROM %s WHERE post_id LIKE %d AND ingrd_list_id LIKE %d", $this->ingrds_table, $post_id, $ingrd_list_id));
+	}
+	
+	/**
+	 * Delete all ingredient items associated with a post
+	 * FIXME Call delete when posts are removed
+	 *
+	 * @uses $wpdb
+	 * @param $post_id Delete all ingredients for indicated post
+	 * @return void
+	 **/
+	function delete_ingrds_for_post($post_id)
+	{
+		global $wpdb;
+		$result = $wpdb->query($wpdb->prepare("DELETE FROM %s WHERE post_id LIKE %d", $this->ingrds_table, $post_id));
+	}
 }
 endif; // End class hrecipe_ingrd_db
 ?>

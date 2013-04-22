@@ -60,6 +60,7 @@ class import_shopncook {
 	/**
 	 * import a ShopNCook SCX format file
 	 *
+	 * @param $fname string Filename to be parsed
 	 * @return array of normalized recipes
 	 **/
 	function normalize_all($fname)
@@ -77,22 +78,22 @@ class import_shopncook {
 		}
 		
 		// Version check the XML content
-		if ('1.0' != $recipe_import['SHOPNCOOK']['_']['VERSION']) {
-			$this->error_msg = 'Unknown ShopNCook XML version ' . $recipe_import['SHOPNCOOK']['_']['VERSION'];
+		if ('1.0' != $recipe_import['SHOPNCOOK']['@attrib']['VERSION']) {
+			$this->error_msg = 'Unknown ShopNCook XML version ' . $recipe_import['SHOPNCOOK']['@attrib']['VERSION'];
 			return false;
 		}
 
 		/*
 		 * Imported list may contain one or more recipes, array structure will differ as a result
 		 */
-		if (isset($recipe_import['SHOPNCOOK']['RECIPELIST']['RECIPE']['_'])) {
-			// Handle single recipe case:
-			$recipes[0] = $this->parse_recipe($recipe_import['SHOPNCOOK']['RECIPELIST']['RECIPE']);
-		} else {
+		if (array_key_exists(0, $recipe_import['SHOPNCOOK']['RECIPELIST']['RECIPE'])) {
 			$recipes = array();
 			foreach ($recipe_import['SHOPNCOOK']['RECIPELIST']['RECIPE'] as $scx_recipe) {
 				array_push($recipes, $this->parse_recipe($scx_recipe));
 			}
+		} else {
+			// Handle single recipe case:
+			$recipes[0] = $this->parse_recipe($recipe_import['SHOPNCOOK']['RECIPELIST']['RECIPE']);
 		}
 
 		$this->recipes = $recipes;
@@ -183,9 +184,9 @@ class import_shopncook {
 		$ingrd_norm = array();
 		
 		if (is_array($ingrd)) {
-			if ($ingrd['_']['QUANTITY']) {
-				$qty = rtrim($ingrd['_']['QUANTITY'], '.0'); // Remove trailing 0 and decimal point
-				$unit = $ingrd['_']['UNIT'];
+			if ($ingrd['@attrib']['QUANTITY']) {
+				$qty = rtrim($ingrd['@attrib']['QUANTITY'], '.0'); // Remove trailing 0 and decimal point
+				$unit = $ingrd['@attrib']['UNIT'];
 			} else {
 				$qty = $ingrd['INGREDIENTQUANTITY'];
 				$unit = '';
@@ -195,7 +196,7 @@ class import_shopncook {
 			                              'comment' => is_string($ingrd['INGREDIENTCOMMENT']) ?  $ingrd['INGREDIENTCOMMENT'] : ''));
 		} else {
 			foreach (explode("\n", $ingrd) as $item) {
-				array_push($ingrd_norm, array('ingrd' => $item));
+				array_push($ingrd_norm, array('ingrd' => $item, 'value' => NULL, 'type' => NULL, 'comment' => NULL));
 			}
 		}
 

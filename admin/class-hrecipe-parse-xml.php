@@ -4,7 +4,7 @@
  *
  * @package hRecipe Microformat
  * @author Kenneth J. Brucker <ken@pumastudios.com>
- * @copyright 2011 Kenneth J. Brucker (email: ken@pumastudios.com)
+ * @copyright 2011-2013 Kenneth J. Brucker (email: ken@pumastudios.com)
  * 
  * This file is part of hRecipe Microformat, a plugin for Wordpress.
  *
@@ -23,24 +23,10 @@
  **/
 
 class hrecipe_parse_xml {
-	/**
-	 * The array created by the parser which can be assigned to a variable with: $varArr = $domObj->array.
-	 *
-	 * @var Array
-	 */
-	public  $array;
 	public  $error_msg;
-	private $parser;
-	private $pointer;
 	private $tags;
 
 	function __construct() {
-		$this->pointer =& $this->array;
-		$this->parser = xml_parser_create("UTF-8");
-
-		xml_set_object( $this->parser, $this );
-		xml_set_element_handler( $this->parser, "tag_open", "tag_close" );
-		xml_set_character_data_handler( $this->parser, "cdata" );
 	}
 	
 	/*
@@ -49,90 +35,110 @@ class hrecipe_parse_xml {
 	function set_tags( $tags ) {
 		$this->tags = $tags;
 	}
-
+	
 	/*
 	 * Parse an XML file
 	 */
 	function parse( $path ) {
-		if ( !( $fp = fopen( $path, "r" ) ) ) {
+		$doc = new DOMDocument();
+		$doc->preserveWhiteSpace = false;
+
+		if (!$doc->load($path)) {
 			$this->error_msg = "Cannot open XML data file: '$path'";
-			return false;
+			return NULL;
 		}
 
-		while ( $data = fread( $fp, 4096 ) ) {
-			if ( !xml_parse( $this->parser, $data, feof( $fp ) ) ) {
-				$this->error_msg = sprintf( "XML error: %s at line %d",
-						xml_error_string( xml_get_error_code( $this->parser ) ),
-						xml_get_current_line_number( $this->parser ) );
-				xml_parser_free( $this->parser );
-				return false;
-			}
-		}
-
-		xml_parser_free( $this->parser );
-		fclose($fp);
-		return $this->array;
+		return $this->xml_to_array($doc->documentElement);
 	}
 
-  /*
-   * Parse XML from a string
-   */
-	function parseString( $data ) {
-		xml_parse( $this->parser, $data );
-		return $this->array;
-	}
-
-	private function tag_open( $parser, $tag, $attributes ) {
-		// Map tag names to alternates provided
-		if (isset($this->tags) && array_key_exists($tag, $this->tags)) $tag = $this->tags[$tag];
+	/**
+	 * Recursively parse XML data to build array representation
+	 *
+	 * @param $node_xml DOMDocument element
+	 * @return array representing XML data
+	 **/
+	private function xml_to_array($node_xml) {
+		$node_array = array();
+		$hits_array = array();
 		
-		$this->convert_to_array( $tag, '_' );
-		$idx=$this->convert_to_array( $tag, 'cdata' );
-		if ( isset( $idx ) ) {
-			$this->pointer[$tag][$idx] = array( '@idx' => $idx, '@parent' => &$this->pointer );
-			$this->pointer =& $this->pointer[$tag][$idx];
-		}else {
-			$this->pointer[$tag] = array( '@parent' => &$this->pointer );
-			$this->pointer =& $this->pointer[$tag];
+		/**
+		 * For each sibling node get associated contents and attributes
+		 */
+		while ($node_xml != NULL) {
+			/**
+			 * Map tag names to alternates provided
+			 */
+			$tag = strtoupper($node_xml->nodeName);
+			if (isset($this->tags) && array_key_exists($tag, $this->tags)) $tag = $this->tags[$tag];
+			
+			/**
+			 * Text nodes are end of chain, just get their value
+			 */
+			if (XML_TEXT_NODE == $node_xml->nodeType) {
+				$node_val = $node_xml->nodeValue;
+			} else {
+				/**
+				 * Assume this is XML_ELEMENT_NODE type
+				 * Recurse on children of this node, result will be an array as long as child is not only a single text node
+				 */
+				$node_val = $this->xml_to_array($node_xml->firstChild);				
+
+				/**
+				 * Collect node attributes
+				 */
+				if ($node_xml->hasAttributes()) {
+					/**
+					 * If we don't have an array, there is a problem
+					 */
+					if (! is_array($node_val)) {
+						$this->error_msg = "XML format error: Found tag <$tag>, a text node masquerading as an element node";
+						return NULL;
+					}
+					
+					$attr_array = array();
+				
+					foreach ($node_xml->attributes as $attrib) {
+						$attr_array[strtoupper($attrib->nodeName)] = $attrib->nodeValue;
+					}
+					$node_val['@attrib'] = $attr_array;
+				}
+			}
+			
+			/**
+			 * If hitting tag again, value is saved in an array
+			 */
+			if (array_key_exists($tag, $node_array)) {
+				/**
+				 * If seeing the key for the 2nd time, convert to an array
+				 */
+				if (1 == $hits_array[$tag]) {
+					$curr_val = $node_array[$tag];
+					$node_array[$tag] = array($curr_val);
+					$hits_array[$tag]++;
+				}
+				$node_array[$tag][] = $node_val;
+			} else {
+				$node_array[$tag] = $node_val;
+				$hits_array[$tag] = 1;
+			}
+			
+			/**
+			 * Go to next sibling
+			 */
+			$node_xml = $node_xml->nextSibling;
 		}
-		if ( !empty( $attributes ) ) { $this->pointer['_'] = $attributes; }
+		
+		/**
+		 * If result is an empty array, return NULL
+		 * If result is an array with a single text node, collapse the array and just return the text
+		 */
+		if (count($node_array) == 0) {
+			return NULL;
+		} elseif (count($node_array) == 1 && array_key_exists('#TEXT', $node_array)) {
+			return $node_array['#TEXT'];
+		} else {
+			return $node_array;
+		}
 	}
-
-	/**
-	 * Adds the current elements content to the current pointer[cdata] array.
-	 */
-	private function cdata( $parser, $cdata ) {
-		if ("\n" == $cdata) $cdata = ''; // Ignore empty elements
-		if ( isset( $this->pointer['cdata'] ) ) { $this->pointer['cdata'] .= $cdata;}
-		else { $this->pointer['cdata'] = $cdata;}
-	}
-
-	private function tag_close( $parser, $tag ) {
-		$current = & $this->pointer;
-		if ( isset( $this->pointer['@idx'] ) ) {unset( $current['@idx'] );}
-		$this->pointer = & $this->pointer['@parent'];
-		unset( $current['@parent'] );
-		if ( isset( $current['cdata'] ) && count( $current ) == 1 ) { $current = $current['cdata'];}
-		else if ( empty( $current['cdata'] ) ) { unset( $current['cdata'] ); }
-	}
-
-	/**
-	 * Converts a single element item into array(element[0]) if a second element of the same name is encountered.
-	 */
-	private function convert_to_array( $tag, $item ) {
-		if ( isset( $this->pointer[$tag][$item] ) ) {
-			$content = $this->pointer[$tag];
-			$this->pointer[$tag] = array( ( 0 ) => $content );
-			$idx = 1;
-		}else if ( isset( $this->pointer[$tag] ) ) {
-				$idx = count( $this->pointer[$tag] );
-				if ( !isset( $this->pointer[$tag][0] ) ) {
-					foreach ( $this->pointer[$tag] as $key => $value ) {
-						unset( $this->pointer[$tag][$key] );
-						$this->pointer[$tag][0][$key] = $value;
-					}}}else $idx = null;
-		return $idx;
-	}
-
 } // end of class parse_xml
 ?>
