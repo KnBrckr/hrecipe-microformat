@@ -250,7 +250,7 @@ class hrecipe_microformat {
 		// Add recipe custom post type
 		$this->create_post_type();
 		
-		// Adjust WP Query
+		// Adjust WP Query to include recipe posts in post queries
 		add_filter('pre_get_posts', array(&$this, 'pre_get_posts_filter'));
 		
 		// Do template setup after posts have been loaded

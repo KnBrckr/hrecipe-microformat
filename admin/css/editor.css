@@ -39,21 +39,6 @@
 }
 
 /* Show element type in editor window */
-.ingredient .value:before {
-	content: "{Qty}";
-}
-.ingredient .type:before {
-	content: "{Unit}";
-}
-.ingredient .ingrd:before {
-	content: "{Ingredient}";
-}
-.ingredient .comment:before {
-	content: "{Comment}";
-}
-.ingredient .NDB_No {
-	display: none;
-}
 .hrecipe-hint:before {
 	content: "{Hint}";
 }
