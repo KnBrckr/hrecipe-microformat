@@ -574,7 +574,7 @@ class hrecipe_importer {
 		foreach ($content as $index => $section) {
 			switch ($section['type']) {
 				case 'ingrd-list':
-					$text .= '[ingrd-list id="'. $ingrd_list_id++ . '"]';
+					$text .= '[ingrd-list id="'. $ingrd_list_id++ . '"]' . "\n\n";
 					break;
 					
 				case 'text':
