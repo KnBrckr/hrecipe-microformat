@@ -294,7 +294,8 @@ class hrecipe_admin extends hrecipe_microformat
 		
 		// Register admin style sheet and javascript
 		wp_register_style(self::prefix . 'admin', self::$url . 'admin/css/admin.css');
-		wp_register_script(self::prefix . 'admin', self::$url . 'admin/js/admin.js');
+		wp_register_script(self::prefix . 'admin', self::$url . 'admin/js/admin.js',
+		                   array('jquery-ui-autocomplete','jquery-ui-sortable'));
 		
 		// Register jQuery UI stylesheet
 		wp_register_style(self::prefix . 'jquery-ui', self::$url . 'admin/css/jquery-ui.css');
@@ -313,15 +314,77 @@ class hrecipe_admin extends hrecipe_microformat
 	 **/
 	function setup_meta_boxes()
 	{
+		/**
+		 * Add Recipe Ingredients metabox
+		 */
+		add_meta_box(self::prefix . 'ingredients', __('Recipe Ingredients', self::p), array(&$this, 'metabox_ingrd'), self::post_type, 'normal', 'high', null);	
 
-		$meta_boxes = array();
-		
-		// Add metabox for the Recipe Metadata
-		add_meta_box(self::prefix . 'info', __('Additional Recipe Information', self::p), array(&$this, 'info_metabox'), self::post_type, 'normal', 'high', null);		
+		/**
+		 * Add metabox for the Recipe Metadata
+		 */ 
+		add_meta_box(self::prefix . 'info', __('Additional Recipe Information', self::p), array(&$this, 'info_metabox'), self::post_type, 'normal', 'high', null);	
 	}
 	
 	/**
-	 * Emit HTML for the recipe information metabox
+	 * Emit HTML for Recipe Ingredients Metabox on Admin Recipe Edit Page
+	 *
+	 * @uses $post
+	 * @return void
+	 **/
+	function metabox_ingrd()
+	{
+		global $post;
+
+		/**
+		 * Use nonce for verification
+		 */
+		wp_nonce_field( plugin_basename(__FILE__), self::prefix . 'noncename' );
+		
+		/**
+		 * For each ingredient list, output a table
+		 */
+		for ($list_id=1; ($ingrds = $this->ingrd_db->get_ingrds($post->ID, $list_id) ) != NULL; $list_id++) { 
+			?>
+			<label for="ingrd-list-name">Ingredients List <?php echo $list_id; ?> Caption: </label> <input type="text" id="ingrd-list-name" value="<?php echo 'FIXME Get default from DB' ?>"/>
+			Use [ingrd-list id="<?php echo $list_id; ?>"] in recipe text to display this list.
+			<table class="ingredients">
+				<thead>
+					<tr>
+						<th></th>
+						<th>Amount</th>
+						<th>Unit</th>
+						<th>Ingredient</th>
+						<th>Comment</th>
+					</tr>
+				</thead>
+				<tbody class="ingrd-list">
+					<?php
+					foreach ($ingrds as $d) {
+						?>
+						<tr>
+							<td class="ui-buttons">
+								<ul>
+								<li><span class="sort-handle ui-icon ui-icon-arrow-2-n-s ui-state-active"></span></li>
+								<li><span class="insert ui-icon ui-icon-plusthick ui-state-active"></span></li>
+								<li><span class="delete ui-icon ui-icon-minusthick ui-state-active"></span></li>
+								</ul>
+							</td>
+							<td><input type="text" name="value" class="value" value="<?php echo $d->quantity ?>" /></td>
+							<td><input type="text" name="type" class="type ui-widget" value="<?php echo $d->unit ?>"/></td>
+							<td><input type="text" name="ingrd" class="ingrd" value ="<?php echo $d->ingrd ?>"/><input type="hidden" name="NDB_No" value="" class="NDB_No"></td>
+							<td><input type="text" name="comment" class="comment" value="<?php echo $d->comment ?>"/></td>
+						</tr>
+						<?php
+					}				
+					?>
+				</tbody>
+			</table>
+			<?php
+		}
+	}
+	
+	/**
+	 * Emit HTML for the recipe information metabox displayed in the admin recipe editing screen
 	 *
 	 * @uses $post To retrieve post meta data
 	 * @return void
@@ -363,6 +426,7 @@ class hrecipe_admin extends hrecipe_microformat
 	 **/
 	function save_post_meta($post_id)
 	{
+		// FIXME Save recipe ingredients
 		global $post;
 		
 		// Don't save meta data on autosaves

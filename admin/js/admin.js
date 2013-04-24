@@ -21,8 +21,40 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  **/
 
+// Autocomplete list for Units
+var availableUnits=[ // TODO Dynamically pull from WEIGHT database?
+	'cup',
+	'cups',
+	'fl oz',
+	'fluid ounce',
+	'g',
+	'gallon',
+	'gram',
+	'grams',
+	'kg',
+	'kilogram',
+	'kilograms',
+	'l',
+	'lb',
+	'litre',
+	'ml',
+	'ounce',
+	'oz',
+	'pinch',
+	'pound',
+	'quart',
+	'stick',
+	'tablespoon',
+	'tbs',
+	'tbsp',
+	'teaspoon',
+	'tsp'
+];
+
 jQuery(document).ready( function($) {
+	
 	// Make the recipe field sections sortable to configure head and footer contents
+	
 	$('.recipe-fields').sortable(
 		{
 			items: '.menu-item-handle',
@@ -35,51 +67,115 @@ jQuery(document).ready( function($) {
 					n.find('input').attr('value', new_list);
 				});
 			}
-		});		
-
-	/**
-	 * Manipulate the instructions metabox a bit
-	 */
-	
-	var metabox = $('#hrecipe_instructions');
-	// Make the ingredients metabox contents sortable
-	metabox.sortable(
-		{
-			items: '.step'
 		});
 		
-	// Action to create new row
-	metabox.find('.insert').live('click', function(){
-		var row = $(this).closest('div');
-		var clonedRow = hrecipeCloneStep(row, true);
-		
-		// Put new row into the table after the current one
-		row.after(clonedRow);
-	});
+	/*
+		Add tools to Ingredient list section
+	*/
 	
-	// Action to delete active row
-	$('.delete').live('click', function() {
-		var step = $(this).closest('.step');
+	// Make ingredients list sortable
+	$('.ingredients').sortable({ items: 'tr' });
+			
+	// Setup autocomplete for fields in the table
+	hrecipeInitAutocomplete($('.ingredients'));
+	
+	// Setup Insert and Delete Row functions
+	$('.ingredients').ready( function($) {
+		// Insert a new row after the active row
+		jQuery('.insert').live('click', function(){
+			var row = jQuery(this).closest('tr');
+			var newRow = hrecipeNewIngredient(row);
 		
-		if (step.siblings().length > 0) {
-			step.remove();			
-		}
+			// Put new row into the table after the current one
+			row.after(newRow);
+			jQuery('.ingredients').sortable('refresh');
+		});
+	
+		// Delete active row
+		jQuery('.delete').live('click', function() {
+			var btn = jQuery(this);
+		
+			if (btn.closest('tbody').find('tr').length > 1) {
+				btn.closest('tr').remove();			
+			}
+		});
 	});
 });
 
 //
-// Clone an step row
+// Create a blank Ingredient row
 //
-// row (DOM element) step row to clone
+// row (DOM element) ingredient row to clone
 //
 // return cloned Row, cleaned of input values
-function hrecipeCloneStep(row) {
+function hrecipeNewIngredient(row) {
 	var clonedRow = row.clone();
 
-	// Prep the new row for insert
-	clonedRow.find('textarea').each(function() { 
-		this.value = '';
-	});
+	// Clean out any values
+	clonedRow.find('input').each(function() { this.value = '';});
 
+	// Setup autocomplete for the new row elements
+	hrecipeInitAutocomplete(clonedRow);
+	
 	return clonedRow;
+}
+
+//
+// Init Autocomplete on a jQuery object
+//
+// target (jQuery Object)
+//
+// return void
+function hrecipeInitAutocomplete(target) {
+	// Autocomplete for the type (unit) column of ingredient list
+	jQuery(target).find('.type').autocomplete({source: availableUnits});
+	
+	// Autocomplete for the ingredient column of ingredient list
+	// TODO the URL below assumes a standard WP install.  If wp-admin is in a different location, this won't work
+	jQuery(target).find('.ingrd').autocomplete({
+		source: function( request, response ) {
+			jQuery.ajax({
+				url: "../../../../../../wp-admin/admin-ajax.php",
+				dataType: "json",
+				data: {
+					action: 'hrecipe-microformat_ingrd_auto_complete',
+					maxRows: 12,
+					name_contains: request.term
+				},
+				// When Ajax returns successfully, process the retrieved data
+				success: function( data ) {
+					response(hrecipeAjaxAutocompleteSuccess(data));
+				}
+			});
+		},
+		minLength: 2,
+		// change triggered when field is blurred if the value has changed
+		change: function( event, ui ) {
+			if (ui.item) {
+				// If an item was selected, record the food database record number
+				jQuery(this).addClass('sr_linked').siblings('.NDB_No').val(ui.item.NDB_No);				
+			} else {
+				// No matching item, clear food database record number
+				jQuery(this).removeClass('sr_linked').siblings('.NDB_No').val('');
+			}
+		}
+	});
+	
+	return;
+}
+
+//
+// AJAX Completion for ingredient column
+//
+// return array of mapping items for jQuery autocomplete tool
+//
+function hrecipeAjaxAutocompleteSuccess(data) {
+	if (0 == data) return null;
+	
+	return(jQuery.map( data.list, function(item){
+		return {
+			label: item.Long_Desc,
+			NDB_No: item.NDB_No
+		} ;
+	}));
 }
