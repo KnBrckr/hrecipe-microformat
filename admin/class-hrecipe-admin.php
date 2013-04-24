@@ -491,10 +491,6 @@ class hrecipe_admin extends hrecipe_microformat
 		if ( get_user_option('rich_editing') != 'true')
 			return;
 
-		// Setup the TinyMCE buttons
-    add_filter('mce_external_plugins', array(&$this, 'add_tinymce_plugins'));
-    add_filter('mce_buttons_3', array(&$this, 'register_buttons'));
-
 		// Add editor stylesheet
 		add_filter( 'mce_css', array( &$this, 'add_tinymce_css' ) );
 		
@@ -829,43 +825,6 @@ class hrecipe_admin extends hrecipe_microformat
 	function input_hidden_html($field, $value)
 	{
 		echo '<input type="hidden" name="' . self::settings . '[' . $field . ']" value="' . $value . '">';
-	}
-	
-	function register_buttons($buttons) {
-	   array_push($buttons, 'hrecipeIngredientList');
-	// TODO 'hrecipeInstructions'
-	   return $buttons;
-	}
- 
-	// Load the TinyMCE plugins
-	function add_tinymce_plugins($plugin_array) {
-		foreach(array('hrecipeMicroformat', 'noneditable') as $plugin) {
-			$url = $this->locate_tinymce_plugin($plugin);
-			if ($url) {
-				$plugin_array[$plugin] = $url;
-			}
-		}
-	
-		return $plugin_array;
-	}
-	
-	/**
-	 * Locate tinymce plugin file, use either the dev src or the minified version if available
-	 *
-	 * @return string URL path to TinyMCE javascript plugin
-	 **/
-	function locate_tinymce_plugin($plugin)
-	{
-		foreach (array('TinyMCE-plugins', 'TinyMCE-utils') as $plugin_dir) {
-			$plugin_path = 'admin/' . $plugin_dir . '/' . $plugin . '/';
-			foreach (array('editor_plugin.js', 'editor_plugin_src.js') as $js) {
-				if (file_exists(self::$dir . $plugin_path . $js)) {
-					return self::$url . $plugin_path . $js;
-				}
-			}
-		}
-		
-		return false;
 	}
 	
 	/**
