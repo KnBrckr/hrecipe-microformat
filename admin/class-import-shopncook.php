@@ -52,7 +52,10 @@ class import_shopncook {
 	 * @return array Normalized array of imported recipe data
 	 */
 	public function __construct() {
-		// Setup parser that maps INGREDIENTTEXT to INGREDIENT so all elements in INGREDIENTLIST remain in order
+		/**
+		 * Setup parser that maps INGREDIENTTEXT to INGREDIENT so all elements in INGREDIENTLIST remain in order
+		 * Modified tags will have extra '@orig_tag' hash in the returned array
+		 */
 		$this->xml_parser = new hrecipe_parse_xml();
 		$this->xml_parser->set_tags(array('INGREDIENTTEXT' => 'INGREDIENT'));
 	}
@@ -125,7 +128,43 @@ class import_shopncook {
 		 * Setup content array
 		 */
 		$recipe['content'] = array();
-		array_push($recipe['content'], array('type' => 'ingrd-list', 'data' => $this->scx_ingrd_list($scx['INGREDIENTLIST'])));
+		
+		/**
+		 * Create normalized ingredient list array from the ingredient list in XML
+		 *
+		 * The Ingredient list XML may contain multiple sub-lists of Ingredients separated by IngredientText tokens.
+		 * IngredientText tokens have been converted to Ingredient Tokens and marked with the original tag contents
+		 * Each section should be treated as a separate list
+		 */
+
+		$ingrd_list = $scx['INGREDIENTLIST'];
+		$ingrd_norm = array();
+		
+		// Add list of ingredients to array
+		if (is_array($ingrd_list['INGREDIENT'])) {
+			foreach ($ingrd_list['INGREDIENT'] as $ingrd) {
+				// If starting a new sublist, save already accumlated contents as a list and start fresh
+				if (array_key_exists('@orig_tag', $ingrd) 
+				    && 'INGREDIENTTEXT' == $ingrd['@orig_tag']
+				    && count($ingrd_norm) > 0 ) {
+						array_push($recipe['content'], array('type' => 'ingrd-list', 'data' => $ingrd_norm));
+						$ingrd_norm = array();
+				}
+				$ingrd_norm = array_merge($ingrd_norm, $this->scx_ingredient($ingrd));
+			}
+		} else {
+			// Single recipe element FIXME test single recipe element!
+			$ingrd_norm = array_merge($ingrd_norm, $this->scx_ingredient($ingrd_list['INGREDIENT']));
+		}
+		
+		// Save any accumulated ingredients to recipe content
+		if (count($ingrd_norm) > 0) {
+			array_push($recipe['content'], array('type' => 'ingrd-list', 'data' => $ingrd_norm));			
+		}
+		
+		/**
+		 * Add the actual recipe text to the content
+		 */
 		array_push($recipe['content'], array('type' => 'text', 'data' => $scx['RECIPETEXT']));
 
 		return $recipe;
@@ -140,28 +179,6 @@ class import_shopncook {
 	 */
 	private function scx_string($e) {
 		return is_string($e) ? $e : '';
-	}
-
-	/**
-	 * Create normalized recipe array from the ingredient list
-	 *
-	 * @access private
-	 * @param string $ingrd_list list of ingredients from ShopNCook recipe
-	 * @return string HTML text for recipe
-	 */
-	private function scx_ingrd_list($ingrd_list) {
-		$ingrd_norm = array();
-
-		// Add list of ingredients to array
-		if (is_array($ingrd_list['INGREDIENT'])) {
-			foreach ($ingrd_list['INGREDIENT'] as $ingrd) {
-				$ingrd_norm = array_merge($ingrd_norm, $this->scx_ingredient($ingrd));
-			}
-		} else {
-			$ingrd_norm = array_merge($ingrd_norm, $this->scx_ingredient($ingrd_list['INGREDIENT']));
-		}
-
-		return $ingrd_norm; 
 	}
 
 	/**
@@ -184,16 +201,22 @@ class import_shopncook {
 		$ingrd_norm = array();
 		
 		if (is_array($ingrd)) {
-			if ($ingrd['@attrib']['QUANTITY']) {
-				$qty = rtrim($ingrd['@attrib']['QUANTITY'], '.0'); // Remove trailing 0 and decimal point
-				$unit = $ingrd['@attrib']['UNIT'];
+			// Treat INGREDIENTTEXT tag as a Recipe list title
+			// FIXME Special handling for multi-line INGREDIENTTEXT values?
+			if (array_key_exists('@orig_tag', $ingrd) && 'INGREDIENTTEXT' == $ingrd['@orig_tag']) {
+				array_push($ingrd_norm, array('list-title' => $ingrd['@value']));
 			} else {
-				$qty = $ingrd['INGREDIENTQUANTITY'];
-				$unit = '';
+				if ($ingrd['@attrib']['QUANTITY']) {
+					$qty = rtrim($ingrd['@attrib']['QUANTITY'], '.0'); // Remove trailing 0 and decimal point
+					$unit = $ingrd['@attrib']['UNIT'];
+				} else {
+					$qty = $ingrd['INGREDIENTQUANTITY'];
+					$unit = '';
+				}
+				array_push($ingrd_norm, array('value' => $qty, 'type' => $unit,
+				                              'ingrd' => $this->scx_string($ingrd['INGREDIENTITEM']),
+				                              'comment' => $this->scx_string($ingrd['INGREDIENTCOMMENT'])));
 			}
-			array_push($ingrd_norm, array('value' => $qty, 'type' => $unit,
-			                              'ingrd' => is_string($ingrd['INGREDIENTITEM']) ? $ingrd['INGREDIENTITEM'] : '',
-			                              'comment' => is_string($ingrd['INGREDIENTCOMMENT']) ?  $ingrd['INGREDIENTCOMMENT'] : ''));
 		} else {
 			foreach (explode("\n", $ingrd) as $item) {
 				array_push($ingrd_norm, array('ingrd' => $item, 'value' => NULL, 'type' => NULL, 'comment' => NULL));

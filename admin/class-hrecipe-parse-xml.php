@@ -66,10 +66,14 @@ class hrecipe_parse_xml {
 		 */
 		while ($node_xml != NULL) {
 			/**
-			 * Map tag names to alternates provided
+			 * Map tag names to alternates provided, save the old value for later
 			 */
 			$tag = strtoupper($node_xml->nodeName);
-			if (isset($this->tags) && array_key_exists($tag, $this->tags)) $tag = $this->tags[$tag];
+			$saved_tag = NULL;
+			if (isset($this->tags) && array_key_exists($tag, $this->tags)) {
+				$saved_tag = $tag;
+				$tag = $this->tags[$tag];
+			}
 			
 			/**
 			 * Text nodes are end of chain, just get their value
@@ -81,7 +85,15 @@ class hrecipe_parse_xml {
 				 * Assume this is XML_ELEMENT_NODE type
 				 * Recurse on children of this node, result will be an array as long as child is not only a single text node
 				 */
-				$node_val = $this->xml_to_array($node_xml->firstChild);				
+				$node_val = $this->xml_to_array($node_xml->firstChild);
+				
+				/**
+				 * If tag was remapped, save the original as an attribute
+				 */
+				if ($saved_tag) {
+					$cur_val = $node_val;
+					$node_val = array( '@orig_tag' => $saved_tag, '@value' => $cur_val);
+				}
 
 				/**
 				 * Collect node attributes
@@ -94,7 +106,7 @@ class hrecipe_parse_xml {
 						$this->error_msg = "XML format error: Found tag <$tag>, a text node masquerading as an element node";
 						return NULL;
 					}
-					
+				
 					$attr_array = array();
 				
 					foreach ($node_xml->attributes as $attrib) {

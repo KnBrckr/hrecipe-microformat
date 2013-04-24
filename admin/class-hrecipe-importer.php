@@ -526,6 +526,9 @@ class hrecipe_importer {
 		
 		foreach ($recipe['content'] as $index => $section) {
 			if ('ingrd-list' == $section['type']) {
+
+				// FIXME Handle list title tokens found during processing of ingredient list
+				
 				// Add row to DB for each ingredient
 				$ingrds = array(); // Start with empty list
 				
