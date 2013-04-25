@@ -923,15 +923,16 @@ class hrecipe_microformat {
 			'id' => 1,
 		), $atts ) );
 		// Sanitize input
-		$id = intval($id);
+		$list_id = intval($id);
 		
-		$ingrds = $this->ingrd_db->get_ingrds($post->ID, $id);
+		$ingrd_list_title = get_post_meta($post->ID, self::prefix . 'ingrd-list-title', true);
+		
+		$ingrds = $this->ingrd_db->get_ingrds($post->ID, $list_id);
 		// FIXME Check for empty return
 		
 		// Open Ingredients table and add header
-		$text .= '<table class="ingredients" id="ingredients-' . $id . '">';
-		$list_title = get_post_meta($post->ID, self::prefix . 'list-title-' . $id, true);
-		$text .= '<thead><tr><th colspan="2"><span class="ingredients-title">' . $list_title . '</span></th></tr></thead>';
+		$text .= '<table class="ingredients" id="ingredients-' . $list_id . '">';
+		$text .= '<thead><tr><th colspan="2"><span class="ingredients-title">' . $ingrd_list_title[$list_id] . '</span></th></tr></thead>';
 
 		// Add row for each ingredient
 		foreach ($ingrds as $d) {

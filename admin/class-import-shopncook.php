@@ -207,11 +207,11 @@ class import_shopncook {
 				array_push($ingrd_norm, array('list-title' => $ingrd['@value']));
 			} else {
 				if ($ingrd['@attrib']['QUANTITY']) {
-					$qty = rtrim($ingrd['@attrib']['QUANTITY'], '.0'); // Remove trailing 0 and decimal point
+					$qty = strstr($ingrd['@attrib']['QUANTITY'], '.0', true); // Remove trailing 0 and decimal point
 					$unit = $ingrd['@attrib']['UNIT'];
 				} else {
 					$qty = $ingrd['INGREDIENTQUANTITY'];
-					$unit = '';
+					$unit = '??';
 				}
 				array_push($ingrd_norm, array('value' => $qty, 'type' => $unit,
 				                              'ingrd' => $this->scx_string($ingrd['INGREDIENTITEM']),

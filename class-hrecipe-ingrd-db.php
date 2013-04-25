@@ -170,7 +170,7 @@ class hrecipe_ingrd_db {
 	function delete_ingrds_for_post($post_id)
 	{
 		global $wpdb;
-		$result = $wpdb->query($wpdb->prepare("DELETE FROM " . $this->ingrds_table . " WHERE post_id LIKE %d", $this->ingrds_table, $post_id));
+		$result = $wpdb->query($wpdb->prepare("DELETE FROM " . $this->ingrds_table . " WHERE post_id LIKE %d", $post_id));
 	}
 }
 endif; // End class hrecipe_ingrd_db

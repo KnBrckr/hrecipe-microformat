@@ -247,16 +247,16 @@ class hrecipe_importer {
 		echo '<h3>' . sprintf(__('Importing %d Recipe(s):', $this->domain), count($recipes)) . '</h3>';
 		echo '<ol>';
 		foreach ($recipes as $index => $recipe) {
-			if ($errmsg = $this->add_recipe_post($post_status, $recipe, $unknown_category)) {
-				echo '<li>' . $errmsg . '</li>';
+			if (!($post_id = $this->add_recipe_post($post_status, $recipe, $unknown_category))) {
+				echo '<li>' . $this->error_msg . '</li>';
 				$errmsg = sprintf(__('Error creating recipe %d.  Remainder of Import cancelled.', $this->domain), $index + 1);
 				break;					
 			}
-			echo '<li>' . esc_attr($recipe['fn']) . '</li>';
+			echo '<li><a href="' . get_edit_post_link($post_id) . '">' . esc_attr($recipe['fn']) . '</a></li>';
 		}
 		echo '</ol>';
 
-		if ($errmsg) {
+		if (isset($errmsg)) {
 			echo '<h3>' . $errmsg . '</h3>';
 		} else {
 			echo '<h3>' . sprintf(__('Recipe Import Complete.', $this->domain)) . '</h3>';			
@@ -464,7 +464,8 @@ class hrecipe_importer {
 	 *	$recipe['tag']           Comma separated list of tags
 	 *	$recipe['difficulty']    Recipe difficulty rating  [0-5]
 	 * @param array $unknown_category maps unknown categories to known elements
-	 * @return false on success, error message on failure
+	 * @uses $this->error_msg string Error message on failure
+	 * @return recipe id (post id) on success, NULL on failure
 	 **/
 	private function add_recipe_post($post_status, $recipe, $unknown_category)	{
 		global $hrecipe_microformat;
@@ -504,13 +505,14 @@ class hrecipe_importer {
 			echo "<li>";
 			print_r($new_post);
 			echo "</li>";
-			return false;
+			return -1;
 		}
 		
 		// Insert post
 		$post_id = wp_insert_post($new_post);
 		if (! $post_id) {
-			return sprintf(__('Failed to import recipe "%s"', $this->domain), $new_post['post_title']);
+			$this->error_msg = sprintf(__('Failed to import recipe "%s"', $this->domain), $new_post['post_title']);
+			return NULL;
 		}
 		
 		// Save Recipe meta-data
@@ -521,17 +523,22 @@ class hrecipe_importer {
 			}
 		}
 		
-		// Save recipe ingredients
+		/**
+		 * Save Recipe Ingredients
+		 */
 		$ingrd_list_id = 1; // Coorelates to short code ids added to content in build_post_content()
+		$ingrd_list_title = array(); // array of ingrdient list titles, indexed by list id
 		
 		foreach ($recipe['content'] as $index => $section) {
 			if ('ingrd-list' == $section['type']) {
-				// Add row to DB for each ingredient in list
+				/**
+				 * Add row to DB for each ingredient in list
+				 */
 				$ingrds = array(); // Start with empty list
 				
 				foreach ($section['data'] as $d) {
 					if (array_key_exists('list-title', $d)) {
-						add_post_meta($post_id, $hrecipe_microformat::prefix . 'list-title-' . $ingrd_list_id, $d['list-title']);
+						$ingrd_list_title[$ingrd_list_id] = $d['list-title'];
 					} else {
 						$row['quantity'] = $d['value'];
 						$row['unit'] = $d['type'];
@@ -545,13 +552,19 @@ class hrecipe_importer {
 				// Add list to the DB
 				if ( count($ingrds) > 0 ) {
 					// FIXME Handle insert errors
+					
 					// Add ingredients to the DB and move to next ingredient list id
 					$this->ingrd_db->insert_ingrds($post_id, $ingrd_list_id++, $ingrds);
 				}
 			} // End if ('ingrd-list')
 		} // End foreach ($content)
 		
-		return false;
+		/**
+		 * Save ingredient list titles and list ids (array keys) to post meta data
+		 */
+		add_post_meta($post_id, $hrecipe_microformat::prefix . 'ingrd-list-title', $ingrd_list_title);
+		
+		return $post_id;
 	}
 	
 	/**

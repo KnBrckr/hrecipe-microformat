@@ -305,6 +305,9 @@ class hrecipe_admin extends hrecipe_microformat
 		add_action('add_meta_boxes_' . self::post_type, array(&$this, 'configure_tinymce')); // TODO Best place for this?
 		add_action('add_meta_boxes_' . self::post_type, array(&$this, 'setup_meta_boxes'));  // Setup plugin metaboxes
 		add_action('save_post' , array(&$this, 'save_post_meta')); // Save the post metadata
+		
+		// Cleanup when deleting a recipe
+		add_action('delete_post', array($this, 'action_delete_post'));
 	}
 	
 	/**
@@ -335,54 +338,80 @@ class hrecipe_admin extends hrecipe_microformat
 	function metabox_ingrd()
 	{
 		global $post;
-
+		
 		/**
-		 * Use nonce for verification
+		 * Get ingredient list titles from post meta.  If no data found, this is a new recipe
 		 */
-//		wp_nonce_field( plugin_basename(__FILE__), self::prefix . 'noncename' );
+		$ingrd_list_title = get_post_meta($post->ID, self::prefix . 'ingrd-list-title', true);
+		if ('' == $ingrd_list_title) {
+			$ingrd_list_title = array( 1 => 'Ingredients' );
+		}
 		
 		/**
 		 * For each ingredient list, output a table
 		 */
-		for ($list_id=1; ($ingrds = $this->ingrd_db->get_ingrds($post->ID, $list_id) ) != NULL; $list_id++) {
-			$list_title = get_post_meta($post->ID, self::prefix . 'list-title-' . $list_id, true);
+		// FIXME If Lists can be added/deleted/reordered, array indexes might get mucked up
+		foreach ($ingrd_list_title as $list_id => $list_title) {
+			$ingrds = $this->ingrd_db->get_ingrds($post->ID, $list_id);
 			?>
-			<label for="ingrd-list-name">List Title:</label><input type="text" name="ingrd-list-name[<?php echo $list_id; ?>]" value="<?php echo $list_title ?>"/>
-			Use [ingrd-list id="<?php echo $list_id; ?>"] in recipe text to display this list.
-			<table class="ingredients">
-				<thead>
-					<tr>
-						<th></th>
-						<th>Amount</th>
-						<th>Unit</th>
-						<th>Ingredient</th>
-						<th>Comment</th>
-					</tr>
-				</thead>
-				<tbody class="ingrd-list">
-					<?php
-					foreach ($ingrds as $d) {
-						?>
+			<div class="ingrd-list">
+				<label for="<?php echo self::prefix; ?>ingrd-list-name">List Title:</label>
+				<input type="text" name="<?php echo self::prefix; ?>ingrd-list-name[<?php echo $list_id; ?>]" value="<?php echo $list_title ?>"/>
+				<p>Use [ingrd-list id="<?php echo $list_id; ?>"] in recipe text to display this list.</p>
+				<table class="ingredients">
+					<thead>
 						<tr>
-							<td class="ui-buttons">
-								<ul>
-								<li><span class="sort-handle ui-icon ui-icon-arrow-2-n-s ui-state-active"></span></li>
-								<li><span class="insert ui-icon ui-icon-plusthick ui-state-active"></span></li>
-								<li><span class="delete ui-icon ui-icon-minusthick ui-state-active"></span></li>
-								</ul>
-							</td>
-							<td><input type="text" name="value[<?php echo $list_id; ?>][]" class="value" value="<?php echo $d->quantity ?>" /></td>
-							<td><input type="text" name="type[<?php echo $list_id; ?>][]" class="type ui-widget" value="<?php echo $d->unit ?>"/></td>
-							<td><input type="text" name="ingrd[<?php echo $list_id; ?>][]" class="ingrd" value ="<?php echo $d->ingrd ?>"/><input type="hidden" name="NDB_No[<?php echo $list_id; ?>][]" value="" class="NDB_No"></td>
-							<td><input type="text" name="comment[<?php echo $list_id; ?>][]" class="comment" value="<?php echo $d->comment ?>"/></td>
+							<th></th>
+							<th>Amount</th>
+							<th>Unit</th>
+							<th>Ingredient</th>
+							<th>Comment</th>
+							<th>NDB No</th>
 						</tr>
+					</thead>
+					<tbody>
 						<?php
-					}				
-					?>
-				</tbody>
-			</table>
+						if (count($ingrds) == 0) {
+							// Setup a few empty rows in the edit screen for new posts
+							for ($i=0; $i < 4; $i++) { 
+								$this->recipe_edit_ingrd_row($list_id, '', '', '', '', '');
+							}
+						} else {
+							foreach ($ingrds as $d) {
+								$this->recipe_edit_ingrd_row($list_id, $d->quantity, $d->unit, $d->ingrd, $d->comment, $d->NDB_No);
+							} // foreach $ingrds						
+						}
+						?>
+					</tbody>
+				</table>
+			</div>
 			<?php
 		}
+	}
+	
+	/**
+	 * Emit HTML for a row in the ingredients table on admin recipe edit screen
+	 *
+	 * @return void
+	 **/
+	function recipe_edit_ingrd_row($list_id, $qty, $unit, $ingrd, $comment, $NDB_No)
+	{
+		?>
+		<tr>
+			<td class="ui-buttons">
+				<ul>
+				<li><span class="sort-handle ui-icon ui-icon-arrow-2-n-s ui-state-active"></span></li>
+				<li><span class="insert ui-icon ui-icon-plusthick ui-state-active"></span></li>
+				<li><span class="delete ui-icon ui-icon-minusthick ui-state-active"></span></li>
+				</ul>
+			</td>
+			<td><input type="text" name="<?php echo self::prefix; ?>quantity[<?php echo $list_id; ?>][]" class="value" value="<?php echo $qty ?>" /></td>
+			<td><input type="text" name="<?php echo self::prefix; ?>unit[<?php echo $list_id; ?>][]" class="type ui-widget" value="<?php echo $unit ?>"/></td>
+			<td><input type="text" name="<?php echo self::prefix; ?>ingrd[<?php echo $list_id; ?>][]" class="ingrd" value ="<?php echo $ingrd ?>"/></td>
+			<td><input type="text" name="<?php echo self::prefix; ?>comment[<?php echo $list_id; ?>][]" class="comment" value="<?php echo $comment ?>"/></td>
+			<td><input type="text" name="<?php echo self::prefix ?>NDB_No[<?php echo $list_id; ?>][]" value="<?php echo $NDB_No; ?>" class="NDB_No" readonly="readonly"></td>
+		</tr>
+		<?php
 	}
 	
 	/**
@@ -431,8 +460,6 @@ class hrecipe_admin extends hrecipe_microformat
 		// FIXME Save recipe ingredients
 		global $post;
 		
-		error_log(var_export($_POST,true));
-		
 		// Don't save meta data on autosaves
 		if ( defined('DOING_AUTOSAVE') && DOING_AUTOSAVE ) 
 			return $post_id;
@@ -451,25 +478,37 @@ class hrecipe_admin extends hrecipe_microformat
 		/**
 		 * Save Ingredient List Titles and ingredients
 		 */
-		foreach ($_POST['ingrd-list-name'] as $list_id => $title) {
-			// List Titles saved as Post Meta Data
-			update_post_meta($post_id, self::prefix . 'list-title-' . $list_id, $title);
+		$ingrd_list_title = array();
+		foreach ($_POST[self::prefix . 'ingrd-list-name'] as $list_id => $title) {
+			// Save list title to add to Post Meta Data
+			$ingrd_list_title[$list_id] = $title;
 			
 			$ingrds = array();
 			// Ingredient lists stored in Ingredient Database
-			for ($ingrd_row = 0 ; isset($_POST['value'][$list_id][$ingrd_row]) ; $ingrd_row++) {
-				$ingrds[] = array(
-					'quantity' => $_POST['value'][$list_id][$ingrd_row],
-					'unit' => $_POST['type'][$list_id][$ingrd_row],
-					'ingrd' => $_POST['ingrd'][$list_id][$ingrd_row],
-					'comment' => $_POST['comment'][$list_id][$ingrd_row],
-					'NDB_No' => $_POST['NDB_No'][$list_id][$ingrd_row]
-				);
+			for ($ingrd_row = 0 ; isset($_POST[self::prefix . 'quantity'][$list_id][$ingrd_row]) ; $ingrd_row++) {
+				// Only add row to list if it has content
+				if ($_POST[self::prefix . 'quantity'][$list_id][$ingrd_row] != '' || 
+					$_POST[self::prefix . 'unit'][$list_id][$ingrd_row] != '' ||
+					$_POST[self::prefix . 'ingrd'][$list_id][$ingrd_row] != '' ||
+					$_POST[self::prefix . 'comment'][$list_id][$ingrd_row] != '' ) {
+					$ingrds[] = array(
+						'quantity' => $_POST[self::prefix . 'quantity'][$list_id][$ingrd_row],
+						'unit' => $_POST[self::prefix . 'unit'][$list_id][$ingrd_row],
+						'ingrd' => $_POST[self::prefix . 'ingrd'][$list_id][$ingrd_row],
+						'comment' => $_POST[self::prefix . 'comment'][$list_id][$ingrd_row],
+						'NDB_No' => $_POST[self::prefix . 'NDB_No'][$list_id][$ingrd_row]
+					);
+						
+					}
 			}
 			
 			// FIXME Handle Insert failures
 			$this->ingrd_db->insert_ingrds($post_id, $list_id, $ingrds);
 		}
+		
+		// List Titles saved as Post Meta Data
+		update_post_meta($post_id, self::prefix . 'ingrd-list-title', $ingrd_list_title);
+		
 		
 		// FIXME Sort out the right way to handle post revisions (http://pastebin.com/LAuBtmSZ, http://lud.icro.us/post-meta-revisions-wordpress)
 		$the_post = wp_is_post_revision($post_id);
@@ -495,6 +534,21 @@ class hrecipe_admin extends hrecipe_microformat
 		}
 		
 		return $post_id;
+	}
+	
+	/**
+	 * Housekeeping when deleting a recipe post.  
+	 *
+	 * Post Meta data is handled by core.
+	 *
+	 * @return void
+	 **/
+	function action_delete_post($post_id)
+	{
+		/**
+		 * Delete ingredients associated with this post
+		 */
+		$this->ingrd_db->delete_ingrds_for_post($post_id);
 	}
 
 	/**

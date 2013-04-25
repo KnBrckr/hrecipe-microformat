@@ -74,7 +74,7 @@ jQuery(document).ready( function($) {
 	*/
 	
 	// Make ingredients list sortable
-	$('.ingredients').sortable({ items: 'tr' });
+	$('.ingredients').sortable({ items: 'tbody tr' });
 			
 	// Setup autocomplete for fields in the table
 	hrecipeInitAutocomplete($('.ingredients'));
