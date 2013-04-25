@@ -26,6 +26,7 @@
 // TODO Add cuisine types - mexican, spanish, indian, etc.
 // TODO Create admin widget for Recipe Categories - only allow one category to be selected
 // TODO Phone-home with error log
+// FIXME Restore from saved revision needs to restore ingredients
 
 // Protect from direct execution
 if (!defined('WP_PLUGIN_DIR')) {
@@ -338,14 +339,15 @@ class hrecipe_admin extends hrecipe_microformat
 		/**
 		 * Use nonce for verification
 		 */
-		wp_nonce_field( plugin_basename(__FILE__), self::prefix . 'noncename' );
+//		wp_nonce_field( plugin_basename(__FILE__), self::prefix . 'noncename' );
 		
 		/**
 		 * For each ingredient list, output a table
 		 */
-		for ($list_id=1; ($ingrds = $this->ingrd_db->get_ingrds($post->ID, $list_id) ) != NULL; $list_id++) { 
+		for ($list_id=1; ($ingrds = $this->ingrd_db->get_ingrds($post->ID, $list_id) ) != NULL; $list_id++) {
+			$list_title = get_post_meta($post->ID, self::prefix . 'list-title-' . $list_id, true);
 			?>
-			<label for="ingrd-list-name">Ingredients List <?php echo $list_id; ?> Caption: </label> <input type="text" id="ingrd-list-name" value="<?php echo 'FIXME Get default from DB' ?>"/>
+			<label for="ingrd-list-name">List Title:</label><input type="text" name="ingrd-list-name[<?php echo $list_id; ?>]" value="<?php echo $list_title ?>"/>
 			Use [ingrd-list id="<?php echo $list_id; ?>"] in recipe text to display this list.
 			<table class="ingredients">
 				<thead>
@@ -369,10 +371,10 @@ class hrecipe_admin extends hrecipe_microformat
 								<li><span class="delete ui-icon ui-icon-minusthick ui-state-active"></span></li>
 								</ul>
 							</td>
-							<td><input type="text" name="value" class="value" value="<?php echo $d->quantity ?>" /></td>
-							<td><input type="text" name="type" class="type ui-widget" value="<?php echo $d->unit ?>"/></td>
-							<td><input type="text" name="ingrd" class="ingrd" value ="<?php echo $d->ingrd ?>"/><input type="hidden" name="NDB_No" value="" class="NDB_No"></td>
-							<td><input type="text" name="comment" class="comment" value="<?php echo $d->comment ?>"/></td>
+							<td><input type="text" name="value[<?php echo $list_id; ?>][]" class="value" value="<?php echo $d->quantity ?>" /></td>
+							<td><input type="text" name="type[<?php echo $list_id; ?>][]" class="type ui-widget" value="<?php echo $d->unit ?>"/></td>
+							<td><input type="text" name="ingrd[<?php echo $list_id; ?>][]" class="ingrd" value ="<?php echo $d->ingrd ?>"/><input type="hidden" name="NDB_No[<?php echo $list_id; ?>][]" value="" class="NDB_No"></td>
+							<td><input type="text" name="comment[<?php echo $list_id; ?>][]" class="comment" value="<?php echo $d->comment ?>"/></td>
 						</tr>
 						<?php
 					}				
@@ -429,6 +431,8 @@ class hrecipe_admin extends hrecipe_microformat
 		// FIXME Save recipe ingredients
 		global $post;
 		
+		error_log(var_export($_POST,true));
+		
 		// Don't save meta data on autosaves
 		if ( defined('DOING_AUTOSAVE') && DOING_AUTOSAVE ) 
 			return $post_id;
@@ -442,7 +446,30 @@ class hrecipe_admin extends hrecipe_microformat
 		// User allowed to edit?
 		if ( self::post_type != $_POST['post_type'] || !current_user_can( 'edit_post', $post_id) ) {
 			return $post_id;
-		}		
+		}
+		
+		/**
+		 * Save Ingredient List Titles and ingredients
+		 */
+		foreach ($_POST['ingrd-list-name'] as $list_id => $title) {
+			// List Titles saved as Post Meta Data
+			update_post_meta($post_id, self::prefix . 'list-title-' . $list_id, $title);
+			
+			$ingrds = array();
+			// Ingredient lists stored in Ingredient Database
+			for ($ingrd_row = 0 ; isset($_POST['value'][$list_id][$ingrd_row]) ; $ingrd_row++) {
+				$ingrds[] = array(
+					'quantity' => $_POST['value'][$list_id][$ingrd_row],
+					'unit' => $_POST['type'][$list_id][$ingrd_row],
+					'ingrd' => $_POST['ingrd'][$list_id][$ingrd_row],
+					'comment' => $_POST['comment'][$list_id][$ingrd_row],
+					'NDB_No' => $_POST['NDB_No'][$list_id][$ingrd_row]
+				);
+			}
+			
+			// FIXME Handle Insert failures
+			$this->ingrd_db->insert_ingrds($post_id, $list_id, $ingrds);
+		}
 		
 		// FIXME Sort out the right way to handle post revisions (http://pastebin.com/LAuBtmSZ, http://lud.icro.us/post-meta-revisions-wordpress)
 		$the_post = wp_is_post_revision($post_id);

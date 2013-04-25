@@ -113,6 +113,14 @@ class hrecipe_ingrd_db {
 	{
 		global $wpdb;
 		
+		/**
+		 * Delete saved list if one already exists
+		 */
+		$this->delete_ingrd_list($post_id, $ingrd_list_id);
+		
+		/**
+		 * Save new ingredient list contents
+		 */
 		$list_order = 0;  // Init the sort order counter; rows are added in the order received
 		foreach ($ingrd_list as $row) {
 			$row['post_id'] = $post_id;
@@ -143,7 +151,6 @@ class hrecipe_ingrd_db {
 	 * Delete an ingredient list from a post
 	 *
 	 * @return null
-	 * @author Kenneth J. Brucker <ken.brucker@action-a-day.com>
 	 **/
 	function delete_ingrd_list($post_id, $ingrd_list_id)
 	{

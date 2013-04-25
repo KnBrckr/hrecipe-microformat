@@ -930,7 +930,8 @@ class hrecipe_microformat {
 		
 		// Open Ingredients table and add header
 		$text .= '<table class="ingredients" id="ingredients-' . $id . '">';
-		$text .= '<thead><tr><th colspan="2"><span class="ingredients-title">' . __('Ingredients', self::p) . '</span></th></tr></thead>';
+		$list_title = get_post_meta($post->ID, self::prefix . 'list-title-' . $id, true);
+		$text .= '<thead><tr><th colspan="2"><span class="ingredients-title">' . $list_title . '</span></th></tr></thead>';
 
 		// Add row for each ingredient
 		foreach ($ingrds as $d) {

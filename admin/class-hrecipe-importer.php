@@ -526,24 +526,26 @@ class hrecipe_importer {
 		
 		foreach ($recipe['content'] as $index => $section) {
 			if ('ingrd-list' == $section['type']) {
-
-				// FIXME Handle list title tokens found during processing of ingredient list
-				
-				// Add row to DB for each ingredient
+				// Add row to DB for each ingredient in list
 				$ingrds = array(); // Start with empty list
 				
 				foreach ($section['data'] as $d) {
-					$row['quantity'] = $d['value'];
-					$row['unit'] = $d['type'];
-					$row['ingrd'] = $d['ingrd'];
-					$row['comment'] = $d['comment'];
+					if (array_key_exists('list-title', $d)) {
+						add_post_meta($post_id, $hrecipe_microformat::prefix . 'list-title-' . $ingrd_list_id, $d['list-title']);
+					} else {
+						$row['quantity'] = $d['value'];
+						$row['unit'] = $d['type'];
+						$row['ingrd'] = $d['ingrd'];
+						$row['comment'] = $d['comment'];
 					
-					$ingrds[] = $row; // Add row to the list
+						$ingrds[] = $row; // Add row to the list
+					}
 				}
 				
 				// Add list to the DB
 				if ( count($ingrds) > 0 ) {
 					// FIXME Handle insert errors
+					// Add ingredients to the DB and move to next ingredient list id
 					$this->ingrd_db->insert_ingrds($post_id, $ingrd_list_id++, $ingrds);
 				}
 			} // End if ('ingrd-list')
@@ -574,6 +576,7 @@ class hrecipe_importer {
 		foreach ($content as $index => $section) {
 			switch ($section['type']) {
 				case 'ingrd-list':
+					// Can't save ingredient list to DB yet - Need the Post ID first.
 					$text .= '[ingrd-list id="'. $ingrd_list_id++ . '"]' . "\n\n";
 					break;
 					
