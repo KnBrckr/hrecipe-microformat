@@ -112,8 +112,9 @@ class import_shopncook {
 	 */
 	private function parse_recipe($scx) {
 		$recipe['fn'] = $scx['RECIPEHEADER']['RECIPETITLE'];
-		// Yield is consistently provided by NBPERSONS vs. PORTIONYIELD
-		$recipe['yield'] = $this->scx_string($scx['RECIPEHEADER']['NBPERSONS']);
+		// Use NBPERSONS as a backup to PORTIONYIELD
+		$recipe['yield'] = is_string($scx['RECIPEHEADER']['PORTIONYIELD']) ? $scx['RECIPEHEADER']['PORTIONYIELD'] :  $this->scx_string($scx['RECIPEHEADER']['NBPERSONS']);
+		if ('0' == $recipe['yield']) $recipe['yield'] = ''; // 0 Yield isn't helpful so filter it
 		$recipe['duration'] = $this->scx_string($scx['RECIPEHEADER']['TOTALTIME']);
 		$recipe['preptime'] = $this->scx_string($scx['RECIPEHEADER']['PREPTIME']);
 		$recipe['cooktime'] = ''; // Not present in ShopNCook files
