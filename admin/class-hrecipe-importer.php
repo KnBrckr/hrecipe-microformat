@@ -549,6 +549,11 @@ class hrecipe_importer {
 					}
 				}
 				
+				// Add default list title if none found in content
+				if (! array_key_exists($ingrd_list_id, $ingrd_list_title)) {
+					$ingrd_list_title[$ingrd_list_id] = "Ingredients";
+				}
+				
 				// Add list to the DB
 				if ( count($ingrds) > 0 ) {
 					// FIXME Handle insert errors

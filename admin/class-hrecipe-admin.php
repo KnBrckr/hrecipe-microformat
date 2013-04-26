@@ -483,6 +483,8 @@ class hrecipe_admin extends hrecipe_microformat
 			// Save list title to add to Post Meta Data
 			$ingrd_list_title[$list_id] = $title;
 			
+			// FIXME Extra escaping being applied to the data along the way somewhere - Might start on import?
+			
 			$ingrds = array();
 			// Ingredient lists stored in Ingredient Database
 			for ($ingrd_row = 0 ; isset($_POST[self::prefix . 'quantity'][$list_id][$ingrd_row]) ; $ingrd_row++) {
@@ -497,8 +499,7 @@ class hrecipe_admin extends hrecipe_microformat
 						'ingrd' => $_POST[self::prefix . 'ingrd'][$list_id][$ingrd_row],
 						'comment' => $_POST[self::prefix . 'comment'][$list_id][$ingrd_row],
 						'NDB_No' => $_POST[self::prefix . 'NDB_No'][$list_id][$ingrd_row]
-					);
-						
+						);
 					}
 			}
 			

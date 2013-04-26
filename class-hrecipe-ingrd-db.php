@@ -23,7 +23,6 @@
  **/
 
 // FIXME On post (auto)save, new ingredient list needs to be saved to go with that post revision
-// FIXME Ingredients are deleted only when Post is removed from DB
 
 if (! class_exists('hrecipe_ingrd_db')) :
 class hrecipe_ingrd_db {
@@ -161,7 +160,6 @@ class hrecipe_ingrd_db {
 	
 	/**
 	 * Delete all ingredient items associated with a post
-	 * FIXME Call delete when posts are removed
 	 *
 	 * @uses $wpdb
 	 * @param $post_id Delete all ingredients for indicated post

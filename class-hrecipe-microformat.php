@@ -924,24 +924,47 @@ class hrecipe_microformat {
 		), $atts ) );
 		// Sanitize input
 		$list_id = intval($id);
-		
+
+		/**
+		 * Get ingredient list titles.  List indexed by available list ids.
+		 *
+		 * Empty replacement if id does not exist
+		 */
 		$ingrd_list_title = get_post_meta($post->ID, self::prefix . 'ingrd-list-title', true);
 		
-		$ingrds = $this->ingrd_db->get_ingrds($post->ID, $list_id);
-		// FIXME Check for empty return
+		if (! array_key_exists($id, $ingrd_list_title)) {
+			return $text;
+		}
 		
-		// Open Ingredients table and add header
+		/**
+		 * Get the ingredients for the given list id
+		 */
+		$ingrds = $this->ingrd_db->get_ingrds($post->ID, $list_id);
+		
+		/**
+		 * Generate HTML table for the ingredient list
+		 */
 		$text .= '<table class="ingredients" id="ingredients-' . $list_id . '">';
 		$text .= '<thead><tr><th colspan="2"><span class="ingredients-title">' . $ingrd_list_title[$list_id] . '</span></th></tr></thead>';
 
-		// Add row for each ingredient
+		/**
+		 * Add row to table for each ingredient in list
+		 *
+		 * Input: $d->NDB_No, $d->quantity, $d->unit, $d->ingrd, $d->comment
+		 *
+		 * hrecipe microformat definition (see readme for source):
+		 * ingredient. required. 1 or more. text with optional valid (x)HTML markup.
+		 * value and type. optional. child of ingredient. [experimental]
+		 * comment. optional. text. child of ingredient. [ziplist extension]
+		 */
 		foreach ($ingrds as $d) {
-			// FIXME quantity is not converting as expected for imperial units
-			// array('value', 'type', 'ingrd', 'comment')
-			foreach (array('NDB_No','quantity','unit','ingrd','comment') as $i) {
-				$$i = isset($d->$i) && $d->$i ? '<span class="' . $i . '">' . $d->$i . '</span>' : '';
-			}
-			$text .= '<tr class="ingredient"><td>' . $NDB_No . $quantity . ' ' . $unit . '</td><td>' . $ingrd . $comment . '</td></tr>';
+			$text .= '<tr class="ingredient"><td>';
+			if ('' != $d->quantity) $text .= '<span class="value">' . $d->quantity . '</span>';
+			if ('' != $d->unit) $text .= '<span class="type">' . $d->unit . '</span>';
+			$text .= '</td><td>';
+			if ('' != $d->ingrd) $text .= '<span class="ingrd">' . $d->ingrd . '</span>';
+			if ('' != $d->comment) $text .= '<span class="comment">' . $d->comment . '</span>';
+			$text .= '</td></tr>';
 		}
 		
 		$text .= '</table>';
