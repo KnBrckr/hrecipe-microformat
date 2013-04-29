@@ -356,7 +356,7 @@ class hrecipe_admin extends hrecipe_microformat
 			?>
 			<div class="ingrd-list">
 				<label for="<?php echo self::prefix; ?>ingrd-list-name">List Title:</label>
-				<input type="text" name="<?php echo self::prefix; ?>ingrd-list-name[<?php echo $list_id; ?>]" value="<?php echo $list_title ?>"/>
+				<input type="text" name="<?php echo self::prefix; ?>ingrd-list-name[<?php echo $list_id; ?>]" value="<?php echo esc_attr($list_title) ?>"/>
 				<p>Use [ingrd-list id="<?php echo $list_id; ?>"] in recipe text to display this list.</p>
 				<table class="ingredients">
 					<thead>
@@ -396,6 +396,13 @@ class hrecipe_admin extends hrecipe_microformat
 	 **/
 	function recipe_edit_ingrd_row($list_id, $qty, $unit, $ingrd, $comment, $NDB_No)
 	{
+		// Escape special characters in the output
+		$qty = esc_attr($qty);
+		$unit = esc_attr($unit);
+		$ingrd = esc_attr($ingrd);
+		$comment = esc_attr($comment);
+		$NDB_No = esc_attr($NDB_No);
+		
 		?>
 		<tr>
 			<td class="ui-buttons">
@@ -483,7 +490,13 @@ class hrecipe_admin extends hrecipe_microformat
 			// Save list title to add to Post Meta Data
 			$ingrd_list_title[$list_id] = $title;
 			
-			// FIXME Extra escaping being applied to the data along the way somewhere - Might start on import?
+			// Strip slashes from input values - Write to DB will do the appropriate escaping of text
+			
+			$_POST[self::prefix . 'quantity'] = stripslashes_deep($_POST[self::prefix . 'quantity']);
+			$_POST[self::prefix . 'unit'] = stripslashes_deep($_POST[self::prefix . 'unit']);
+			$_POST[self::prefix . 'ingrd'] = stripslashes_deep($_POST[self::prefix . 'ingrd']);
+			$_POST[self::prefix . 'comment'] = stripslashes_deep($_POST[self::prefix . 'comment']);
+			$_POST[self::prefix . 'NDB_No'] = stripslashes_deep($_POST[self::prefix . 'NDB_No']);
 			
 			$ingrds = array();
 			// Ingredient lists stored in Ingredient Database

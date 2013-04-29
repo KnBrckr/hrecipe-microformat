@@ -959,11 +959,11 @@ class hrecipe_microformat {
 		 */
 		foreach ($ingrds as $d) {
 			$text .= '<tr class="ingredient"><td>';
-			if ('' != $d->quantity) $text .= '<span class="value">' . $d->quantity . '</span>';
-			if ('' != $d->unit) $text .= '<span class="type">' . $d->unit . '</span>';
+			if ('' != $d->quantity) $text .= '<span class="value">' . esc_attr($d->quantity) . '</span>';
+			if ('' != $d->unit) $text .= '<span class="type">' . esc_attr($d->unit) . '</span>';
 			$text .= '</td><td>';
-			if ('' != $d->ingrd) $text .= '<span class="ingrd">' . $d->ingrd . '</span>';
-			if ('' != $d->comment) $text .= '<span class="comment">' . $d->comment . '</span>';
+			if ('' != $d->ingrd) $text .= '<span class="ingrd">' . esc_attr($d->ingrd) . '</span>';
+			if ('' != $d->comment) $text .= '<span class="comment">' . esc_attr($d->comment) . '</span>';
 			$text .= '</td></tr>';
 		}
 		
