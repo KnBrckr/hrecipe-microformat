@@ -1010,6 +1010,7 @@ class hrecipe_microformat {
 		 * All cups are not created equal! http://en.wikipedia.org/wiki/Cup_(unit)
 		 * http://en.wikipedia.org/wiki/Cooking_weights_and_measures
 		 *
+		 * FIXME Standardize units of measurement during import
 		 * teaspoon: t, ts, tsp, tspn
 		 * tablespoon: T, tb, tbs, tbsp, tblsp, tblspn, tbls
 		 */
@@ -1044,7 +1045,7 @@ class hrecipe_microformat {
 			 */
 			if (array_key_exists($unit, $volume_conversions)) {
 				$convert_measure = '<span class="metric_measure">';
-				$convert_measure .= '<span class="value">' . $qty * $volume_conversions[$unit] . '</span>';
+				$convert_measure .= '<span class="value">' . round($qty * $volume_conversions[$unit]) . '</span>';
 				$convert_measure .= '<span class="type">ml</span>';
 				$convert_measure .= '</span>';
 			}
