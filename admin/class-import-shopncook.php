@@ -215,6 +215,9 @@ class import_shopncook {
 					$qty = $ingrd['INGREDIENTQUANTITY'];
 					$unit = '';
 				}
+				// Filter '0's for qty out
+				if (0 == $qty) $qty = '';
+				
 				array_push($ingrd_norm, array('value' => $qty, 'type' => $unit,
 				                              'ingrd' => $this->scx_string($ingrd['INGREDIENTITEM']),
 				                              'comment' => $this->scx_string($ingrd['INGREDIENTCOMMENT'])));

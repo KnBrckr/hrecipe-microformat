@@ -41,6 +41,7 @@ var availableUnits=[ // TODO Dynamically pull from WEIGHT database?
 	'ounce',
 	'oz',
 	'pinch',
+	'pint',
 	'pound',
 	'quart',
 	'stick',

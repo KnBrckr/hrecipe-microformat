@@ -456,7 +456,7 @@ class hrecipe_admin extends hrecipe_microformat
 	}
 	
 	/**
-	 * Save Recipe Post meta data
+	 * Save Recipe Post meta data and Ingredients
 	 *
 	 * @uses $post Post data
 	 * @param $post_id int post id
@@ -464,7 +464,6 @@ class hrecipe_admin extends hrecipe_microformat
 	 **/
 	function save_post_meta($post_id)
 	{
-		// FIXME Save recipe ingredients
 		global $post;
 		
 		// Don't save meta data on autosaves

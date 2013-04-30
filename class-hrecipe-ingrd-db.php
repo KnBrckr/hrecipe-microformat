@@ -51,7 +51,7 @@ class hrecipe_ingrd_db {
 	 * Create the database table to hold ingredients
 	 *
 	 * Col Field       Type  Blank  Description
-	 * 0   ingrd_id    N 20*  N     Unique key
+	 * 0   id          N 20*  N     Unique key
 	 * 1   post_id     N 20   N     Indexed: Associated post_id for ingredient
 	 * 2   ingrd_list_id N 10 N     Recipe can have multiple lists; List ID within a post
 	 * 3   list_order  N 10   N     sort order within ingrd_list_id list
@@ -68,7 +68,7 @@ class hrecipe_ingrd_db {
 		global $charset_collate;
 		
 		$sql = "CREATE TABLE IF NOT EXISTS " . $this->ingrds_table . " (
-			ingrd_id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+			id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
 			post_id bigint(20) UNSIGNED NOT NULL,
 			ingrd_list_id int(10) UNSIGNED NOT NULL,
 			list_order int(10) NOT NULL,
@@ -77,7 +77,7 @@ class hrecipe_ingrd_db {
 			unit varchar(100) DEFAULT '',
 			ingrd varchar(200) DEFAULT '',
 			comment longtext DEFAULT '',
-			PRIMARY KEY (ingrd_id),
+			PRIMARY KEY (id),
 			INDEX (post_id)
 		) $charset_collate;";	
 

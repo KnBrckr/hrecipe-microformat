@@ -959,8 +959,7 @@ class hrecipe_microformat {
 		 */
 		foreach ($ingrds as $d) {
 			$text .= '<tr class="ingredient"><td>';
-			if ('' != $d->quantity) $text .= '<span class="value">' . esc_attr($d->quantity) . '</span>';
-			if ('' != $d->unit) $text .= '<span class="type">' . esc_attr($d->unit) . '</span>';
+			$text .= $this->convert_units($d);
 			$text .= '</td><td>';
 			if ('' != $d->ingrd) $text .= '<span class="ingrd">' . esc_attr($d->ingrd) . '</span>';
 			if ('' != $d->comment) $text .= '<span class="comment">' . esc_attr($d->comment) . '</span>';
@@ -968,6 +967,99 @@ class hrecipe_microformat {
 		}
 		
 		$text .= '</table>';
+		
+		return $text;
+	}
+	
+	/**
+	 * Create HTML for units in imperial and metric
+	 *
+	 * @param $ingrd object Ingredient object from Database lookup
+	 * @return string HTML text for units
+	**/
+	function convert_units($ingrd)
+	{
+		$qty = $ingrd->quantity;
+		$unit = $ingrd->unit;
+		$NDB_No = $ingrd->NDB_No;
+		
+		$orig_measure = '';
+		$imperial_measure = '';
+		$metric_measure = '';
+		$text = '';
+		
+		/**
+		 * If either quantity or unit is missing, no conversion possible
+		 */
+		if ( '' == $qty || '' == $unit ) {
+			if ('' != $qty) $text .= '<span class="value">' . esc_attr($qty) . '</span>';
+			if ('' != $unit) $text .= '<span class="type">' . esc_attr($unit) . '</span>';
+			return $text;
+		}
+		
+		/**
+		 * Do unit conversions.
+		 */
+		
+		/**
+		 * ingrd_id : NDB_No : ingrd : [weight | volume ] : g/cup
+		 */
+		
+		/**
+		 * Volume conversion table to mL
+		 * All cups are not created equal! http://en.wikipedia.org/wiki/Cup_(unit)
+		 * http://en.wikipedia.org/wiki/Cooking_weights_and_measures
+		 *
+		 * teaspoon: t, ts, tsp, tspn
+		 * tablespoon: T, tb, tbs, tbsp, tblsp, tblspn, tbls
+		 */
+		$metric_measures = array('g', 'gram', 'kg', 'ml', 'l');
+		
+		$volume_conversions = array (
+			'cup' => 236.59,
+			'cups' => 236.59,
+			'fl oz' => 29.57,
+			'fluid ounce' => 29.57,
+			'gallon' => 3785.41,
+			'pint' => 473.18,
+			'quart' => 946.35,
+			'stick' => 118.29,
+			'tablespoon' => 14.79,
+			'tbs' => 14.79,
+			'tbsp' => 14.79,
+			'teaspoon' => 4.93,
+			'tsp' => 4.93
+		);
+		
+		/**
+		 * Is unit metric?  or US? or something else?
+		 */
+		if (in_array($unit, $metric_measures)) {
+			$orig_type = "metric_measure";
+		} else {
+			$orig_type = "us_measure";
+			
+			/**
+			 * Convert to metric
+			 */
+			if (array_key_exists($unit, $volume_conversions)) {
+				$convert_measure = '<span class="metric_measure">';
+				$convert_measure .= '<span class="value">' . $qty * $volume_conversions[$unit] . '</span>';
+				$convert_measure .= '<span class="type">ml</span>';
+				$convert_measure .= '</span>';
+			}
+		}
+		
+		$orig_measure = '<span class="orig_measure ' . $orig_type . '">';
+		$orig_measure .= '<span class="value">' . esc_attr($qty) . '</span>';
+		$orig_measure .= '<span class="type">' . esc_attr($unit) . '</span>';
+		$orig_measure .= '</span>';
+		
+		if (isset($convert_measure)) {
+			$text = $convert_measure . '(' . $orig_measure . ')';
+		} else {
+			$text = $orig_measure;
+		}
 		
 		return $text;
 	}

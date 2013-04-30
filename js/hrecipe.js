@@ -27,12 +27,13 @@ jQuery(document).ready( function($) {
 	var metric = ['g', 'kg', 'l', 'ml'];
 	
 	//Display non-metric values in fractions
-	jQuery('.ingredient').each(function(i,e){
-		var value = jQuery(this).find('.value');
-		var type = jQuery(this).find('.type');
-		if (jQuery.inArray(type.text().toLowerCase(), metric) >= 0) { return; } // If type is in metric array, skip processing
-		value.text(value.text().replace(/(\d*)\.(\d*)/g, decimal2fraction));
-	});
+	// FIXME Turn fractional display back on
+	// jQuery('.ingredient').each(function(i,e){
+	// 	var value = jQuery(this).find('.value');
+	// 	var type = jQuery(this).find('.type');
+	// 	if (jQuery.inArray(type.text().toLowerCase(), metric) >= 0) { return; } // If type is in metric array, skip processing
+	// 	value.text(value.text().replace(/(\d*)\.(\d*)/g, decimal2fraction));
+	// });
 	
 	// Fixup display of fractions in ingredients
 	jQuery('.ingredient .value').html(function(i,value){
