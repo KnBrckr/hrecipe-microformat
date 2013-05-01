@@ -203,13 +203,17 @@ class import_shopncook {
 		
 		if (is_array($ingrd)) {
 			// Treat INGREDIENTTEXT tag as a Recipe list title
-			// FIXME Special handling for multi-line INGREDIENTTEXT values?
+			// TODO Special handling for multi-line INGREDIENTTEXT values?
 			if (array_key_exists('@orig_tag', $ingrd) && 'INGREDIENTTEXT' == $ingrd['@orig_tag']) {
 				array_push($ingrd_norm, array('list-title' => $ingrd['@value']));
 			} else {
 				if ($ingrd['@attrib']['QUANTITY']) {
 					$qty = $ingrd['@attrib']['QUANTITY'];
-					if (strpos($qty, '.0') > 0) $qty = strstr($qty, '.0', true); // Remove trailing 0 and decimal point
+					
+					// Remove trailing .0 if present
+					$vals = explode('.', $qty);
+					if (isset($vals[1]) && $vals[1] == 0) $qty = $vals[0];
+					
 					$unit = $ingrd['@attrib']['UNIT'];
 				} else {
 					$qty = $ingrd['INGREDIENTQUANTITY'];

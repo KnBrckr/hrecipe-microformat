@@ -972,7 +972,7 @@ class hrecipe_microformat {
 	}
 	
 	/**
-	 * Create HTML for units in imperial and metric
+	 * Create HTML for units in imperial and metric including fractional display where appropriate
 	 *
 	 * @param $ingrd object Ingredient object from Database lookup
 	 * @return string HTML text for units
@@ -1014,9 +1014,24 @@ class hrecipe_microformat {
 		 * teaspoon: t, ts, tsp, tspn
 		 * tablespoon: T, tb, tbs, tbsp, tblsp, tblspn, tbls
 		 */
-		$metric_measures = array('g', 'gram', 'kg', 'ml', 'l');
 		
-		$volume_conversions = array (
+		/**
+		 * List of measures that will be considered metric
+		 */
+		static $metric_measures = array(
+			'g', 
+			'gram', 
+			'grams', 
+			'kilogram',
+			'kilograms',
+			'kg', 
+			'l',
+			'litre',
+			'ml', 
+		);
+		
+		// tablespoons and teaspoons omitted from list so they don't get converted
+		static $volume_conversions = array (
 			'cup' => 236.59,
 			'cups' => 236.59,
 			'fl oz' => 29.57,
@@ -1025,11 +1040,6 @@ class hrecipe_microformat {
 			'pint' => 473.18,
 			'quart' => 946.35,
 			'stick' => 118.29,
-			'tablespoon' => 14.79,
-			'tbs' => 14.79,
-			'tbsp' => 14.79,
-			'teaspoon' => 4.93,
-			'tsp' => 4.93
 		);
 		
 		/**
@@ -1052,17 +1062,145 @@ class hrecipe_microformat {
 		}
 		
 		$orig_measure = '<span class="orig_measure ' . $orig_type . '">';
-		$orig_measure .= '<span class="value">' . esc_attr($qty) . '</span>';
+		// FIXME what if $qty has non-numeric text?
+		$orig_measure .= '<span class="value">' . $this->decimal_to_fraction($qty, $unit) . '</span>';
 		$orig_measure .= '<span class="type">' . esc_attr($unit) . '</span>';
 		$orig_measure .= '</span>';
 		
 		if (isset($convert_measure)) {
-			$text = $convert_measure . '(' . $orig_measure . ')';
+			$text = $convert_measure . ' (' . $orig_measure . ')';
 		} else {
 			$text = $orig_measure;
 		}
 		
 		return $text;
+	}
+	
+	/**
+	 * Convert decimal to common fractions based on unit type
+	 *
+	 * In US & imperial measurements:
+	 *   cups are rarely displayed as 3/8 or 5/8.  1/8 cup == 2 Tbs
+	 *   tsp, tbs never use 1/3 or 2/3 measurements.  spoons are generally graduated in 1/8 intervals.
+	 * See:
+	 *  http://allrecipes.com/HowTo/Commonly-Used-Measurements--Equivalents/Detail.aspx
+	 *  http://allrecipes.com/HowTo/recipe-conversion-basics/detail.aspx
+	 *  http://www.jsward.com/cooking/conversion.shtml
+	 * 
+	 * Common fractions used in cooking:  
+	 *     1/8 = .125
+	 *     1/4 = .25
+	 *     1/3 = .333333...
+	 *     3/8 = .375
+	 *     1/2 = .5
+	 *     5/8 = .625
+	 *     2/3 = .666666...
+	 *     3/4 = .75
+	 *     7/8 = .875
+	 *
+	 * @param $value Decimal value to convert
+	 * @param $unit Unit type being converted
+	 * @return string Fractional string 
+	 */
+	function decimal_to_fraction($value, $unit) {
+		/**
+		 * To mathematically differentiate between 5/8 and 2/3, use binary array to 1/64 accuracy
+		 */
+		static $sixtyfourths = array (
+			'0',   // 0/64
+			'0','0','0','0','1/8','1/8','1/8',
+			'1/8', // 8/64
+			'1/8','1/8','1/8','1/8','1/4','1/4','1/4',
+			'1/4', // 16/64
+			'1/4','1/4','1/4','1/4','1/3','1/3','3/8',
+			'3/8', // 24/64
+			'3/8','3/8','3/8','3/8','1/2','1/2','1/2',
+			'1/2', // 32/64
+			'1/2','1/2','1/2','1/2','5/8','5/8','5/8',
+			'5/8', // 40/64
+			'5/8','2/3','2/3','3/4','3/4','3/4','3/4',
+			'3/4', // 48/64
+			'3/4','3/4','3/4','7/8','7/8','7/8','7/8',
+			'7/8', // 56/64
+			'7/8','7/8','7/8','1','1','1','1',
+			'1'    // 64/64
+		);
+		
+		/**
+		 * List of measures to display in fractional units
+		 */
+		static $fractional_measures = array( 
+			'cup', 
+			'cups',
+			'fl oz',
+			'fluid ounce',
+			'gallon',
+			'lb',
+			'ounce',
+			'oz',
+			'pint',
+			'pound',
+			'quart',
+			'stick',
+			'tablespoon',
+			'tbs',
+			'tbsp',
+			'teaspoon',
+			'tsp',
+		);
+		
+		/**
+		 * Only convert some unit types to fractions
+		 */
+		if (! in_array($unit, $fractional_measures)) {
+			return $value;
+		}
+		
+		// FIXME Need to do this based on (\d*).(\d*) within the value string?
+		$parts = explode('.', $value);
+		
+		// Need integral and fractional parts to make fraction
+		if (count($parts) != 2) {
+			return $value;
+		}
+		
+		// turn fractional component back into fractional value
+		$fractional = '.' . $parts[1];
+
+		// Binary search to locate closest matching 64th
+		$numerator = 32;
+		$step = 16;
+		while ($step >= 1) {
+			if ($fractional > $numerator/64) {
+				$numerator += $step;
+			} else {
+				$numerator -= $step;
+			}
+			$step /= 2;
+		}
+
+		/**
+		  * Use array of 64ths to create fractional display
+		  */
+		if ('1' == $sixtyfourths[$numerator] || '0' == $sixtyfourths[$numerator]) {
+			return $parts[0] . $sixtyfourths[$numerator];
+		} elseif ($parts[0] > 0) {
+			return $parts[0] . " " . $this->pretty_fraction($sixtyfourths[$numerator]);
+		} else {
+			return $this->pretty_fraction($sixtyfourths[$numerator]);
+		}
+	}
+	
+	/**
+	 * Change simple fraction value to super & subscript
+	 *
+	 * @param $fraction string value representing fraction
+	 * @return string super and subscripted fraction
+	 **/
+	function pretty_fraction($fraction)
+	{
+		$parts = explode('/', $fraction);
+		return '<sup>' . $parts[0] . '</sup>&frasl;<sub>' . $parts[1] . '</sub>';
 	}
 	
 	/**
