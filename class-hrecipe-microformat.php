@@ -972,13 +972,46 @@ class hrecipe_microformat {
 	}
 	
 	/**
-	 * Create HTML for units in imperial and metric including fractional display where appropriate
+	 * Create HTML for units in US and metric including fractional display where appropriate
 	 *
 	 * @param $ingrd object Ingredient object from Database lookup
 	 * @return string HTML text for units
 	**/
 	function convert_units($ingrd)
 	{
+		/**
+		 * List of measures that will be considered metric
+		 */
+		static $metric_measures = array(
+			'g', 
+			'gram', 
+			'grams', 
+			'kilogram',
+			'kilograms',
+			'kg', 
+			'l',
+			'litre',
+			'ml', 
+		);
+		
+		/**
+		 * Volume conversion table to mL
+		 * All cups are not created equal! http://en.wikipedia.org/wiki/Cup_(unit)
+		 * http://en.wikipedia.org/wiki/Cooking_weights_and_measures
+		 *
+		 * tablespoons and teaspoons omitted from list so they don't get converted
+		 */
+		static $volume_to_ml = array (
+			'cup' => 236.59,
+			'cups' => 236.59,
+			'fl oz' => 29.57,
+			'fluid ounce' => 29.57,
+			'gallon' => 3785.41,
+			'pint' => 473.18,
+			'quart' => 946.35,
+			'stick' => 118.29,
+		);
+		
 		$qty = $ingrd->quantity;
 		$unit = $ingrd->unit;
 		$NDB_No = $ingrd->NDB_No;
@@ -1002,45 +1035,9 @@ class hrecipe_microformat {
 		 */
 		
 		/**
+		 * FIXME Do unit conversions based on ingredient type
 		 * ingrd_id : NDB_No : ingrd : [weight | volume ] : g/cup
 		 */
-		
-		/**
-		 * Volume conversion table to mL
-		 * All cups are not created equal! http://en.wikipedia.org/wiki/Cup_(unit)
-		 * http://en.wikipedia.org/wiki/Cooking_weights_and_measures
-		 *
-		 * FIXME Standardize units of measurement during import
-		 * teaspoon: t, ts, tsp, tspn
-		 * tablespoon: T, tb, tbs, tbsp, tblsp, tblspn, tbls
-		 */
-		
-		/**
-		 * List of measures that will be considered metric
-		 */
-		static $metric_measures = array(
-			'g', 
-			'gram', 
-			'grams', 
-			'kilogram',
-			'kilograms',
-			'kg', 
-			'l',
-			'litre',
-			'ml', 
-		);
-		
-		// tablespoons and teaspoons omitted from list so they don't get converted
-		static $volume_conversions = array (
-			'cup' => 236.59,
-			'cups' => 236.59,
-			'fl oz' => 29.57,
-			'fluid ounce' => 29.57,
-			'gallon' => 3785.41,
-			'pint' => 473.18,
-			'quart' => 946.35,
-			'stick' => 118.29,
-		);
 		
 		/**
 		 * Is unit metric?  or US? or something else?
@@ -1053,9 +1050,9 @@ class hrecipe_microformat {
 			/**
 			 * Convert to metric
 			 */
-			if (array_key_exists($unit, $volume_conversions)) {
+			if (array_key_exists($unit, $volume_to_ml)) {
 				$convert_measure = '<span class="metric_measure">';
-				$convert_measure .= '<span class="value">' . round($qty * $volume_conversions[$unit]) . '</span>';
+				$convert_measure .= '<span class="value">' . round($qty * $volume_to_ml[$unit]) . '</span>';
 				$convert_measure .= '<span class="type">ml</span>';
 				$convert_measure .= '</span>';
 			}

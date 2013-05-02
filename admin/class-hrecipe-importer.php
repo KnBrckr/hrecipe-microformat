@@ -540,6 +540,12 @@ class hrecipe_importer {
 					if (array_key_exists('list-title', $d)) {
 						$ingrd_list_title[$ingrd_list_id] = $d['list-title'];
 					} else {
+						/**
+			   		 	  * TODO Standardize units of measurement during import
+			   		 	  * teaspoon: t, ts, tsp, tspn
+			   		 	  * tablespoon: T, tb, tbs, tbsp, tblsp, tblspn, tbls
+						  */
+						
 						$row['quantity'] = $d['value'];
 						$row['unit'] = $d['type'];
 						$row['ingrd'] = $d['ingrd'];
