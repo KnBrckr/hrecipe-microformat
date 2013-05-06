@@ -39,23 +39,56 @@
 	float: left;
 }
 
-/* ======================= */
-/* = Recipe Info Metabox = */
-/* ======================= */
+/* ======================================= */
+/* = Recipe Post Type Metabox formatting = */
+/* ======================================= */
 
-#hrecipe_info p {
+/**
+  * #hrecipe_info id for metabox containing additional recipe info
+  *
+  * #hrecipe-ingredients id for metabox to define recipe ingregients - holds one or more lists
+  * .ingrd-list class assigned to each the box around each recipe ingredient list on admin screen
+  * .ingrd-list-title class Title of ingredient list
+  * .value class Ingredient quantity
+  * .type class Ingredient Units
+  * .ingrd class Ingredient name
+  * .ingrd comment Ingredient comments
+  */
+
+.ingrd-list {
+	margin: 1em 0;
+}
+/* FIXME Adjust widths of ingredient input fields - how to make dynamic to fit browser width? */
+.ingrd-list-title input {
+	width: 400px;
+	font-size: 130%;
+}
+.ingrd-list .value {
+	width: 50px;
+}
+.ingrd-list .type {
+	width: 80px;
+}
+.ingrd-list .ingrd {
+	width: 200px;
+}
+.ingrd-list .comment {
+	width: 200px;
+}
+
+.ingrd-list, #hrecipe_info p {
 	padding: 5px;
 	border: 1px solid #dfdfdf;
 	border-radius: 6px;
 }
 
-#hrecipe_info .field-label {
+#hrecipe_info .field-label, .ingrd-list .field-label {
 	width: 125px;
 	font-size: 130%;
 	display: inline-block;
 }
 
-#hrecipe_info .field-description {
+#hrecipe_info .field-description, .ingrd-list .field-description{
 	display: block;
 	margin-left: 127px;
 }

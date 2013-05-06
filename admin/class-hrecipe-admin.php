@@ -355,9 +355,12 @@ class hrecipe_admin extends hrecipe_microformat
 			$ingrds = $this->ingrd_db->get_ingrds($post->ID, $list_id);
 			?>
 			<div class="ingrd-list">
-				<label for="<?php echo self::prefix; ?>ingrd-list-name">List Title:</label>
-				<input type="text" name="<?php echo self::prefix; ?>ingrd-list-name[<?php echo $list_id; ?>]" value="<?php echo esc_attr($list_title) ?>"/>
-				<p>Use [ingrd-list id="<?php echo $list_id; ?>"] in recipe text to display this list.</p>
+				<p class="ingrd-list-title">
+					<label for="<?php echo self::prefix; ?>ingrd-list-name" class="field-label">List Title:</label>
+					<input type="text" name="<?php echo self::prefix; ?>ingrd-list-name[<?php echo $list_id; ?>]" value="<?php echo esc_attr($list_title) ?>" />
+					<!-- FIXME Make copy-text highlightable for easy copy to clipboard (jquery.selectable?)-->
+					<span class="field-description">Use <span class="copy-text">[ingrd-list id="<?php echo $list_id; ?>"]</span> in recipe text to display this list.</span>
+				</p>
 				<table class="ingredients">
 					<thead>
 						<tr>

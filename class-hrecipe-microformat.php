@@ -974,6 +974,30 @@ class hrecipe_microformat {
 	/**
 	 * Create HTML for units in US and metric including fractional display where appropriate
 	 *
+	 * Some foods are traditionally measured by volume in US recipes (dry goods i.e. flour, sugar)
+	 * and by weight in metric based recipes.  Convert such ingredients from volume to weight
+	 * using table of weight for each ingredient
+	 *
+	 * US => Metric
+	 *   Volume Units:
+	 *     If food should be displayed by weight:
+	 *       Convert volume to a standard (cups) then convert to grams (grams/cup) - Lookup g/c in Food DB
+	 *     else
+	 *       Convert volume to ml
+	 *   Weight Units:
+	 *     Convert weight to grams (grams/oz, grams/lb)
+	 * Metric => US
+	 *   Volume Units:
+	 *     Covert ml to cups/tbs/tsp
+	 *   Weight Units:
+	 *     If food should be displayed by volume:
+	 *       Convert grams to volume cups/tbs/tsp
+	 *     else
+	 *       Convert grams to oz/lb
+	 *
+	 *
+	 * TODO Decide on display format for unit conversions
+	 *
 	 * @param $ingrd object Ingredient object from Database lookup
 	 * @return string HTML text for units
 	**/
