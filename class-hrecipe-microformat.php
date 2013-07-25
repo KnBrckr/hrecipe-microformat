@@ -118,9 +118,13 @@ class hrecipe_microformat {
 	 * Class contructor
 	 *
 	 * init the module during wp_init phase
+	 *
+	 * @uses $table_prefix - Wordpress database table prefix
 	 */
 	
 	function __construct() {
+		global $table_prefix;
+		
 		self::$dir = WP_PLUGIN_DIR . '/' . self::p . '/' ;
 		self::$url =  plugins_url(self::p) . '/' ;
 		$this->recipe_category_taxonomy = self::prefix . 'category';
@@ -219,8 +223,8 @@ class hrecipe_microformat {
 		$this->options = (array) wp_parse_args(get_option(self::settings), $options_defaults);
 		
 		// Create needed database instances
-		$this->food_db = new hrecipe_food_db(self::prefix, $this->options['loaded_food_db_ver']);
-		$this->ingrd_db = new hrecipe_ingrd_db(self::prefix);
+		$this->food_db = new hrecipe_food_db($table_prefix . self::prefix, $this->options['loaded_food_db_ver']);
+		$this->ingrd_db = new hrecipe_ingrd_db($table_prefix . self::prefix);
 	}
 	
 	/**
@@ -939,7 +943,7 @@ class hrecipe_microformat {
 		/**
 		 * Get the ingredients for the given list id
 		 */
-		$ingrds = $this->ingrd_db->get_ingrds($post->ID, $list_id);
+		$ingrds = $this->ingrd_db->get_ingrds_for_recipe($post->ID, $list_id);
 		
 		/**
 		 * Generate HTML table for the ingredient list
@@ -950,7 +954,7 @@ class hrecipe_microformat {
 		/**
 		 * Add row to table for each ingredient in list
 		 *
-		 * Input: $d->NDB_No, $d->quantity, $d->unit, $d->ingrd, $d->comment
+		 * Input: $d->food_id, $d->quantity, $d->unit, $d->ingrd, $d->comment
 		 *
 		 * hrecipe microformat definition (see readme for source):
 		 * ingredient. required. 1 or more. text with optional valid (x)HTML markup.
@@ -1038,7 +1042,7 @@ class hrecipe_microformat {
 		
 		$qty = $ingrd->quantity;
 		$unit = $ingrd->unit;
-		$NDB_No = $ingrd->NDB_No;
+		$food_id = $ingrd->food_id;
 		
 		$orig_measure = '';
 		$imperial_measure = '';
@@ -1296,6 +1300,7 @@ class hrecipe_microformat {
 		$max_rows = is_numeric($_REQUEST['maxRows']) ? intval($_REQUEST['maxRows']) : 12;
 		if ($max_rows < 1) $max_rows = 1;
 		
+		// FIXME Change autocomplete to use food table vs. SR
 		// Retrieve food names matching incoming string
 		$rows = $this->food_db->get_name( $name_contains, $max_rows );
 		
@@ -1420,7 +1425,7 @@ class hrecipe_microformat {
 				'show_in_menu' => true,
 				// TODO 'menu_icon' => ICON URL
 				'has_archive' => true,
-				 'rewrite' => array('slug' => 'Recipes'),
+				'rewrite' => array('slug' => 'Recipes'),
 				'menu_position' => 7,
 				'supports' => array('title', 'editor', 'excerpt', 'author', 'thumbnail', 'trackbacks', 'comments', 'revisions'),
 				'taxonomies' => array('post_tag'), // TODO Setup Taxonomy to allow only a single selection

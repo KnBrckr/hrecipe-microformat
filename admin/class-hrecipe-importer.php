@@ -565,7 +565,7 @@ class hrecipe_importer {
 					// FIXME Handle insert errors
 					
 					// Add ingredients to the DB and move to next ingredient list id
-					$this->ingrd_db->insert_ingrds($post_id, $ingrd_list_id++, $ingrds);
+					$this->ingrd_db->insert_ingrds_for_recipe($post_id, $ingrd_list_id++, $ingrds);
 				}
 			} // End if ('ingrd-list')
 		} // End foreach ($content)

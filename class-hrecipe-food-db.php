@@ -77,9 +77,7 @@ class hrecipe_food_db {
 	 **/
 	function __construct($prefix, $loaded_ver)
 	{
-		global $table_prefix;
-
-		$this->table_prefix = $table_prefix . $prefix;
+		$this->table_prefix = $prefix . "sr_";
 		$this->loaded_ver = $loaded_ver;
 	}
 	

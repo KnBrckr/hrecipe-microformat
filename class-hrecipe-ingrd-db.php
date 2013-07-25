@@ -28,12 +28,20 @@ if (! class_exists('hrecipe_ingrd_db')) :
 class hrecipe_ingrd_db {
 	
 	/**
-	 * Ingredients database table name
+	 * Table of defined foods for use in recipes
 	 *
 	 * @var string
 	 * @access private
 	 **/
-	private $ingrds_table;
+	private $foods_table;
+	
+	/**
+	 * Table of ingredients used in a recipe
+	 *
+	 * @var string
+	 * @access private
+	 **/
+	private $recipe_ingrds_table;
 	
 	/**
 	 * Construct new object
@@ -42,20 +50,29 @@ class hrecipe_ingrd_db {
 	 * @return void
 	 **/
 	function __construct($prefix) {
-		global $table_prefix;
-
-		$this->ingrds_table = $table_prefix . $prefix . 'ingrds';
+		$this->foods_table = $prefix . 'foods';
+		$this->recipe_ingrds_table = $prefix . 'recipe_ingrds';
 	}
 	
 	/**
-	 * Create the database table to hold ingredients
+	 * Create the database tables to hold ingredients
 	 *
+	 * Foods Table
+	 * Col Field       Type  Blank  Description
+	 * 0   food_id     N 20*  N     Unique key - Food ID number
+	 * 1   NDB_No      A 5    Y     Associated food description from government food database
+	 * 2   ingrd       A 200  N     Ingredient Name  -- Normalize names?
+	 * 3   measure     Enum   N     'volume', 'weight'
+	 * 4   gpcup       N 7.1  N     Grams/Cup
+	 * * Marks Primary keys
+	 * 
+	 * Recipe Ingredients Table
 	 * Col Field       Type  Blank  Description
 	 * 0   id          N 20*  N     Unique key
 	 * 1   post_id     N 20   N     Indexed: Associated post_id for ingredient
 	 * 2   ingrd_list_id N 10 N     Recipe can have multiple lists; List ID within a post
 	 * 3   list_order  N 10   N     sort order within ingrd_list_id list
-	 * 4   NDB_No      A 5    Y     Associated food description from government food database
+	 * 4   food_id     N 20   Y     Associated food from foods table
 	 * 5   quantity    A 100  Y     Amount of ingredient to use
 	 * 6   unit        A 100  Y     Unit of measurement for quantity
 	 * 7   ingrd       A 200  Y     Ingredient Name  -- Normalize names?
@@ -66,17 +83,38 @@ class hrecipe_ingrd_db {
 	 **/
 	function create_schema() {
 		global $charset_collate;
+		global $wpdb;
 		
-		$sql = "CREATE TABLE IF NOT EXISTS " . $this->ingrds_table . " (
-			id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-			post_id bigint(20) UNSIGNED NOT NULL,
-			ingrd_list_id int(10) UNSIGNED NOT NULL,
-			list_order int(10) NOT NULL,
-			NDB_No char(5) DEFAULT '',
-			quantity varchar(100) DEFAULT '',
-			unit varchar(100) DEFAULT '',
-			ingrd varchar(200) DEFAULT '',
-			comment longtext DEFAULT '',
+		/**
+		 * Create Food Table
+		 */
+
+		$sql = "CREATE TABLE IF NOT EXISTS " . $this->foods_table . " (
+			food_id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+			NDB_No CHAR(5) DEFAULT '',
+			ingrd VARCHAR(200) NOT NULL,
+			measure ENUM('volume', 'weight') NOT NULL,
+			gpcup DECIMAL(7,1) NOT NULL,
+			PRIMARY KEY (food_id)
+		) $charset_collate;";	
+
+		// Run SQL to create the table
+		dbDelta($sql);
+		
+		/**
+		 * Create Recipe Ingredients Table
+		 */
+		
+		$sql = "CREATE TABLE IF NOT EXISTS " . $this->recipe_ingrds_table . " (
+			id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+			post_id BIGINT(20) UNSIGNED NOT NULL,
+			ingrd_list_id INT(10) UNSIGNED NOT NULL,
+			list_order INT(10) NOT NULL,
+			food_id BIGINT(20) DEFAULT NULL,
+			quantity VARCHAR(100) DEFAULT '',
+			unit VARCHAR(100) DEFAULT '',
+			ingrd VARCHAR(200) DEFAULT '',
+			comment LONGTEXT DEFAULT '',
 			PRIMARY KEY (id),
 			INDEX (post_id)
 		) $charset_collate;";	
@@ -87,7 +125,7 @@ class hrecipe_ingrd_db {
 	
 	/**
 	 * Delete database table for ingredient lists (used for uninstall)
-	 * FIXME Call uninstall
+	 * FIXME Add to uninstall
 	 *
 	 * @return void
 	 **/
@@ -95,7 +133,54 @@ class hrecipe_ingrd_db {
 	{
 		global $wpdb;
 		
-		$wpdb->query("DROP TABLE IF EXISTS " . $this->ingrds_table);
+		$wpdb->query("DROP TABLE IF EXISTS " . $this->foods_table);
+		$wpdb->query("DROP TABLE IF EXISTS " . $this->recipe_ingrds_table);
+	}
+	
+	/**
+	 * Retrieve ingredients from database
+	 *
+	 * @return object database query with food items
+	 **/
+	function get_ingrds($orderby, $order, $perpage, $paged)
+	{
+		global $wpdb;
+		
+		/**
+		 * Prepare Query
+		 */ 
+		$query = "SELECT * FROM " . $this->foods_table;
+
+		/**
+		 * Add ordering parameters
+		 */
+	    $orderby = !empty($orderby) ? $orderby : 'ASC';
+	    $order = !empty($order) ? $order : '';
+	    if(!empty($orderby) & !empty($order)) { $query.=' ORDER BY '.$orderby.' '.$order; }
+		
+		/**
+		 * Pagination of table elements
+		 */
+        // Number of elements in table?
+        $totalitems = $wpdb->query($query); //return the total number of affected rows
+        //Which page is this?
+        $paged = !empty($paged) ? $paged : '';
+        //Page Number
+        if(empty($paged) || !is_numeric($paged) || $paged<=0 ){ $paged=1; }
+        //adjust the query to take pagination into account
+	    if(!empty($paged) && !empty($perpage)){
+		    $offset=($paged-1)*$perpage;
+    		$query.=' LIMIT '.(int)$offset.','.(int)$perpage;
+	    }
+		
+		/**
+		 * Get the table items
+		 */
+		$result = $wpdb->get_results($query);
+		return array(
+			'totalitems' => $totalitems,
+			'ingrds' => $result
+		);
 	}
 	
 	/**
@@ -108,14 +193,14 @@ class hrecipe_ingrd_db {
 	 * @param $ingrd_list array of rows of key/value pairs: NDB_No, quantity, unit, ingredient name and comment 
 	 * @return void
 	 **/
-	function insert_ingrds($post_id, $ingrd_list_id, $ingrd_list)
+	function insert_ingrds_for_recipe($post_id, $ingrd_list_id, $ingrd_list)
 	{
 		global $wpdb;
 		
 		/**
 		 * Delete saved list if one already exists
 		 */
-		$this->delete_ingrd_list($post_id, $ingrd_list_id);
+		$this->delete_ingrds_for_recipe($post_id, $ingrd_list_id);
 		
 		/**
 		 * Save new ingredient list contents
@@ -125,7 +210,7 @@ class hrecipe_ingrd_db {
 			$row['post_id'] = $post_id;
 			$row['ingrd_list_id'] = $ingrd_list_id;
 			$row['list_order'] = $list_order++;
-			$result = $wpdb->insert($this->ingrds_table, $row);
+			$result = $wpdb->insert($this->recipe_ingrds_table, $row);
 		}
 	}
 	
@@ -137,11 +222,11 @@ class hrecipe_ingrd_db {
 	 * @param $ingrd_list_id Which ingredient list in post to get
 	 * @return array of ingredient rows
 	 **/
-	function get_ingrds($post_id,$ingrd_list_id)
+	function get_ingrds_for_recipe($post_id,$ingrd_list_id)
 	{
 		global $wpdb;
 		
-		$result = $wpdb->get_results($wpdb->prepare("SELECT NDB_No,quantity,unit,ingrd,comment FROM " . $this->ingrds_table . " WHERE post_id LIKE %d AND ingrd_list_id LIKE %d ORDER BY list_order ASC", $post_id, $ingrd_list_id));
+		$result = $wpdb->get_results($wpdb->prepare("SELECT food_id,quantity,unit,ingrd,comment FROM " . $this->recipe_ingrds_table . " WHERE post_id LIKE %d AND ingrd_list_id LIKE %d ORDER BY list_order ASC", $post_id, $ingrd_list_id));
 
 		return $result;
 	}
@@ -151,11 +236,11 @@ class hrecipe_ingrd_db {
 	 *
 	 * @return null
 	 **/
-	function delete_ingrd_list($post_id, $ingrd_list_id)
+	function delete_ingrds_for_recipe($post_id, $ingrd_list_id)
 	{
 		global $wpdb;
 		
-		$result = $wpdb->query($wpdb->prepare("DELETE FROM " . $this->ingrds_table . " WHERE post_id LIKE %d AND ingrd_list_id LIKE %d", $post_id, $ingrd_list_id));
+		$result = $wpdb->query($wpdb->prepare("DELETE FROM " . $this->recipe_ingrds_table . " WHERE post_id LIKE %d AND ingrd_list_id LIKE %d", $post_id, $ingrd_list_id));
 	}
 	
 	/**
@@ -165,10 +250,10 @@ class hrecipe_ingrd_db {
 	 * @param $post_id Delete all ingredients for indicated post
 	 * @return void
 	 **/
-	function delete_ingrds_for_post($post_id)
+	function delete_all_ingrds_for_recipe($post_id)
 	{
 		global $wpdb;
-		$result = $wpdb->query($wpdb->prepare("DELETE FROM " . $this->ingrds_table . " WHERE post_id LIKE %d", $post_id));
+		$result = $wpdb->query($wpdb->prepare("DELETE FROM " . $this->recipe_ingrds_table . " WHERE post_id LIKE %d", $post_id));
 	}
 }
 endif; // End class hrecipe_ingrd_db

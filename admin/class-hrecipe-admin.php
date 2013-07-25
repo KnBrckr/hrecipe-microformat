@@ -27,6 +27,7 @@
 // TODO Create admin widget for Recipe Categories - only allow one category to be selected
 // TODO Phone-home with error log
 // FIXME Restore from saved revision needs to restore ingredients
+// FIXME Finish converting from NDB_No to food_id - Also need to handle import
 
 // Protect from direct execution
 if (!defined('WP_PLUGIN_DIR')) {
@@ -36,7 +37,7 @@ if (!defined('WP_PLUGIN_DIR')) {
 }
 
 // Load additional classes
-foreach (array('class-hrecipe-importer.php') as $lib) {
+foreach (array('class-hrecipe-importer.php', 'class-hrecipe-ingredient-table.php') as $lib) {
 	if (!include_once($lib)) {
 		return false;
 	}
@@ -125,6 +126,7 @@ class hrecipe_admin extends hrecipe_microformat
 		/*
 		 * Setup the Food Database
 		 */
+		// FIXME Run database load out of band from activation!  Makes activation take too long
 		try {
 	   	 	// TODO New DB is only loaded during activation - Should it be this way?
 			// Setup USDA Standard Reference database			
@@ -182,8 +184,23 @@ class hrecipe_admin extends hrecipe_microformat
 	 * @return void
 	 **/
 	function admin_menu()
-	{	
-		// Create the sub-menu item in the Settings section
+	{
+		/**
+		 * Create sub-menu to manage ingredient list
+		 *
+		 * Use the slug for custom post type to place sub-menu under the post type parent menu
+		 */
+		
+		add_submenu_page('edit.php?post_type=' . self::post_type, 
+			'List of Available Ingredients', 
+			'Ingredients', 
+			'edit_posts', // If user can edit_posts, show this menu
+			self::prefix . 'ingredients-table',  // Slug for this menu
+			array($this, 'ingredients_table'));
+		
+		/**
+		 * Create Plugin Options Page as a sub-menu in Settings Section
+		 */
 		$settings_page = add_options_page(
 			__('hRecipe Microformat Plugin Settings', self::p), 
 			__('hRecipe Microformat', self::p), 
@@ -352,7 +369,7 @@ class hrecipe_admin extends hrecipe_microformat
 		 */
 		// FIXME If Lists can be added/deleted/reordered, array indexes might get mucked up
 		foreach ($ingrd_list_title as $list_id => $list_title) {
-			$ingrds = $this->ingrd_db->get_ingrds($post->ID, $list_id);
+			$ingrds = $this->ingrd_db->get_ingrds_for_recipe($post->ID, $list_id);
 			?>
 			<div class="ingrd-list">
 				<p class="ingrd-list-title">
@@ -381,7 +398,7 @@ class hrecipe_admin extends hrecipe_microformat
 							}
 						} else {
 							foreach ($ingrds as $d) {
-								$this->recipe_edit_ingrd_row($list_id, $d->quantity, $d->unit, $d->ingrd, $d->comment, $d->NDB_No);
+								$this->recipe_edit_ingrd_row($list_id, $d->quantity, $d->unit, $d->ingrd, $d->comment, $d->food_id);
 							} // foreach $ingrds						
 						}
 						?>
@@ -397,14 +414,14 @@ class hrecipe_admin extends hrecipe_microformat
 	 *
 	 * @return void
 	 **/
-	function recipe_edit_ingrd_row($list_id, $qty, $unit, $ingrd, $comment, $NDB_No)
+	function recipe_edit_ingrd_row($list_id, $qty, $unit, $ingrd, $comment, $food_id)
 	{
 		// Escape special characters in the output
 		$qty = esc_attr($qty);
 		$unit = esc_attr($unit);
 		$ingrd = esc_attr($ingrd);
 		$comment = esc_attr($comment);
-		$NDB_No = esc_attr($NDB_No);
+		$food_id = esc_attr($food_id);
 		
 		?>
 		<tr>
@@ -419,7 +436,7 @@ class hrecipe_admin extends hrecipe_microformat
 			<td><input type="text" name="<?php echo self::prefix; ?>unit[<?php echo $list_id; ?>][]" class="type ui-widget" value="<?php echo $unit ?>"/></td>
 			<td><input type="text" name="<?php echo self::prefix; ?>ingrd[<?php echo $list_id; ?>][]" class="ingrd" value ="<?php echo $ingrd ?>"/></td>
 			<td><input type="text" name="<?php echo self::prefix; ?>comment[<?php echo $list_id; ?>][]" class="comment" value="<?php echo $comment ?>"/></td>
-			<td><input type="text" name="<?php echo self::prefix ?>NDB_No[<?php echo $list_id; ?>][]" value="<?php echo $NDB_No; ?>" class="NDB_No" readonly="readonly"></td>
+			<td><input type="text" name="<?php echo self::prefix ?>food_id[<?php echo $list_id; ?>][]" value="<?php echo $food_id; ?>" class="food_id" readonly="readonly"></td>
 		</tr>
 		<?php
 	}
@@ -498,7 +515,7 @@ class hrecipe_admin extends hrecipe_microformat
 			$_POST[self::prefix . 'unit'] = stripslashes_deep($_POST[self::prefix . 'unit']);
 			$_POST[self::prefix . 'ingrd'] = stripslashes_deep($_POST[self::prefix . 'ingrd']);
 			$_POST[self::prefix . 'comment'] = stripslashes_deep($_POST[self::prefix . 'comment']);
-			$_POST[self::prefix . 'NDB_No'] = stripslashes_deep($_POST[self::prefix . 'NDB_No']);
+			$_POST[self::prefix . 'food_id'] = stripslashes_deep($_POST[self::prefix . 'food_id']);
 			
 			$ingrds = array();
 			// Ingredient lists stored in Ingredient Database
@@ -513,13 +530,13 @@ class hrecipe_admin extends hrecipe_microformat
 						'unit' => $_POST[self::prefix . 'unit'][$list_id][$ingrd_row],
 						'ingrd' => $_POST[self::prefix . 'ingrd'][$list_id][$ingrd_row],
 						'comment' => $_POST[self::prefix . 'comment'][$list_id][$ingrd_row],
-						'NDB_No' => $_POST[self::prefix . 'NDB_No'][$list_id][$ingrd_row]
+						'food_id' => $_POST[self::prefix . 'food_id'][$list_id][$ingrd_row]
 						);
 					}
 			}
 			
 			// FIXME Handle Insert failures
-			$this->ingrd_db->insert_ingrds($post_id, $list_id, $ingrds);
+			$this->ingrd_db->insert_ingrds_for_recipe($post_id, $list_id, $ingrds);
 		}
 		
 		// List Titles saved as Post Meta Data
@@ -564,8 +581,38 @@ class hrecipe_admin extends hrecipe_microformat
 		/**
 		 * Delete ingredients associated with this post
 		 */
-		$this->ingrd_db->delete_ingrds_for_post($post_id);
+		$this->ingrd_db->delete_all_ingrds_for_recipe($post_id);
 	}
+	
+	/**
+	 * Display HTML for page to manage ingredients
+	 *
+	 * @return void
+	 **/
+	function ingredients_table()
+	{
+		$ingredients_table = new hrecipe_ingredients_Table($this->ingrd_db);
+
+		echo "Current Action: " . $ingredients_table->current_action();
+		?>
+		<div class="wrap">
+			<div id="icon-edit" class="icon32 icon32-hrecipe-ingredients-table">
+				<br>
+			</div>
+			<!-- FIXME Add support to create new Ingredients -->
+			<h2>Ingredients <a href="?" class="add-new-h2">Add Ingredient</a></h2>
+			<form action method="get" accept-charset="utf-8">
+				<?php
+				// FIXME Fix form for manipulation of ingredients table -- Need missing Hidden input fields
+		
+				$ingredients_table->prepare_items();
+				$ingredients_table->display();				
+				?>
+			</form>
+		</div>
+		<?php
+	}
+	
 
 	/**
 	 * Configure tinymce
@@ -593,9 +640,6 @@ class hrecipe_admin extends hrecipe_microformat
 		
 		// Add custom styles
 		add_filter( 'tiny_mce_before_init', array(&$this, 'tinymce_init_array'));
-		
-		// Add I18N support
-		add_filter('mce_external_languages', array( &$this, 'add_tinymce_langs') );
 	}
 	
 	/**
@@ -934,18 +978,6 @@ class hrecipe_admin extends hrecipe_microformat
 		$mce_css .= self::$url . 'admin/css/editor.css';
 		$mce_css .= ',' . self::$url . 'admin/css/jquery-ui.css';
 		return $mce_css; 
-	}
-	
-	/**
-	 * Add tinyMCE language support for dialog boxes
-	 *
-	 * @return updated array of language files
-	 **/
-	function add_tinymce_langs($langs)
-	{
-	    // File system path to MCE plugin languages PHP script
-	    $langs['hrecipeMicroformat'] = self::$dir . 'admin/TinyMCE-plugins/hrecipeMicroformat/langs/langs.php';
-	    return $langs;
 	}
 	
 	/**

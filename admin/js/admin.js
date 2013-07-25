@@ -154,10 +154,10 @@ function hrecipeInitAutocomplete(target) {
 		change: function( event, ui ) {
 			if (ui.item) {
 				// If an item was selected, record the food database record number
-				jQuery(this).addClass('sr_linked').siblings('.NDB_No').val(ui.item.NDB_No);				
+				jQuery(this).addClass('sr_linked').siblings('.food_id').val(ui.item.food_id);				
 			} else {
 				// No matching item, clear food database record number
-				jQuery(this).removeClass('sr_linked').siblings('.NDB_No').val('');
+				jQuery(this).removeClass('sr_linked').siblings('.food_id').val('');
 			}
 		}
 	});
@@ -176,7 +176,7 @@ function hrecipeAjaxAutocompleteSuccess(data) {
 	return(jQuery.map( data.list, function(item){
 		return {
 			label: item.Long_Desc,
-			NDB_No: item.NDB_No
+			food_id: item.food_id
 		} ;
 	}));
 }
