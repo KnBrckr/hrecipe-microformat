@@ -132,15 +132,14 @@ function hrecipeInitAutocomplete(target) {
 	jQuery(target).find('.type').autocomplete({source: availableUnits});
 	
 	// Autocomplete for the ingredient column of ingredient list
-	// TODO the URL below assumes a standard WP install.  If wp-admin is in a different location, this won't work
 	jQuery(target).find('.ingrd').autocomplete({
 		source: function( request, response ) {
 			jQuery.ajax({
-				url: "../../../../../../wp-admin/admin-ajax.php",
+				url: HrecipeMicroformat.ajaxurl,
 				dataType: "json",
 				data: {
-					action: 'hrecipe-microformat_ingrd_auto_complete',
-					maxRows: 12,
+					action: HrecipeMicroformat.autocompleteAction,
+					maxRows: HrecipeMicroformat.maxRows,
 					name_contains: request.term
 				},
 				// When Ajax returns successfully, process the retrieved data
@@ -154,10 +153,10 @@ function hrecipeInitAutocomplete(target) {
 		change: function( event, ui ) {
 			if (ui.item) {
 				// If an item was selected, record the food database record number
-				jQuery(this).addClass('sr_linked').siblings('.food_id').val(ui.item.food_id);				
+				jQuery(this).addClass('food_linked').parent().siblings().find('.food_id').val(ui.item.food_id);				
 			} else {
 				// No matching item, clear food database record number
-				jQuery(this).removeClass('sr_linked').siblings('.food_id').val('');
+				jQuery(this).removeClass('food_linked').parent().siblings().find('.food_id').val('');
 			}
 		}
 	});
@@ -175,7 +174,7 @@ function hrecipeAjaxAutocompleteSuccess(data) {
 	
 	return(jQuery.map( data.list, function(item){
 		return {
-			label: item.Long_Desc,
+			label: item.ingrd,
 			food_id: item.food_id
 		} ;
 	}));

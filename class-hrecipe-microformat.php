@@ -107,6 +107,15 @@ class hrecipe_microformat {
 	protected $food_db;
 	
 	/**
+	 * Container for ingredients database
+	 *
+	 * Used to access full list of defined ingredients and ingredients associated with each recipe
+	 *
+	 * @var instance of class hrecipe_ingrd_db
+	 **/
+	protected $ingrd_db;
+	
+	/**
 	 * For single pages, remember the post ID for processing in widgets
 	 *
 	 * @access protected
@@ -1300,9 +1309,8 @@ class hrecipe_microformat {
 		$max_rows = is_numeric($_REQUEST['maxRows']) ? intval($_REQUEST['maxRows']) : 12;
 		if ($max_rows < 1) $max_rows = 1;
 		
-		// FIXME Change autocomplete to use food table vs. SR
 		// Retrieve food names matching incoming string
-		$rows = $this->food_db->get_name( $name_contains, $max_rows );
+		$rows = $this->ingrd_db->get_ingrds_by_name( $name_contains, $max_rows );
 		
 		// Response Output
 		$response = json_encode(array(

@@ -138,6 +138,46 @@ class hrecipe_ingrd_db {
 	}
 	
 	/**
+	 * Insert new ingredient into database
+	 *
+	 * @uses $wpdb
+	 * @param $ingrd array of key/value pairs: ingrd, measure, gpcup
+	 * @return result of $wpdb->insert()
+	 **/
+	function insert_ingrd($ingrd)
+	{
+		global $wpdb;
+		
+		/**
+		 * Ensure 'measure' value is valid, use volume as default
+		 */
+		if ('volume' != $ingrd['measure'] && 'weight' != $ingrd['measure']) {
+			$ingrd['measure'] = 'volume';
+		}
+		
+		// If food_id is specified, this request is to update existing row
+		if (isset($ingrd['food_id'])) {
+			$result = $wpdb->update($this->foods_table, $ingrd, array('food_id' => $ingrd['food_id']));
+		} else {
+			$result = $wpdb->insert($this->foods_table, $ingrd);			
+		}
+		return $result;
+	}
+	
+	/**
+	 * Delete an ingredient from database
+	 *
+	 * @return result of $wpdb->query
+	 **/
+	function delete_ingrd($food_id)
+	{
+		global $wpdb;
+		
+		$result = $wpdb->query($wpdb->prepare("DELETE FROM " . $this->foods_table . " WHERE food_id = %d", $food_id));
+		return $result;
+	}
+	
+	/**
 	 * Retrieve ingredients from database
 	 *
 	 * @return object database query with food items
@@ -184,6 +224,40 @@ class hrecipe_ingrd_db {
 	}
 	
 	/**
+	 * Retrieve matching food names
+	 *
+	 * @uses $wpdb
+	 * @param $name_contains string - String to match for food name
+	 * @param $max_rows int - maximum number of rows to return
+	 * @return array of names retrieved
+	 **/
+	function get_ingrds_by_name($name_contains, $max_rows)
+	{
+		global $wpdb;
+		
+		$like = '%' . $name_contains . '%';
+		$rows = $wpdb->get_results($wpdb->prepare("SELECT food_id,ingrd FROM " . $this->foods_table . " WHERE ingrd LIKE %s LIMIT 0,%d", $like, $max_rows));
+		
+		return $rows;
+	}
+	
+	/**
+	 * Retrieve info for a food
+	 *
+	 * @uses $wpdb
+	 * @param $food_id, food id number for query
+	 * @return array of ingredient properties
+	 **/
+	function get_ingrd_by_id($food_id)
+	{
+		global $wpdb;
+		
+		$row = $wpdb->get_row($wpdb->prepare("SELECT food_id,ingrd,measure,gpcup FROM " . $this->foods_table . " WHERE food_id = %d", $food_id), ARRAY_A);
+		
+		return $row;
+	}
+	
+	/**
 	 * Insert list of ingredients into table
 	 * Sort order will match initial row order
 	 *
@@ -225,22 +299,22 @@ class hrecipe_ingrd_db {
 	function get_ingrds_for_recipe($post_id,$ingrd_list_id)
 	{
 		global $wpdb;
-		
-		$result = $wpdb->get_results($wpdb->prepare("SELECT food_id,quantity,unit,ingrd,comment FROM " . $this->recipe_ingrds_table . " WHERE post_id LIKE %d AND ingrd_list_id LIKE %d ORDER BY list_order ASC", $post_id, $ingrd_list_id));
 
+		$result = $wpdb->get_results($wpdb->prepare("SELECT food_id,quantity,unit,ingrd,comment FROM " . $this->recipe_ingrds_table . " WHERE post_id LIKE %d AND ingrd_list_id LIKE %d ORDER BY list_order ASC", $post_id, $ingrd_list_id));
 		return $result;
 	}
 	
 	/**
 	 * Delete an ingredient list from a post
 	 *
-	 * @return null
+	 * @return result of $wpdb->query()
 	 **/
 	function delete_ingrds_for_recipe($post_id, $ingrd_list_id)
 	{
 		global $wpdb;
-		
+
 		$result = $wpdb->query($wpdb->prepare("DELETE FROM " . $this->recipe_ingrds_table . " WHERE post_id LIKE %d AND ingrd_list_id LIKE %d", $post_id, $ingrd_list_id));
+		return $result;
 	}
 	
 	/**
@@ -248,12 +322,14 @@ class hrecipe_ingrd_db {
 	 *
 	 * @uses $wpdb
 	 * @param $post_id Delete all ingredients for indicated post
-	 * @return void
+	 * @return result of $wpdb->query()
 	 **/
 	function delete_all_ingrds_for_recipe($post_id)
 	{
 		global $wpdb;
+
 		$result = $wpdb->query($wpdb->prepare("DELETE FROM " . $this->recipe_ingrds_table . " WHERE post_id LIKE %d", $post_id));
+		return $result;
 	}
 }
 endif; // End class hrecipe_ingrd_db

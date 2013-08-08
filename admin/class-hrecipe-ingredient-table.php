@@ -47,6 +47,7 @@ class hrecipe_ingredients_Table extends WP_List_Table {
 	 * We usually focus on three parameters: singular and plural labels, as well as whether the class supports AJAX.
 	 */
 	 function __construct($ingrd_db) {
+		 // FIXME Need post_type and target page input params to build edit links for ingredients
 		 parent::__construct( array(
 		'singular'=> 'wp_list_ingredient', //Singular label
 		'plural' => 'wp_list_ingredients', //plural label, also this well be one of the table css class
@@ -99,7 +100,6 @@ class hrecipe_ingredients_Table extends WP_List_Table {
 	 * Array in form 'column_name' => 'database_field_name'
 	 *
 	 * @return array $sortable, array of columns that can be sorted
-	 * @author Kenneth J. Brucker <ken.brucker@action-a-day.com>
 	 **/
 	function get_sortable_columns()
 	{
@@ -194,7 +194,7 @@ class hrecipe_ingredients_Table extends WP_List_Table {
 	 **/
 	function column_food_id($item)
 	{
-		return $item->food_id;
+		return esc_attr($item->food_id);
 	}
 	
 	/**
@@ -206,7 +206,7 @@ class hrecipe_ingredients_Table extends WP_List_Table {
 	 **/
 	function column_NDB_No($item)
 	{
-		return $item->NDB_No;
+		return esc_attr($item->NDB_No);
 	}
 
 	/**
@@ -218,7 +218,7 @@ class hrecipe_ingredients_Table extends WP_List_Table {
 	 **/
 	function column_ingrd($item)
 	{
-		return $item->ingrd;
+		return esc_attr($item->ingrd);
 	}
 
 	/**
@@ -230,7 +230,7 @@ class hrecipe_ingredients_Table extends WP_List_Table {
 	 **/
 	function column_measure($item)
 	{
-		return $item->measure;
+		return esc_attr($item->measure);
 	}
 
 	/**
@@ -242,7 +242,7 @@ class hrecipe_ingredients_Table extends WP_List_Table {
 	 **/
 	function column_gpcup($item)
 	{
-		return $item->gpcup;
+		return esc_attr($item->gpcup);
 	}
 }		
 
