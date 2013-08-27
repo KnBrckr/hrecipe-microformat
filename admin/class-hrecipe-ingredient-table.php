@@ -41,13 +41,26 @@ class hrecipe_ingredients_Table extends WP_List_Table {
 	 * @var object
 	 **/
 	var $ingrd_db;
+	
+	/**
+	 * Post type to use in building links to other pages provided by plugin
+	 *
+	 * @var string
+	 **/
+	private $post_type;
+	
+	/**
+	 * slug for page to edit an ingredient
+	 *
+	 * @var string
+	 **/
+	private $ingrd_page;
 
 	/**
 	 * Constructor, we override the parent to pass our own arguments
 	 * We usually focus on three parameters: singular and plural labels, as well as whether the class supports AJAX.
 	 */
-	 function __construct($ingrd_db) {
-		 // FIXME Need post_type and target page input params to build edit links for ingredients
+	 function __construct($ingrd_db, $post_type, $page) {
 		 parent::__construct( array(
 		'singular'=> 'wp_list_ingredient', //Singular label
 		'plural' => 'wp_list_ingredients', //plural label, also this well be one of the table css class
@@ -55,22 +68,23 @@ class hrecipe_ingredients_Table extends WP_List_Table {
 		) );
 		
 		$this->ingrd_db = $ingrd_db;
+		$this->post_type = $post_type;
+		$this->ingrd_page = $page;
 	 }
 	 
  	/**
  	 * Provides extra navigation before and after ingredients table
-	 * FIXME Delete?
  	 *
  	 * @return void
  	 **/
- 	function extra_tablenav( $which )
- 	{
- 		if ( 'top' == $which ) {
- 			echo "Before Table";
- 		} elseif ( 'bottom' == $which ) {
- 			echo "After Table";
- 		}
- 	}
+ 	// function extra_tablenav( $which )
+ 	// {
+ 	// 	if ( 'top' == $which ) {
+ 	// 		echo "Before Table";
+ 	// 	} elseif ( 'bottom' == $which ) {
+ 	// 		echo "After Table";
+ 	// 	}
+ 	// }
 	
 	/**
 	 * Define columns that are used in the table
@@ -218,7 +232,9 @@ class hrecipe_ingredients_Table extends WP_List_Table {
 	 **/
 	function column_ingrd($item)
 	{
-		return esc_attr($item->ingrd);
+		$url = sprintf("<a href='?post_type=%s&page=%s&food_id=%d'>%s</a>", 
+			$this->post_type, $this->ingrd_page, $item->food_id, esc_attr($item->ingrd));
+		return $url ;
 	}
 
 	/**

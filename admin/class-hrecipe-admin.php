@@ -22,12 +22,19 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  **/
 
+/**
+ * FIXME Address runtime errors
+[Sun Aug 25 07:57:00 2013] [error] [client ::1] PHP Notice:  Undefined index: display_in_home in /Users/ken/Sites/wordpress/wp-content/plugins/hrecipe-microformat/admin/class-hrecipe-admin.php on line 959, referer: http://localhost/~ken/wordpress/wp-admin/options-general.php?page=hrecipe_microformat_settings_page
+[Sun Aug 25 07:57:00 2013] [error] [client ::1] PHP Notice:  Undefined index: display_in_feed in /Users/ken/Sites/wordpress/wp-content/plugins/hrecipe-microformat/admin/class-hrecipe-admin.php on line 962, referer: http://localhost/~ken/wordpress/wp-admin/options-general.php?page=hrecipe_microformat_settings_page
+[Sun Aug 25 07:57:00 2013] [error] [client ::1] PHP Notice:  Undefined index: debug_log_enabled in /Users/ken/Sites/wordpress/wp-content/plugins/hrecipe-microformat/admin/class-hrecipe-admin.php on line 977, referer: http://localhost/~ken/wordpress/wp-admin/options-general.php?page=hrecipe_microformat_settings_page
+ 
+ */
+
 // TODO Display Admin notice when settings have been saved
 // TODO Add cuisine types - mexican, spanish, indian, etc.
 // TODO Create admin widget for Recipe Categories - only allow one category to be selected
 // TODO Phone-home with error log
 // FIXME Restore from saved revision needs to restore ingredients
-// FIXME Finish converting from NDB_No to food_id - Also need to handle import
 
 // Protect from direct execution
 if (!defined('WP_PLUGIN_DIR')) {
@@ -136,33 +143,22 @@ class hrecipe_admin extends hrecipe_microformat
 		/*
 		 * Setup the Food Database
 		 */
-		// FIXME Run database load out of band from activation!  Makes activation take too long
-		try {
-	   	 	// TODO New DB is only loaded during activation - Should it be this way?
-			// Setup USDA Standard Reference database			
-			$loaded_ver = $this->food_db->setup_food_db(WP_PLUGIN_DIR . '/' . self::p . '/db/');
-
-			// If the loaded version of the food DB changed, record new version in options
-			if ($loaded_ver != $this->options['loaded_food_db_ver']) {
-				$options = get_option(self::settings);
-				$options['loaded_food_db_ver'] = $loaded_ver;
-				update_option(self::settings, $options);
-			}
-		} catch (Exception $e) {
-			$this->food_db->drop_food_schema();
-			// FIXME Exception not getting handled correctly by WP - need proper method to catch
-			throw new Exception('Unable to load USDA Standard Reference DB; caught exception: ' . $e->getMessage());
+		// TODO Run database load out of band from activation!  Makes activation take too long
+   	 	// TODO During page loads detect DB version loaded and on mismatch put notice in admin screen.  Add button in Options to load new DB version on demand.
+		// Setup USDA Standard Reference database			
+		if (! $this->nutrient_db->setup_nutrient_db(WP_PLUGIN_DIR . '/' . self::p . '/db/')) {
+			// There was a problem creating DB
+			// FIXME Return failure - How?  Use WP_Error class?  Also fix for below
+			return 0;
 		}
 		
 		/*
 		 * Setup Ingredient Database
 		 */
-		try {
-			// Create the ingredient table if it doesn't exist
-			$this->ingrd_db->create_schema();
-		} catch (Exception $e) {
-			// FIXME See Exception above - do the same thing
-			throw new Exception('Unable to create Ingredient DB; caught exception: ' . $e->getMessage());
+		if (! $this->ingrd_db->create_schema()) {
+			// There was a problem creating DB, delete nutrient DB created above
+			$this->nutrient_db->drop_nutrient_schema();
+			return 0;
 		}
 			
 		// Only insert terms if the category taxonomy doesn't already exist.
@@ -490,7 +486,6 @@ class hrecipe_admin extends hrecipe_microformat
 			<td><input type="text" name="<?php echo self::prefix; ?>unit[<?php echo $list_id; ?>][]" class="type ui-widget" value="<?php echo $unit ?>"/></td>
 			<td><input type="text" name="<?php echo self::prefix; ?>ingrd[<?php echo $list_id; ?>][]" class="ingrd" value ="<?php echo $ingrd ?>"/></td>
 			<td><input type="text" name="<?php echo self::prefix; ?>comment[<?php echo $list_id; ?>][]" class="comment" value="<?php echo $comment ?>"/></td>
-			<!-- FIXME Where are 0's in food_ids coming from? -->
 			<!-- FIXME If food_id available, mark row as linked -->
 			<td><input type="text" name="<?php echo self::prefix ?>food_id[<?php echo $list_id; ?>][]" value="<?php echo $food_id; ?>" class="food_id" readonly="readonly"></td>
 		</tr>
@@ -508,7 +503,6 @@ class hrecipe_admin extends hrecipe_microformat
 		global $post;
 
 		// Use nonce for verification
-		// TODO Confirm that nonce is needed in metabox area - Already handed by WP core?
 		wp_nonce_field( 'info_metabox', self::prefix . 'nonce' );
 		
 		// Create the editor metaboxes
@@ -548,7 +542,8 @@ class hrecipe_admin extends hrecipe_microformat
 			return $post_id;
 			
 		// Confirm nonce field
-		if ( empty($_REQUEST) || ! check_admin_referer( 'info_metabox', self::prefix . 'nonce' )) {
+		$nonce_field = self::prefix . 'nonce';
+		if ( ! ( isset($_REQUEST[$nonce_field]) && wp_verify_nonce( $_REQUEST[$nonce_field], 'info_metabox')) ) {
 			return $post_id;
 		}
 		
@@ -641,45 +636,20 @@ class hrecipe_admin extends hrecipe_microformat
 	}
 	
 	/**
-	 * Display HTML for page to manage ingredients
-	 *
-	 * @uses $plugin_page, WP global defines plugin page name
-	 * @return void
-	 **/
-	function ingredients_table_page()
-	{
-		global $plugin_page;
-		
-		$ingredients_table = new hrecipe_ingredients_Table($this->ingrd_db);
-		?>
-		<div class="wrap">
-			<div id="icon-edit" class="icon32 icon32-hrecipe-ingredients-table">
-				<br>
-			</div>
-			<h2>Ingredients <a href="?post_type=<?php echo self::post_type; ?>&page=<?php echo self::prefix?>add-ingredient" class="add-new-h2">Add Ingredient</a></h2>
-			<form action method="get" accept-charset="utf-8">
-				<input type="hidden" name="post_type" value="<?php echo self::post_type; ?>">
-				<input type="hidden" name="page" value="<?php echo $plugin_page ?>">
-				<?php
-				$ingredients_table->prepare_items();
-				$ingredients_table->display();				
-				?>
-			</form>
-		</div>
-		<?php
-	}
-	
-	/**
 	 * Perform actions associated with the ingredients table page
 	 *
 	 * Actions are separated out so that they can be done before admin notices are displayed
 	 *
+	 * @uses $plugin_page, WP global defines plugin page name
 	 * @return void
 	 **/
 	function ingredients_table_page_action()
 	{
-		$ingredients_table = new hrecipe_ingredients_Table($this->ingrd_db);
-		$doaction = $ingredients_table->current_action();
+		global $plugin_page;
+		
+		$this->ingredients_table = new hrecipe_ingredients_Table(
+			$this->ingrd_db, self::post_type, self::prefix . 'add-ingredient');
+		$doaction = $this->ingredients_table->current_action();
 		
 		/**
 		 * Perform table actions
@@ -691,12 +661,16 @@ class hrecipe_admin extends hrecipe_microformat
 			if (! current_user_can('manage_categories')) {
 				wp_die('You are not allowed to add ingredients');
 			}
+
+			$sendback = remove_query_arg(array('action', 'action2', '_wpnonce', '_wp_http_referer'), wp_get_referer());
 			
 			switch ($doaction) {
 				case 'delete':
 					foreach ($_REQUEST['wp_list_ingredient'] as $food_id) {
 						$this->ingrd_db->delete_ingrd($food_id);
 					}
+					
+					$sendback = remove_query_arg('wp_list_ingredient', $sendback);
 					$message = self::msg_ingredient_deleted;
 					break;
 				
@@ -705,7 +679,6 @@ class hrecipe_admin extends hrecipe_microformat
 					break;
 			}
 
-			$sendback = remove_query_arg(array('action', 'action2', '_wpnonce', '_wp_http_referer'), wp_get_referer());
 			$sendback = add_query_arg('message', $message, $sendback);
 			wp_redirect($sendback);
 			exit;
@@ -722,6 +695,95 @@ class hrecipe_admin extends hrecipe_microformat
 	}
 	
 	/**
+	 * Display HTML for page to manage ingredients
+	 *
+	 * @uses $plugin_page, WP global defines plugin page name
+	 * @uses $this->ingredients_table, WP_List_Table Object
+	 * @return void
+	 **/
+	function ingredients_table_page()
+	{
+		global $plugin_page;
+		
+		?>
+		<div class="wrap">
+			<div id="icon-edit" class="icon32 icon32-hrecipe-ingredients-table">
+				<br>
+			</div>
+			<h2>Ingredients <a href="?post_type=<?php echo self::post_type; ?>&page=<?php echo self::prefix?>add-ingredient" class="add-new-h2">Add Ingredient</a></h2>
+			<form action method="get" accept-charset="utf-8">
+				<input type="hidden" name="post_type" value="<?php echo self::post_type; ?>">
+				<input type="hidden" name="page" value="<?php echo $plugin_page ?>">
+				<?php
+				$this->ingredients_table->prepare_items();
+				$this->ingredients_table->display();				
+				?>
+			</form>
+		</div>
+		<?php
+	}
+	
+	/**
+	 * Save user input to ingredients table
+	 *
+	 * @return void
+	 **/
+	function save_ingredient()
+	{
+		/**
+		 * Add ingredient if this was a submit action
+		 */
+		if (isset($_REQUEST['submit']) && 
+		('Add' == $_REQUEST['submit'] || 'Update' == $_REQUEST['submit'])) {
+			// Prepare redirection URL
+			$sendback = remove_query_arg(array('food_id'), wp_get_referer());
+		
+			// Is nonce valid?  check_admin_referer will die if invalid
+			if (!empty($_REQUEST) && check_admin_referer('add_ingredient', self::prefix . 'nonce')) {
+				// Does user have required credentials?
+				if (! current_user_can('manage_categories')) {
+					wp_die('You are not allowed to add ingredients');
+				}
+			
+				$message = $this::msg_added_new_ingredient;
+				/**
+				 * Collect fields from request
+				 */
+				$row = array();
+				$row['ingrd'] = isset($_REQUEST['ingrd']) ? $_REQUEST['ingrd'] : '' ;
+				$row['gpcup'] = isset($_REQUEST['gpcup']) ? intval($_REQUEST['gpcup']) : '';
+
+				// Default measure to volume radio button
+				$row['measure'] = isset($_REQUEST['measure']) ? $_REQUEST['measure'] : 'volume';
+				
+				// Updates also need food_id
+				if ( 'Update' == $_REQUEST['submit'] && isset($_REQUEST['food_id'])) {
+					$row['food_id'] = $_REQUEST['food_id'];
+					$message = $this::msg_updated_ingredient;
+				}
+			
+				// Insert/Update Ingredient Row
+				$result = $this->ingrd_db->insert_ingrd( $row );
+				if ($result < 1) {
+					$message = $this::msg_ingredient_update_error;
+				}
+			
+				// Add result message to the query
+				$sendback = add_query_arg('message', $message, $sendback);
+			}			
+	
+			// After adding ingredient, reset form input and redirect to redisplay a clean form.
+			wp_redirect($sendback);
+			exit;
+		}
+		
+		// Display message from save operation
+		if (isset($_REQUEST['message'])) {
+			$this->log_admin_notice($this->message[$_REQUEST['message']]);
+		}
+	}
+
+	/**
 	 * Display HTML for page to add/edit ingredients
 	 *
 	 * @uses $plugin_page, WP global defines plugin page name
@@ -731,17 +793,16 @@ class hrecipe_admin extends hrecipe_microformat
 	{
 		global $plugin_page;
 		
-		var_dump($_REQUEST);
 		/**
 		 * Collect fields from request
 		 */
 		if (isset($_REQUEST['food_id'])) {
 			$food_id = intval($_REQUEST['food_id']);
-			$submit_type = 'edit-ingredient';
+			$submit_type = 'Update';
 			$row = $this->ingrd_db->get_ingrd_by_id($food_id);
 		} else {
 			$food_id = '';
-			$submit_type = 'add-ingredient';
+			$submit_type = 'Add';
 			$row['ingrd'] = '';
 			$row['measure'] = 'volume'; // Default measure radio button to volume
 			$row['gpcup'] = '';
@@ -776,63 +837,6 @@ class hrecipe_admin extends hrecipe_microformat
 		<?php
 	}
 	
-	/**
-	 * Save user input to ingredients table
-	 *
-	 * @return void
-	 **/
-	function save_ingredient()
-	{
-		/**
-		 * Add ingredient if this was a submit action
-		 */
-		if (isset($_REQUEST['submit']) && 
-		('add-ingredient' == $_REQUEST['submit'] || 'edit-ingredient' == $_REQUEST['submit'])) {
-			// Prepare redirection URL
-			$sendback = remove_query_arg(array('food_id'), wp_get_referer());
-		
-			// Is nonce valid?  check_admin_referer will die if invalid
-			if (!empty($_REQUEST) && check_admin_referer('add_ingredient', self::prefix . 'nonce')) {
-				// Does user have required credentials?
-				if (! current_user_can('manage_categories')) {
-					wp_die('You are not allowed to add ingredients');
-				}
-			
-				$message = $this::msg_added_new_ingredient;
-				/**
-				 * Collect fields from request
-				 */
-				$row = array();
-				$row['ingrd'] = isset($_REQUEST['ingrd']) ? $_REQUEST['ingrd'] : '' ;
-				$row['gpcup'] = isset($_REQUEST['gpcup']) ? intval($_REQUEST['gpcup']) : '';
-				// Default measure to volume radio button
-				$row['measure'] = isset($_REQUEST['measure']) ? $_REQUEST['measure'] : 'volume';
-				if ( 'edit-ingredient' == $_REQUEST['submit'] && isset($_REQUEST['food_id'])) {
-					$row['food_id'] = $_REQUEST['food_id'];
-					$message = $this::msg_updated_ingredient;
-				}
-			
-				// Insert/Update Ingredient Row
-				$result = $this->ingrd_db->insert_ingrd( $row );
-				if ($result < 1) {
-					$message = $this::msg_ingredient_update_error;
-				}
-			
-				// Add result message to the query
-				$sendback = add_query_arg('message', $message, $sendback);
-			}			
-	
-			// After adding ingredient, reset form input and redirect to redisplay a clean form.
-			wp_redirect($sendback);
-			exit;
-		}
-		
-		// Display message from save operation
-		if (isset($_REQUEST['message'])) {
-			$this->log_admin_notice($this->message[$_REQUEST['message']]);
-		}
-	}
-
 	/**
 	 * Configure tinymce
 	 *
@@ -1403,9 +1407,12 @@ class hrecipe_admin extends hrecipe_microformat
 	/**
 	 * Cleanup database if uninstall is requested
 	 *
+	 * @uses $table_prefix, WP database table prefix defined for site
 	 * @return void
 	 **/
 	function uninstall() {
+		global $table_prefix;
+		
 		delete_option(self::settings); // Remove the plugin settings
 		
 		/** Delete the recipe posts, including all draft and unpublished versions **/
@@ -1434,8 +1441,8 @@ class hrecipe_admin extends hrecipe_microformat
 		}
 		
 		/** Drop nutritional tables **/
-		$food_db = new hrecipe_food_db(self::prefix,'');
-		$food_db->drop_food_schema();
+		$nutrient_db = new hrecipe_nutrient_db($table_prefix . self::prefix,'');
+		$nutrient_db->drop_food_schema();
 		
 		/** Drop ingredient table **/
 		$ingrd_db = new hrecipe_ingrd_db(self::prefix);

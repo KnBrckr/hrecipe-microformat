@@ -143,7 +143,13 @@ class import_shopncook {
 		
 		// Add list of ingredients to array
 		if (is_array($ingrd_list['INGREDIENT'])) {
-			foreach ($ingrd_list['INGREDIENT'] as $ingrd) {
+			// When 'INGREDIENT' contains a single element need to push it down an array level
+			if (! array_key_exists(0, $ingrd_list['INGREDIENT'])) {
+				$array = array($ingrd_list['INGREDIENT']);
+			} else {
+				$array = $ingrd_list['INGREDIENT'];
+			}
+			foreach ($array as $ingrd) {
 				// If starting a new sublist, save already accumlated contents as a list and start fresh
 				if (array_key_exists('@orig_tag', $ingrd) 
 				    && 'INGREDIENTTEXT' == $ingrd['@orig_tag']

@@ -50,7 +50,7 @@ function hrecipe_microformat_plugin_deactivation() {
  **/		
 $required_libs = array(
 	'class-hrecipe-microformat.php', 
-	'class-hrecipe-food-db.php',
+	'class-hrecipe-nutrient-db.php',
 	'class-hrecipe-ingrd-db.php',
 	'class-hrecipe-widget.php');
 if (is_admin()) {

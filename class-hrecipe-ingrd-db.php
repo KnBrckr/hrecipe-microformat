@@ -23,6 +23,7 @@
  **/
 
 // FIXME On post (auto)save, new ingredient list needs to be saved to go with that post revision
+// FIXME Handle DB errors, including any cleanup needed on failed create
 
 if (! class_exists('hrecipe_ingrd_db')) :
 class hrecipe_ingrd_db {
@@ -99,6 +100,7 @@ class hrecipe_ingrd_db {
 		) $charset_collate;";	
 
 		// Run SQL to create the table
+		// FIXME Handle error here
 		dbDelta($sql);
 		
 		/**
@@ -120,12 +122,12 @@ class hrecipe_ingrd_db {
 		) $charset_collate;";	
 
 		// Run SQL to create the table
-		dbDelta($sql);
+		// FIXME Handle error
+		return dbDelta($sql);
 	}
 	
 	/**
 	 * Delete database table for ingredient lists (used for uninstall)
-	 * FIXME Add to uninstall
 	 *
 	 * @return void
 	 **/
@@ -229,13 +231,18 @@ class hrecipe_ingrd_db {
 	 * @uses $wpdb
 	 * @param $name_contains string - String to match for food name
 	 * @param $max_rows int - maximum number of rows to return
+	 * @param $exact boolean - true if exact match should be returned
 	 * @return array of names retrieved
 	 **/
-	function get_ingrds_by_name($name_contains, $max_rows)
+	function get_ingrds_by_name($name_contains, $max_rows, $exact)
 	{
 		global $wpdb;
 		
-		$like = '%' . $name_contains . '%';
+		if ($exact) {
+			$like = $name_contains;
+		} else {
+			$like = '%' . $name_contains . '%';			
+		}
 		$rows = $wpdb->get_results($wpdb->prepare("SELECT food_id,ingrd FROM " . $this->foods_table . " WHERE ingrd LIKE %s LIMIT 0,%d", $like, $max_rows));
 		
 		return $rows;

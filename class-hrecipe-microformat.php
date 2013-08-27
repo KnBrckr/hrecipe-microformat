@@ -22,7 +22,6 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  **/
 
-// FIXME Implement recipe unit conversions
 // FIXME List Formatting for Recipe Steps
 
 if ( ! class_exists('hrecipe_microformat')) :
@@ -68,7 +67,6 @@ class hrecipe_microformat {
 	/**
 	 * Hash holding plugin options
 	 *	'database_ver'     :  Database Structure version in use - Used to upgrade old versions to new format as required
-	 *  'loaded_food_db_ver' : Version of US Nutrional Food DB loaded in WP tables
 	 *	'display_in_home'  :  True if recipes should be displayed in the home page
 	 *	'display_in_feed'  :  True if recipes should be displayed in the main feed
 	 *	'include_metadata' : True if recipe meta data should be added to content section
@@ -102,9 +100,9 @@ class hrecipe_microformat {
 	 * Container for government database of food nutritional information
 	 *
 	 * @access protected
-	 * @var instance of class hrecipe_food_db
+	 * @var instance of class hrecipe_nutrient_db
 	 **/
-	protected $food_db;
+	var $nutrient_db;
 	
 	/**
 	 * Container for ingredients database
@@ -113,7 +111,7 @@ class hrecipe_microformat {
 	 *
 	 * @var instance of class hrecipe_ingrd_db
 	 **/
-	protected $ingrd_db;
+	var $ingrd_db;
 	
 	/**
 	 * For single pages, remember the post ID for processing in widgets
@@ -215,10 +213,10 @@ class hrecipe_microformat {
 		
 		/*
 		 * Retrieve Plugin Options
+		 * FIXME Options save makes internal version data disappear!!  Must be handled!!
 		 */
 		$options_defaults = array(
 			'database_ver' => self::required_db_ver,
-			'loaded_food_db_ver' => 0,
 			'display_in_home' => true,
 			'display_in_feed' => true,
 			'include_metadata' => true,
@@ -231,8 +229,8 @@ class hrecipe_microformat {
 		
 		$this->options = (array) wp_parse_args(get_option(self::settings), $options_defaults);
 		
-		// Create needed database instances
-		$this->food_db = new hrecipe_food_db($table_prefix . self::prefix, $this->options['loaded_food_db_ver']);
+		// Create instance of the ingredients and USDA Nutrient Database
+		$this->nutrient_db = new hrecipe_nutrient_db($table_prefix . self::prefix);
 		$this->ingrd_db = new hrecipe_ingrd_db($table_prefix . self::prefix);
 	}
 	
@@ -1076,6 +1074,9 @@ class hrecipe_microformat {
 		 * ingrd_id : NDB_No : ingrd : [weight | volume ] : g/cup
 		 */
 		
+		// FIXME Convert items with no DB match using generic conversion
+		// FIXME mark converted values as approximate qty in recipe, especially when going from metric to US
+		
 		/**
 		 * Is unit metric?  or US? or something else?
 		 */
@@ -1205,6 +1206,7 @@ class hrecipe_microformat {
 		$numerator = 32;
 		$step = 16;
 		while ($step >= 1) {
+			if ($fractional == $numerator/64) break;
 			if ($fractional > $numerator/64) {
 				$numerator += $step;
 			} else {
@@ -1309,8 +1311,8 @@ class hrecipe_microformat {
 		$max_rows = is_numeric($_REQUEST['maxRows']) ? intval($_REQUEST['maxRows']) : 12;
 		if ($max_rows < 1) $max_rows = 1;
 		
-		// Retrieve food names matching incoming string
-		$rows = $this->ingrd_db->get_ingrds_by_name( $name_contains, $max_rows );
+		// Retrieve food names matching incoming string, use wildcard matching
+		$rows = $this->ingrd_db->get_ingrds_by_name( $name_contains, $max_rows, false );
 		
 		// Response Output
 		$response = json_encode(array(

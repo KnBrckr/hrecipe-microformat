@@ -76,6 +76,7 @@ class hrecipe_importer {
 	 */
 	function __construct($domain, $category, $ingrd_db) {
 		$this->id = $domain . '-importer';
+		$this->nonce = "import_nonce";
 		$this->name = __('Import Recipes', $domain);
 		$this->desc = __('Import recipes from supported formats as a Recipe Post Type.', $domain);
 		$this->domain = $domain;
@@ -116,24 +117,24 @@ class hrecipe_importer {
 			// 3 = Import selected recipes
 			switch ($step) {
 				case 0 :
-				  // Destroy Transient data if it exists
-				  delete_transient($this->transient_id);
+					// Destroy Transient data if it exists
+					delete_transient($this->transient_id);
 					// Display Upload form
 					$this->upload_form();
 					break;
 				case 1 :
 					// Import all recipes in the uploaded file
-					check_admin_referer($this->id);
+					check_admin_referer($this->id, $this->nonce);
 					$this->import_all($post_status);
 					break;
 				case 2:
 					// Select recipes from file to be imported
-					check_admin_referer($this->id);
+					check_admin_referer($this->id, $this->nonce);
 					$this->select_import_recipes();
 					break;
 				case 3:
 					// Import selected recipes
-					check_admin_referer($this->id);
+					check_admin_referer($this->id, $this->nonce);
 					echo 'Importing selected';
 					// TODO Implement selective importing of recipes
 					break;
@@ -164,36 +165,37 @@ class hrecipe_importer {
 			<li><?php _e('ShopNCook Export Format (.scx)', $this->domain)?></li>
 		</ul>
 		<form enctype="multipart/form-data" id="import-upload-form" method="post" 
-			action="<?php echo esc_attr(wp_nonce_url('admin.php?import=' . $this->id, $this->id)); ?>">
-		<p>
-		<label for="upload"><h3><?php _e( 'Select a recipe file from your computer:', $this->domain ); ?></h3></label> (<?php printf( __('Maximum size: %s', $this->domain ), $size ); ?>)<br />
-		<input type="file" id="upload" name="import" required />
-		<input type="hidden" name="max_file_size" value="<?php echo $bytes; ?>" />
-		<input type="hidden" name="step" value="1" />
-		</p>
-		<p>
-			<label for="publish"><h4><?php _e( 'Imported Recipes should be ... ', $this->domain );?></h4></label>
-			<ul>
-				<li><input type="radio" name="post_status" value="draft" checked><?php _e ( 'Drafts', $this->domain ); ?></li>
-				<li><input type="radio" name="post_status" value="publish"><?php _e ( 'Published', $this->domain ); ?></li>
-				<li><input type="radio" name="post_status" value="private"><?php _e ( 'Private (only visible to Editors and Administrators)', $this->domain); ?></li>
-			<?php
-			if (WP_DEBUG) {
-				?>
-				<li><input type="radio" name="post_status" value="debug">Debug Mode - Trace VAR ONLY	</li>
+			action="<?php echo 'admin.php?import=' . $this->id; ?>">
+			<input type="hidden" name="max_file_size" value="<?php echo $bytes; ?>" />
+			<input type="hidden" name="step" value="1" />
+			<?php wp_nonce_field( $this->id, $this->nonce ); ?>
+			<p>
+			<label for="upload"><h3><?php _e( 'Select a recipe file from your computer:', $this->domain ); ?></h3></label> (<?php printf( __('Maximum size: %s', $this->domain ), $size ); ?>)<br />
+			<input type="file" id="upload" name="import" required />
+			</p>
+			<p>
+				<label for="publish"><h4><?php _e( 'Imported Recipes should be ... ', $this->domain );?></h4></label>
+				<ul>
+					<li><input type="radio" name="post_status" value="draft" checked><?php _e ( 'Drafts', $this->domain ); ?></li>
+					<li><input type="radio" name="post_status" value="publish"><?php _e ( 'Published', $this->domain ); ?></li>
+					<li><input type="radio" name="post_status" value="private"><?php _e ( 'Private (only visible to Editors and Administrators)', $this->domain); ?></li>
 				<?php
-			}
-			?>
-			</ul>
-		</p>
-		<!-- TODO Implement ability to select recipes to import from larger file
-		<p>
-			<label for="import_all"><h3><?php _e( 'How should recipes be imported?', $this->domain); ?></h3></label>
-			<input type="radio" name="step" value="1" checked><?php _e( 'Import All Recipes from source file', $this->domain ); ?><br />
-			<input type="radio" name="step" value="2"><?php _e( 'Select Recipes from file to import', $this->domain); ?>
-		</p>
-		-->
-		<?php submit_button( __('Upload file and import', $this->domain), 'button' ); ?>
+				if (WP_DEBUG) {
+					?>
+					<li><input type="radio" name="post_status" value="debug">Debug Mode - Trace VAR ONLY	</li>
+					<?php
+				}
+				?>
+				</ul>
+			</p>
+			<!-- TODO Implement ability to select recipes to import from larger file
+			<p>
+				<label for="import_all"><h3><?php _e( 'How should recipes be imported?', $this->domain); ?></h3></label>
+				<input type="radio" name="step" value="1" checked><?php _e( 'Import All Recipes from source file', $this->domain ); ?><br />
+				<input type="radio" name="step" value="2"><?php _e( 'Select Recipes from file to import', $this->domain); ?>
+			</p>
+			-->
+			<?php submit_button( __('Upload file and import', $this->domain), 'button' ); ?>
 		</form>
 		<?php
 	}
@@ -338,8 +340,8 @@ class hrecipe_importer {
 			);
 		?>
 		<form enctype="multipart/form-data" id="import-upload-form" method="post" 
-					action="<?php echo esc_attr(wp_nonce_url('admin.php?import=' . $this->id, $this->id)); ?>">
-					
+					action="<?php echo 'admin.php?import=' . $this->id; ?>">
+			<?php wp_nonce_field( $this->id, $this->nonce ); ?>
 			<input type="hidden" name="step" value="1" />
 			<input type="hidden" name="post_status" value="<?php echo $post_status ?>">
 			<h3>Define recipe categories for import</h3>
@@ -396,7 +398,8 @@ class hrecipe_importer {
 		}
 		?>
 		<form enctype="multipart/form-data" id="import-upload-form" method="post" 
-			action="<?php echo esc_attr(wp_nonce_url('admin.php?import=' . $this->id, $this->id)); ?>">
+			action="<?php echo 'admin.php?import=' . $this->id; ?>">
+			<?php wp_nonce_field( $this->id, $this->nonce ); ?>
 			<h3>Select Recipes to Import:</h3>
 			<input type="hidden" name="step" value="3" />
 			<?php
@@ -479,17 +482,17 @@ class hrecipe_importer {
 		$recipe['difficulty'] = $recipe['difficulty'] ? $recipe['difficulty'] : '0';
 		
 		/**
-		 * Add Recipe to the database
+		 * Setup Recipe Post attributes
 		 */
 		$new_post = array(
-			'post_title' => $recipe['fn'],
-      'post_content' => $this->build_post_content($recipe['content']),
-      'post_status' => $post_status, 
+			'post_title'    => $recipe['fn'],
+			'post_content'  => $this->build_post_content($recipe['content']),
+			'post_status'   => $post_status, 
 			'post_password' => '',
-      'post_type' => $hrecipe_microformat::post_type,
-      'post_date' => $recipe['published'],
-      'post_excerpt' => $recipe['summary'],
-			'tags_input' => $recipe['tag'], // string of Comma separated tags 
+			'post_type'     => $hrecipe_microformat::post_type,
+			'post_date'     => $recipe['published'],
+			'post_excerpt'  => $recipe['summary'],
+			'tags_input'    => $recipe['tag'], // string of Comma separated tags 
 		);
 		
 		/**
@@ -546,10 +549,14 @@ class hrecipe_importer {
 			   		 	  * tablespoon: T, tb, tbs, tbsp, tblsp, tblspn, tbls
 						  */
 						
+						// Normalize ingredient name.  Result contains ingrd, comment and food_id
+						$row = $this->normalize_ingrd($d['ingrd']);
+						// If row and data comment exist, concat them, else return one or the other
+						$row['comment'] = isset($row['comment']) ? 
+							($d['comment'] != '' ? $row['comment']. ', ' . $d['comment'] : $row['comment']) : $d['comment'] ;
+						
 						$row['quantity'] = $d['value'];
 						$row['unit'] = $d['type'];
-						$row['ingrd'] = $d['ingrd'];
-						$row['comment'] = $d['comment'];
 					
 						$ingrds[] = $row; // Add row to the list
 					}
@@ -652,6 +659,109 @@ class hrecipe_importer {
 		$tax_input[$this->category_taxonomy] = $new_categories;
 		
 		return $tax_input;
+	}
+	
+	/**
+	 * Normalize an ingredient name by moving common qualifiers to comments and match against the ingredient
+	 * database to provide unit conversions
+	 *
+	 * @param $ingrd, string, Ingredient text from recipe
+	 * @uses $hrecipe_microformat hrecipe_microformat object
+	 * @return hash array with keys ingrd, comment and food_id - food_id NULL if no match in database
+	 **/
+	function normalize_ingrd($ingrd)
+	{
+		global $hrecipe_microformat;
+		
+		// FIXME Update attributes list - sort by length
+		$attributes = array(
+			"coarsely chopped",
+			"coarsely ground",
+			"coarsely mashed",
+			"finely chopped",
+			"finely crushed",
+			"finely grated",
+			"freshly ground",
+			"Freshly ground",
+			"mashed cooked",
+			"mashed peeled",
+			"very thinly sliced",
+			"vertically sliced",
+			"thinly sliced",
+			"very thin",
+			"very warm",
+			"hot cooked",
+			"uncooked",
+			"undrained",	
+			"chopped",
+			"Chopped",
+			"Grilled",
+			"Minced",
+			"Sliced",
+			"Fresh",
+			"diced",
+			"halved",
+			"bottled",
+			"chilled",
+			"minced",
+			"cubed",
+			"mashed",
+			"drained",
+			"deveined",
+			"cubed",
+			"peeled",
+			"warm",
+			"sliced",
+			"quartered",
+			"shelled",
+			"cooked",
+			"shredded",
+			"cored",
+			"sifted",
+			"skinned",
+			"slivered",
+			"thawed",
+			"ripe",
+			"unpeeled",
+			"seeded",
+			"julienne-cut",
+			"loosely packed",
+			"diagonally sliced",
+			"diagonally cut",
+			"firmly packed",
+			"tightly packed",
+			"torn",
+			"trimmed",
+			"grated",
+			"fresh",
+			"frozen",
+			"canned"
+		);
+	
+		$orig_ingrd = $ingrd;
+		
+		// Trim adjectives from the ingredient name
+		$found = array();
+		foreach ($attributes as $attr) {
+			$ingrd = str_replace($attr, '', $ingrd, $count);
+			if ($count) $found[] = $attr;
+		}
+		$ingrd = preg_replace('/\s\s+/', ' ', trim($ingrd));
+		
+		/**
+		 * Try locating ingredient in the ingredients database
+		 FIXME Also try singular form if 's' present at end of name
+		 */
+		$rows = $hrecipe_microformat->ingrd_db->get_ingrds_by_name( $ingrd, 1, true );
+		if ($rows) {
+			$retval['food_id'] = $rows[0]->food_id;
+			$retval['ingrd'] = $ingrd;
+			$retval['comment'] = implode(', ', $found);
+		} else {
+			$retval['ingrd'] = $orig_ingrd;
+		}
+		
+		return $retval;
 	}
 } // End hrecipe_importer class
 
