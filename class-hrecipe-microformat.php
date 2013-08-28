@@ -1475,8 +1475,6 @@ class hrecipe_microformat {
 		// Cleanup error log if it's disabled
 		$valid_options['debug_log'] = $valid_options['debug_log_enabled'] ? $options['debug_log'] : array();
 		
-		error_log("valid_options: ".var_export($valid_options, true));
-
 		return $valid_options;
 	}
 	
