@@ -135,6 +135,7 @@ class hrecipe_admin extends hrecipe_microformat
 	
 	/**
 	 * When plugin is activated, populate taxonomy and flush the rewrite rules
+	 * TODO Save default version of options that includes any TRUE boolean values.
 	 *
 	 * @return void
 	 **/
@@ -911,8 +912,7 @@ class hrecipe_admin extends hrecipe_microformat
 	function log_admin_error($msg)
 	{
 		$this->admin_notice_errors[] = $msg;
-	}
-	
+	}	
 	
 	/**
 	 * Display Notice messages at head of admin screen
@@ -938,63 +938,6 @@ class hrecipe_admin extends hrecipe_microformat
 		}
 	}
 	
-	/**
-	 * Sanitize the Plugin Options received from the user
-	 *
-	 * @return hash Sanitized hash of plugin options
-	 **/
-	function sanitize_settings($options)
-	{
-		$valid_options = array();
-		
-		// Display Recipes on home page? -- Default to true
-		$valid_options['display_in_home'] = self::sanitize_an_option($options['display_in_home'], 'bool');
-		
-		// Display Recipes in main feed?  -- Default to true
-		$valid_options['display_in_feed'] = self::sanitize_an_option($options['display_in_feed'], 'bool');
-		
-		// Posts per page?
-		$valid_options['posts_per_page'] = self::sanitize_an_option($options['posts_per_page'], 'int');
-		
-		// Include Recipe Metadata (Header/Footer) in Content?
-		$valid_options['include_metadata'] = self::sanitize_an_option($options['include_metadata'], 'bool');
-		
-		// Recipe Header content (ordered list)
-		$valid_options['recipe_head_fields'] = self::sanitize_an_option($options['recipe_head_fields'], 'text');
-		
-		// Recipe Footer content (ordered list)
-		$valid_options['recipe_footer_fields'] = self::sanitize_an_option($options['recipe_footer_fields'], 'text');
-		
-		// Init value for debug log
-		$valid_options['debug_log_enabled'] = self::sanitize_an_option($options['debug_log_enabled'], 'bool');
-
-		// Cleanup error log if it's disabled
-		$valid_options['debug_log'] = $valid_options['debug_log_enabled'] ? $options['debug_log'] : array();
-
-		return $valid_options;
-	}
-	
-	/**
-	 * Sanitize an option based on field type
-	 *
-	 * @param $val Value of option to clean
-	 * @param $type Option type (text, bool, etc.)
-	 * @return sanitized option value
-	 **/
-	function sanitize_an_option($val, $type)
-	{
-		switch($type) {
-			case 'bool' :
-			  return $val ? true : false;
-			
-			case 'text' :
-				return wp_filter_nohtml_kses($val);  // HTML not allowed in options
-				
-			case 'int' :
-				return intval($val);
-		}
-	}
-		
 	/**
 	 * Emit HTML to create the Plugin settings page
 	 *

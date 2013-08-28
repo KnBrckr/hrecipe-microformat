@@ -213,21 +213,8 @@ class hrecipe_microformat {
 		
 		/*
 		 * Retrieve Plugin Options
-		 * FIXME Options save makes internal version data disappear!!  Must be handled!!
 		 */
-		$options_defaults = array(
-			'database_ver' => self::required_db_ver,
-			'display_in_home' => true,
-			'display_in_feed' => true,
-			'include_metadata' => true,
-			'recipe_head_fields' => 'yield,difficulty,rating,category,duration,preptime,cooktime',
-			'recipe_footer_fields' => 'published,author,nutrition',
-			'debug_log_enabled' => false,
-			'posts_per_page' => 30,
-			'debug_log' => array(),
-		);
-		
-		$this->options = (array) wp_parse_args(get_option(self::settings), $options_defaults);
+		$this->options = (array) $this->sanitize_settings(get_option(self::settings));
 		
 		// Create instance of the ingredients and USDA Nutrient Database
 		$this->nutrient_db = new hrecipe_nutrient_db($table_prefix . self::prefix);
@@ -1441,6 +1428,77 @@ class hrecipe_microformat {
 				'taxonomies' => array('post_tag'), // TODO Setup Taxonomy to allow only a single selection
 			)
 		);
+	}
+	
+	/**
+	 * Sanitize the Plugin Options received from the user
+	 *
+	 * @return hash Sanitized hash of plugin options
+	 **/
+	function sanitize_settings($options)
+	{
+		$valid_options = array();		// Accumulate sanitized options for return
+		
+		// Establish defaults used when sanitizing options
+		$options_defaults = array(
+			'database_ver' => self::required_db_ver,
+			'display_in_home' => false,
+			'display_in_feed' => false,
+			'posts_per_page' => 30,
+			'include_metadata' => false,
+			'recipe_head_fields' => 'yield,difficulty,rating,category,duration,preptime,cooktime',
+			'recipe_footer_fields' => 'published,author,nutrition',
+			'debug_log_enabled' => false,
+			'debug_log' => array(),
+		);
+
+		// Option types for sanitizing data.  debug_log is not included as it has special handling
+		$options_type = array(
+			'database_ver' => 'int',
+			'display_in_home' => 'bool',
+			'display_in_feed' => 'bool',
+			'posts_per_page' => 'int',
+			'include_metadata' => 'bool',
+			'recipe_head_fields' => 'text',
+			'recipe_footer_fields' => 'text',
+			'debug_log_enabled' => 'bool',
+		);
+		
+		// Fill in default values
+		$options = (array) wp_parse_args($options, $options_defaults);
+		
+		// Sanitize each value
+		foreach ($options_type as $key => $type) {
+			$valid_options[$key] = $this->sanitize_an_option($options[$key], $type);
+		}
+
+		// Cleanup error log if it's disabled
+		$valid_options['debug_log'] = $valid_options['debug_log_enabled'] ? $options['debug_log'] : array();
+		
+		error_log("valid_options: ".var_export($valid_options, true));
+
+		return $valid_options;
+	}
+	
+	/**
+	 * Sanitize an option based on field type
+	 *
+	 * @param $val Value of option to clean
+	 * @param $type Option type (text, bool, etc.)
+	 * @return sanitized option value
+	 **/
+	function sanitize_an_option($val, $type)
+	{
+		switch($type) {
+			case 'bool' :
+			  return $val ? true : false;
+			
+			case 'text' :
+				return wp_filter_nohtml_kses($val);  // HTML not allowed in options
+				
+			case 'int' :
+				return intval($val);
+		}
 	}
 }
 
