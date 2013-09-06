@@ -182,7 +182,11 @@ class hrecipe_ingrd_db {
 	/**
 	 * Retrieve ingredients from database
 	 *
-	 * @return object database query with food items
+	 * @param $orderby, string, field name to order by
+	 * @param $order, string ASC or DESC
+	 * @param $perpage, int, Number of rows per page
+	 * @param $paged, int, page number (1-n)
+	 * @return hash array: ['totalitems']=count of all matches, ['ingrds'] = object database query with food items
 	 **/
 	function get_ingrds($orderby, $order, $perpage, $paged)
 	{
@@ -196,8 +200,8 @@ class hrecipe_ingrd_db {
 		/**
 		 * Add ordering parameters
 		 */
-	    $orderby = !empty($orderby) ? $orderby : 'ASC';
-	    $order = !empty($order) ? $order : '';
+	    $orderby = !empty($orderby) ? $orderby : 'food_id';
+	    $order = !empty($order) ? $order : 'ASC';
 	    if(!empty($orderby) & !empty($order)) { $query.=' ORDER BY '.$orderby.' '.$order; }
 		
 		/**

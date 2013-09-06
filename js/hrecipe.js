@@ -36,7 +36,7 @@ jQuery(document).ready( function($) {
 			jQuery.post(
 				HrecipeMicroformat.ajaxurl, 
 				{
-					action: HrecipeMicroformat.ratingAction,
+					action: HrecipeMicroformat.pluginPrefix + 'recipe_rating',
 					postID: HrecipeMicroformat.postID,
 					rating: value, // New rating value
 					prevRating: HrecipeMicroformat.userRating, // Last saved rating value from user

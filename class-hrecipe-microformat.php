@@ -249,7 +249,7 @@ class hrecipe_microformat {
 		$this->create_post_type();
 		
 		// Adjust WP Query to include recipe posts in post queries
-		add_filter('pre_get_posts', array(&$this, 'pre_get_posts_filter'));
+		add_filter('pre_get_posts', array($this, 'pre_get_posts_filter'));
 		
 		// Do template setup after posts have been loaded
 		add_action('wp', array(&$this, 'wp'));
@@ -265,11 +265,14 @@ class hrecipe_microformat {
 		wp_register_style('jquery.ui.stars', self::$url . 'lib/jquery.ui.stars-3.0/jquery.ui.stars.min.css', array(), '3.0.1');
 		
 		// Register AJAX action for recipe ratings (action: hrecipe_recipe_rating)
-		add_action('wp_ajax_'. self::p .  '_recipe_rating', array(&$this, 'ajax_recipe_rating'));
-		add_action('wp_ajax_nopriv_' . self::p . '_recipe_rating', array(&$this, 'ajax_recipe_rating'));
+		add_action('wp_ajax_'. self::prefix .  'recipe_rating', array($this, 'ajax_recipe_rating'));
+		add_action('wp_ajax_nopriv_' . self::prefix . 'recipe_rating', array($this, 'ajax_recipe_rating'));
 		
 		// Register AJAX action used for ingredient name auto-completion
-		add_action('wp_ajax_' . self::p . '_ingrd_auto_complete', array(&$this, 'ajax_ingrd_auto_complete'));
+		add_action('wp_ajax_' . self::prefix . 'ingrd_auto_complete', array($this, 'ajax_ingrd_auto_complete'));
+		
+		// Register AJAX action for searching USDA Nutrition database (NDB) for ingredients
+		add_action('wp_ajax_' . self::prefix . 'NDB_search', array($this, 'ajax_NDB_search'));
 	}
 	
 	/**
@@ -417,7 +420,7 @@ class hrecipe_microformat {
 				'HrecipeMicroformat', 
 				array( 
 					'ajaxurl' => admin_url( 'admin-ajax.php' ), 	// URL to file handling AJAX request (wp-admin/admin-ajax.php)
-					'ratingAction' => self::p . '_recipe_rating', // AJAX Action
+					'pluginPrefix' => self::prefix, // Prefix for actions, etc.
 					'postID' => $post->ID,
 					'userRating' => self::user_rating($post->ID), // How has the user rated this recipe?
 					'ratingNonce' => wp_create_nonce(self::prefix . 'recipe-rating-nonce')
@@ -1289,19 +1292,20 @@ class hrecipe_microformat {
 	 **/
 	function ajax_ingrd_auto_complete()
 	{
-		global $wpdb;
-		
+		// FIXME Respond with an error on mal-formed request
+
 		// Escape incoming name to prevent SQL attack
 		$name_contains = esc_attr($_REQUEST['name_contains']);
 		
 		// Validate numeric
+		// TODO Change hard coded default to configuration value
 		$max_rows = is_numeric($_REQUEST['maxRows']) ? intval($_REQUEST['maxRows']) : 12;
 		if ($max_rows < 1) $max_rows = 1;
 		
-		// Retrieve food names matching incoming string, use wildcard matching
+		// Retrieve ingredient names matching incoming string, use wildcard matching
 		$rows = $this->ingrd_db->get_ingrds_by_name( $name_contains, $max_rows, false );
 		
-		// Response Output
+		// Encode Response Output for HTML return
 		$response = json_encode(array(
 			'list' => $rows,
 		));
@@ -1310,6 +1314,38 @@ class hrecipe_microformat {
 		echo $response;
 		exit;
 	}
+	
+	/**
+	 * Handle AJAX request for food definitions in USDA Nutrition DB
+	 *
+	 * @return does not return
+	 **/
+	function ajax_NDB_search()
+	{
+		// FIXME Respond with an error on mal-formed request
+		
+		// Escape incoming name to prevent SQL attack
+		$name = esc_attr($_REQUEST['name_contains']);
+		
+		// Validate numerics
+		// TODO Change hard coded default to configuration value
+		$max_rows = is_numeric($_REQUEST['maxRows']) ? intval($_REQUEST['maxRows']) : 12;
+		if ($max_rows < 1) $max_rows = 1;
+		
+		$page = is_numeric($_REQUEST['pageNum']) ? intval($_REQUEST['pageNum']) : 1;
+		if ($page < 1) $page = 1;
+		
+		// Retrieve food names matching incoming string
+		$names = $this->nutrient_db->get_name($name, $max_rows, $page);
+		
+		// Encode Response Output for HTML return
+		$response = json_encode ($names);
+		
+		header("Content-Type: application/json");
+		echo $response;
+		exit;
+	}
+	
 	/**
 	 * Perform Plugin Activation handling
 	 *  * Confirm that plugin environment requirements are met

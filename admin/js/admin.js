@@ -71,7 +71,7 @@ jQuery(document).ready( function($) {
 		});
 		
 	/*
-		Add tools to Ingredient list section
+		Add tools to Recipe Ingredient list section
 	*/
 	
 	// Make ingredients list sortable
@@ -101,6 +101,39 @@ jQuery(document).ready( function($) {
 			}
 		});
 	});
+	
+	/*
+		Tools for Add Ingredient page
+	*/
+	
+	// On Enter, submit search for ingredient in NDB database
+	$('#NDB_search_ingrd').keypress(function(e){
+		if (e.keyCode === 13) { 
+			hrecipeNDBSearch(1); 
+		}
+	});
+	
+	// Handle submit event for NDB ingredient search
+	$('#NDB_search_form').submit(function(e){
+		// On a cancel action, close the ThickBox
+		if ( 'cancel' === NDBSearchAction ) {
+			self.parent.tb_remove(); // Close the thickbox modal
+			return false;
+		}
+		
+		// Record selected food from Nutrition DB with new ingredient
+		if ( 'selectIngrd' === NDBSearchAction && typeof this.elements.row != "undefined" && "" != this.elements.row.value ) {
+			// Fill in the NDB_No for the food
+			jQuery('#NDB_No').val(this.elements.row.value);
+			
+			// FIXME Determine grams/cup
+			self.parent.tb_remove(); // Close the thickbox modal
+			return false;
+		}
+
+		return false;
+	});
+	$('#NDB_search_form :submit').click(function(){ NDBSearchAction = this.name; });
 });
 
 //
@@ -138,13 +171,21 @@ function hrecipeInitAutocomplete(target) {
 				url: HrecipeMicroformat.ajaxurl,
 				dataType: "json",
 				data: {
-					action: HrecipeMicroformat.autocompleteAction,
+					action: HrecipeMicroformat.pluginPrefix + 'ingrd_auto_complete',
 					maxRows: HrecipeMicroformat.maxRows,
 					name_contains: request.term
 				},
 				// When Ajax returns successfully, process the retrieved data
 				success: function( data ) {
-					response(hrecipeAjaxAutocompleteSuccess(data));
+					if (0 == data) return null;
+	
+					// return array of mapping items for jQuery autocomplete tool to use
+					return(jQuery.map( data.list, function(item){
+						return {
+							label: item.ingrd,
+							food_id: item.food_id
+						} ;
+					}));
 				}
 			});
 		},
@@ -165,17 +206,60 @@ function hrecipeInitAutocomplete(target) {
 }
 
 //
-// AJAX Completion for ingredient column
+// Perform and AJAX search of NDB database for matching ingredients
 //
-// return array of mapping items for jQuery autocomplete tool
-//
-function hrecipeAjaxAutocompleteSuccess(data) {
-	if (0 == data) return null;
+var hrecipeNDBSearchResult = {
+	'page' : 1,
+	'pages' : 1,
+	'totalrows' : 0
+}
+
+function hrecipeNDBSearch(page) {
+	if (searchString = jQuery('#NDB_search_ingrd').val()) {
+		jQuery('#NDB_search_form .waiting').show();  // Show busy icon
+		jQuery.ajax({
+			'url': HrecipeMicroformat.ajaxurl,
+			'dataType': 'json',
+			'data': {
+				'action': HrecipeMicroformat.pluginPrefix + 'NDB_search',
+				'maxRows': HrecipeMicroformat.maxRows,
+				'pageNum': page,
+				'name_contains': searchString
+			},
+			// When Ajax returns successfully, process the retrieved data
+			success: function( data, textStatus, jqXHR ) {
+				jQuery('#NDB_search_form .waiting').hide(); // Hide busy icon
 	
-	return(jQuery.map( data.list, function(item){
-		return {
-			label: item.ingrd,
-			food_id: item.food_id
-		} ;
-	}));
+				if (data) {
+					hrecipeNDBSearchResult = data;
+				} else {
+					hrecipeNDBSearchResult = {
+						'page' : 1,
+						'pages' : 1,
+						'totalrows' : 0
+					}					
+				}
+	
+				// FIXME Provide feedback on empty results
+	
+				// Add results to table for display
+				tableContents = '';
+				for (var i = 0; i < data.rows.length; i++) {
+					tableContents += '<tr><td><input type="radio" name="row" value="' + data.rows[i].NDB_No + '"></td><td>' + data.rows[i].Long_Desc + '</td></tr>';
+				}
+				jQuery('#NDB_search_results').show();
+				jQuery('#NDB_search_results tbody').html(tableContents);
+				jQuery('.total-pages').text(data.pages);
+				jQuery('.displaying-num').text(data.totalrows + ' items');
+				jQuery('.current-page').val(data.page);
+			},
+			error: function ( jqXHR, textStatus, errorThrown) {
+				jQuery('#NDB_search_form .waiting').hide();  // Hide busy icon
+				// TODO Anything else to do on error here?
+			}
+		});
+		event.returnValue = false;
+	} else {
+		// FIXME Flash Input box
+	};
 }

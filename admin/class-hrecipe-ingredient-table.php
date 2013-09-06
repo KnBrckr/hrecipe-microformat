@@ -40,7 +40,7 @@ class hrecipe_ingredients_Table extends WP_List_Table {
 	 *
 	 * @var object
 	 **/
-	var $ingrd_db;
+	private $ingrd_db;
 	
 	/**
 	 * Post type to use in building links to other pages provided by plugin

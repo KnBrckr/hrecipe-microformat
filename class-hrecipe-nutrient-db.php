@@ -26,6 +26,7 @@
  **/
 
 // FIXME Return failures on DB errors
+// FIXME Remove tables that are not needed
 
 // Protect from direct execution
 if (!defined('WP_PLUGIN_DIR')) {
@@ -542,22 +543,61 @@ class hrecipe_nutrient_db {
 	}
 	
 	/**
-	 * Retrieve matching food names
+	 * Retrieve matching food names, split input names on spaces to search for presence of each anywhere
 	 *
 	 * @uses $wpdb
 	 * @param $name_contains string - String to match for food name
-	 * @param $max_rows int - maximum number of rows to return
-	 * @return array of names retrieved
+	 * @param $per_page int - maximum number of rows to return
+	 * @param $paged, int - page number for group of rows to return
+	 * @return array: ['paged']=this page number, ['pages']=total # pages, ['rows'] = DB rows of names retrieved
 	 **/
-	function get_name($name_contains, $max_rows)
+	function get_name($name_contains, $per_page, $paged)
 	{
 		global $wpdb;
 		
 		$db_name = $this->options['table_prefix'] . 'food_des';
-		$like = '%' . $name_contains . '%';
-		$rows = $wpdb->get_results($wpdb->prepare("SELECT NDB_No,Long_Desc FROM ${db_name} WHERE Long_Desc LIKE %s LIMIT 0,%d", $like, $max_rows));
+		$terms = array();
+		foreach (explode(' ', $name_contains) as $word) {
+			$word = trim($word);
+			if ( ! empty($word) ) {
+				// TODO Allow use of '-' prefix to add NOT LIKE to search
+				$terms[] = $wpdb->prepare("Long_Desc LIKE %s", '%' . $word . '%');
+			}
+		}
+		$query = "SELECT NDB_No,Long_Desc FROM ${db_name} WHERE " . implode(' AND ', $terms);
 		
-		return $rows;
+		/**
+		 * Pagination of table elements
+		 */
+		$per_page = max(5, (int)$per_page);  // Do at least 5 per page
+		$totalrows = $wpdb->query($query); // Number of total rows matching name
+		$pages = max(1, ceil($totalrows/$per_page));  // make sure pages is at least 1
+		
+        // 1 <= paged <= pages
+		if ($paged < 1) {
+			$paged = 1;
+		} elseif ($paged > $pages) {
+			$paged = $pages;
+		}
+		
+        // Adjust the query to take pagination into account
+	    $offset = ($paged-1) * $per_page;
+		$query .= ' LIMIT '.(int)$offset.','.(int)$per_page;
+		
+		/**
+		 * Get results
+		 */
+		$rows = $wpdb->get_results($query);
+		
+		return array(
+			'page' => $paged,
+			'pages' => $pages,
+			'totalrows' => $totalrows,
+			'rows' => $rows
+		);
 	}
+	
+	// FIXME SELECT t1.NDB_No, t1.Long_Desc, t2.Amount, t2.Msre_Desc, t2.Gm_Wgt, t2.Seq FROM `ps_hrecipe_sr_food_des` as t1 natural join `ps_hrecipe_sr_weight` as t2
+	
 } // End class hrecipe_nutrient_db
 ?>

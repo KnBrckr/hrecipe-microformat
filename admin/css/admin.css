@@ -99,3 +99,15 @@
 #hrecipe_info .radio-button input {
 	margin-right: 5px;
 }
+
+/* ==================================== */
+/* = Add Ingredients Page Formatting  = */
+/* ==================================== */
+
+#NDB_search_modal {
+	display: none;  // Hide the modal box at the beginning
+}
+
+#NDB_search_form .waiting {
+	display: none;  // Start out with the busy marker hidden
+}
