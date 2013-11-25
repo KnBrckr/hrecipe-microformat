@@ -104,10 +104,10 @@
 /* = Add Ingredients Page Formatting  = */
 /* ==================================== */
 
-#NDB_search_modal {
-	display: none;  // Hide the modal box at the beginning
+.hidden {
+	display: none; // Class to hide objects by default
 }
 
-#NDB_search_form .waiting {
-	display: none;  // Start out with the busy marker hidden
+tr.prototype {
+	display: none; // Hide prototype rows used to build tables
 }

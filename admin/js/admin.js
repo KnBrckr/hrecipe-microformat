@@ -122,9 +122,9 @@ jQuery(document).ready( function($) {
 		}
 		
 		// Record selected food from Nutrition DB with new ingredient
-		if ( 'selectIngrd' === NDBSearchAction && typeof this.elements.row != "undefined" && "" != this.elements.row.value ) {
+		if ( 'selectIngrd' === NDBSearchAction && typeof this.elements.NDB_No != "undefined" && "" != this.elements.NDB_No.value ) {
 			// Fill in the NDB_No for the food
-			jQuery('#NDB_No').val(this.elements.row.value);
+			jQuery('#NDB_No').val(this.elements.NDB_No.value);
 			
 			// FIXME Determine grams/cup
 			self.parent.tb_remove(); // Close the thickbox modal
@@ -236,19 +236,26 @@ function hrecipeNDBSearch(page) {
 					hrecipeNDBSearchResult = {
 						'page' : 1,
 						'pages' : 1,
-						'totalrows' : 0
+						'totalrows' : 0,
+						'rows' : {}
 					}					
 				}
-	
-				// FIXME Provide feedback on empty results
+				
+				// Cleanup old table contents, but leave the prototype row
+				jQuery('.tr_ingrd:not(.prototype)').remove();
 	
 				// Add results to table for display
-				tableContents = '';
 				for (var i = 0; i < data.rows.length; i++) {
-					tableContents += '<tr><td><input type="radio" name="row" value="' + data.rows[i].NDB_No + '"></td><td>' + data.rows[i].Long_Desc + '</td></tr>';
+					// Clone the prototype row and make it visible
+					var newRow = jQuery('.prototype.tr_ingrd').clone().removeClass('prototype');
+					newRow.attr('NDB_No', data.rows[i].NDB_No);
+					newRow.find('.ingrd').text(data.rows[i].Long_Desc);
+					newRow.find('.NDB_No').val(data.rows[i].NDB_No).click(function(e){
+						hrecipeNDBMeasures(e);
+					});
+					jQuery('.NDB_ingredients>tbody').append(newRow);
 				}
 				jQuery('#NDB_search_results').show();
-				jQuery('#NDB_search_results tbody').html(tableContents);
 				jQuery('.total-pages').text(data.pages);
 				jQuery('.displaying-num').text(data.totalrows + ' items');
 				jQuery('.current-page').val(data.page);
@@ -262,4 +269,47 @@ function hrecipeNDBSearch(page) {
 	} else {
 		// FIXME Flash Input box
 	};
+}
+
+function hrecipeNDBMeasures(e) {
+	// Rehide measures tables
+	// TODO Don't hide table that is about to be displayed
+	jQuery('.measures').hide();
+	
+	// If data already collected for this NDB_No, just show it.
+	if (jQuery('.tr_ingrd[ndb_no='+e.currentTarget.value+'] .measures .tr_measure').size() > 1) {
+		jQuery('.tr_ingrd[ndb_no='+e.currentTarget.value+'] .measures').show();
+		return;
+	}
+	
+	// Submit AJAX to get measures from DB
+	jQuery.ajax({
+		'url': HrecipeMicroformat.ajaxurl,
+		'dataType': 'json',
+		'data': {
+			'action': HrecipeMicroformat.pluginPrefix + 'NDB_measures',
+			'NDB_No': e.currentTarget.value
+		},
+		success: function (data, textStatus, jqXHR) {
+			if (data) {
+				// FIXME Scan available measures for one that can be used to calculate grams/cup
+				
+				var measuresTbl = jQuery('.tr_ingrd[ndb_no=' + data[0].NDB_No + '] .measures').show();
+				
+				if (0 != measuresTbl) {
+					for (var i = 0; i < data.length; i++) {
+						var newRow = measuresTbl.find('.prototype').clone().removeClass('prototype');
+						newRow.find('.Seq').val(data[i].Seq);
+						newRow.find('.Amount').text(data[i].Amount);
+						newRow.find('.Msre_Desc').text(data[i].Msre_Desc);
+						newRow.find('.Gm_Wgt').text(data[i].Gm_Wgt);
+						measuresTbl.append(newRow);
+					}				
+				}
+			}
+		},
+		error: function (jqXHR, textStatus, errorThrown) {
+			// TODO Anything else needed here?
+		}
+	});
 }

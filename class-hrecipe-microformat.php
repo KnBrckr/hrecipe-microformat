@@ -273,6 +273,7 @@ class hrecipe_microformat {
 		
 		// Register AJAX action for searching USDA Nutrition database (NDB) for ingredients
 		add_action('wp_ajax_' . self::prefix . 'NDB_search', array($this, 'ajax_NDB_search'));
+		add_action('wp_ajax_' . self::prefix . 'NDB_measures', array($this, 'ajax_NDB_measures'));
 	}
 	
 	/**
@@ -1340,6 +1341,29 @@ class hrecipe_microformat {
 		
 		// Encode Response Output for HTML return
 		$response = json_encode ($names);
+		
+		header("Content-Type: application/json");
+		echo $response;
+		exit;
+	}
+	
+	/**
+	 * Handle AJAX request to retrieve measures for a food from USDA Nutrition DB
+	 *
+	 * @return does not return
+	 **/
+	function ajax_NDB_measures()
+	{
+		// FIXME Respond with an error on mal-formed request
+		
+		// Escape incoming name to prevent SQL attack
+		$NDB_No = esc_attr($_REQUEST['NDB_No']);
+		
+		// Retrieve measures from USDA Nutrition DB
+		$measures = $this->nutrient_db->get_measures_by_NDB_No($NDB_No);
+		
+		// Encode Response output for HTML return
+		$response = json_encode($measures);
 		
 		header("Content-Type: application/json");
 		echo $response;

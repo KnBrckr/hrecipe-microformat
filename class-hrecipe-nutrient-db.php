@@ -597,7 +597,19 @@ class hrecipe_nutrient_db {
 		);
 	}
 	
-	// FIXME SELECT t1.NDB_No, t1.Long_Desc, t2.Amount, t2.Msre_Desc, t2.Gm_Wgt, t2.Seq FROM `ps_hrecipe_sr_food_des` as t1 natural join `ps_hrecipe_sr_weight` as t2
-	
+	/**
+	 * Retrieve measures information for given NDB_No
+	 *
+	 * @return array of rows
+	 **/
+	function get_measures_by_NDB_No($NDB_No)
+	{
+		global $wpdb;
+		
+		$query = $wpdb->prepare("SELECT t1.`NDB_No`, t1.`Long_Desc`, t2.`Amount`, t2.`Msre_Desc`, t2.`Gm_Wgt`, t2.`Seq` FROM `ps_hrecipe_sr_food_des` as t1 natural join `ps_hrecipe_sr_weight` AS t2 WHERE `NDB_No` = %s", $NDB_No);
+		$rows = $wpdb->get_results($query);
+		
+		return $rows;
+	}	
 } // End class hrecipe_nutrient_db
 ?>

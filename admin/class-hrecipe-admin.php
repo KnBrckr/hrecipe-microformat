@@ -815,7 +815,7 @@ class hrecipe_admin extends hrecipe_microformat
 				<br>
 			</div>
 			<h2>Add Ingredient</h2>
-			<form action method="get" accept-charset="utf-8">
+			<form name="add_ingredient" action method="get" accept-charset="utf-8">
 				<?php wp_nonce_field( 'add_ingredient', self::prefix . 'nonce' ); ?>
 				<input type="hidden" name="post_type" value="<?php echo self::post_type; ?>">
 				<input type="hidden" name="page" value="<?php echo $plugin_page?>">
@@ -835,12 +835,12 @@ class hrecipe_admin extends hrecipe_microformat
 			</form>
 		</div>
 		<!-- Modal Dialog box to search Nutrition DB for matching ingredients -->
-		<div id="NDB_search_modal">
-			<form id="NDB_search_form" name="find_NDB_Form">
+		<div id="NDB_search_modal" class="hidden">
+			<form id="NDB_search_form" name="NDB_search_form">
 				<p>
-					<label for="NDB_search_ingrd">Search for Ingredient: </label><input type="text" name="NDB_search_ingrd" value="" id="NDB_search_ingrd"><img class="waiting" src="<?php echo esc_url( admin_url( 'images/wpspin_light.gif' ) ); ?>" alt="" width="16"/>
+					<label for="NDB_search_ingrd">Search for Ingredient: </label><input type="text" name="NDB_search_ingrd" value="" id="NDB_search_ingrd"><img class="waiting hidden" src="<?php echo esc_url( admin_url( 'images/wpspin_light.gif' ) ); ?>" alt="" width="16"/>
 				</p>
-				<div style="display:none" id="NDB_search_results">
+				<div id="NDB_search_results" class="hidden">
 					<div class="tablenav top">
 						<div class="tablenav-pages">
 							<span class="displaying-num"></span>
@@ -855,11 +855,33 @@ class hrecipe_admin extends hrecipe_microformat
 							</span>						
 						</div>
 					</div>
-					<table border="0" cellspacing="5" cellpadding="5">
+					<table class="NDB_ingredients" border="0" cellspacing="5" cellpadding="5">
 						<thead></thead>
 						<tfoot></tfoot>
 						<tbody>
-							<tr><td></td></tr>
+							<tr class="prototype tr_ingrd">
+								<td>
+									<input type="radio" name="NDB_No" value="" class="NDB_No">
+								</td>
+								<td>
+									<span class="ingrd">Ingredient</span>
+									<!-- Sub-Table used to select a measure to use for conversions -->
+									<table class="measures hidden" border="0" cellspacing="5" cellpadding="5">
+										<thead>
+											<tr><td></td><td>Measure</td><td>Grams</td></tr>
+										</thead>
+										<tr class="prototype tr_measure">
+											<td>
+												<input type="radio" name="measure" value="Seq" class="Seq">
+											</td>
+											<td>
+												<span class="Amount">Amount</span> <span class="Msre_Desc">Msre_Desc</span>
+											</td>
+											<td><span class="Gm_Wgt">Gm_Wgt</span>g</td>
+										</tr>
+									</table>
+								</td>
+							</tr>
 						</tbody>
 					</table>
 					<input type="submit" name="selectIngrd" value="Select Ingredient" id="selectIngrd">
