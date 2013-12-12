@@ -56,6 +56,7 @@ class hrecipe_admin extends hrecipe_microformat
 	const msg_updated_ingredient = 2;
 	const msg_ingredient_update_error = 3;
 	const msg_ingredient_deleted = 4;
+	const msg_ingredient_blank = 5;
 	
 	/**
 	 * Errors and warnings to display on admin screens
@@ -100,7 +101,8 @@ class hrecipe_admin extends hrecipe_microformat
 			self::msg_added_new_ingredient => 'Added new ingredient.',
 			self::msg_updated_ingredient => 'Updated ingredient.',
 			self::msg_ingredient_update_error => 'Database update failed for ingredient.',
-			self::msg_ingredient_deleted => 'Deleted ingredient(s).'
+			self::msg_ingredient_deleted => 'Deleted ingredient(s).',
+			self::msg_ingredient_blank => 'Blank ingredient specified, not added to database'
 		);
 	}
 	
@@ -742,6 +744,7 @@ class hrecipe_admin extends hrecipe_microformat
 				$row = array();
 				$row['ingrd'] = isset($_REQUEST['ingrd']) ? $_REQUEST['ingrd'] : '' ;
 				$row['gpcup'] = isset($_REQUEST['gpcup']) ? intval($_REQUEST['gpcup']) : '';
+				$row['NDB_No'] = isset($_REQUEST['NDB_No']) ? $_REQUEST['NDB_No'] : '' ;
 
 				// Default measure to volume radio button
 				$row['measure'] = isset($_REQUEST['measure']) ? $_REQUEST['measure'] : 'volume';
@@ -751,12 +754,17 @@ class hrecipe_admin extends hrecipe_microformat
 					$row['food_id'] = $_REQUEST['food_id'];
 					$message = $this::msg_updated_ingredient;
 				}
-			
-				// Insert/Update Ingredient Row
-				$result = $this->ingrd_db->insert_ingrd( $row );
-				if ($result < 1) {
-					$message = $this::msg_ingredient_update_error;
+				
+				// Only insert when given a non-blank ingredient
+				if ( '' != $row['ingrd'] ) {
+					$result = $this->ingrd_db->insert_ingrd( $row );
+					if ($result < 1) {
+						$message = $this::msg_ingredient_update_error;
+					}
+				} else {
+					$message = $this::msg_ingredient_blank;
 				}
+			
 			
 				// Add result message to the query
 				$sendback = add_query_arg('message', $message, $sendback);

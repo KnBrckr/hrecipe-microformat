@@ -144,7 +144,7 @@ class hrecipe_ingrd_db {
 	 *
 	 * @uses $wpdb
 	 * @param $ingrd array of key/value pairs: ingrd, measure, gpcup
-	 * @return result of $wpdb->insert()
+	 * @return result of $wpdb->replace(), >0 on success.
 	 **/
 	function insert_ingrd($ingrd)
 	{
@@ -157,12 +157,8 @@ class hrecipe_ingrd_db {
 			$ingrd['measure'] = 'volume';
 		}
 		
-		// If food_id is specified, this request is to update existing row
-		if (isset($ingrd['food_id'])) {
-			$result = $wpdb->update($this->foods_table, $ingrd, array('food_id' => $ingrd['food_id']));
-		} else {
-			$result = $wpdb->insert($this->foods_table, $ingrd);			
-		}
+		// Use replace operation to add new row or replace existing, 
+		$result = $wpdb->replace($this->foods_table, $ingrd);
 		return $result;
 	}
 	
