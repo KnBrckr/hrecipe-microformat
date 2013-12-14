@@ -810,37 +810,74 @@ class hrecipe_admin extends hrecipe_microformat
 			$row['ingrd'] = '';
 			$row['measure'] = 'volume'; // Default measure radio button to volume
 			$row['gpcup'] = '';
+			$row['NDB_No'] = '';
 		}
 		
 		$ingrd = isset($_REQUEST['ingrd']) ? esc_attr($_REQUEST['ingrd']) : '' ;
 		$gpcup = isset($_REQUEST['gpcup']) ? intval($_REQUEST['gpcup']) : '';
 		// Default measure to volume radio button
 		$measure = isset($_REQUEST['measure']) ? esc_attr($_REQUEST['measure']) : 'volume';
+
+		if ($row['NDB_No'] != '') {
+			$NDB_ingrd = $this->nutrient_db->get_name_by_NDB_No($row['NDB_No']);
+			$hide_unlink = "";
+		} else {
+			$NDB_ingrd = '';
+			$hide_unlink = "hidden";
+		}
 		
 		?>
-		<div class="wrap">
+		<div class="wrap" id="col-container">
 			<div id="icon-edit" class="icon32 icon32-hrecipe-ingredients-table">
 				<br>
 			</div>
 			<h2>Add Ingredient</h2>
-			<form name="add_ingredient" action method="get" accept-charset="utf-8">
-				<?php wp_nonce_field( 'add_ingredient', self::prefix . 'nonce' ); ?>
-				<input type="hidden" name="post_type" value="<?php echo self::post_type; ?>">
-				<input type="hidden" name="page" value="<?php echo $plugin_page?>">
-				<input type="hidden" name="food_id" value="<?php echo $food_id; ?>" id="food_id">
-				<input type="hidden" name="NDB_No" value="" id="NDB_No">
-				<table border="0" cellspacing="5" cellpadding="5">
-					<tr><td>Ingredient</td><td><?php self::text_html('ingrd', $row['ingrd']); ?></td></tr>
-					<tr><td>Measure</td><td><?php
-						self::radio_html('measure', array( 'volume' => 'Volume', 'weight' => 'Weight'), array(),$row['measure']);
-					?></td></tr>
-					<tr><td>Grams per Cup</td><td><?php self::text_html('gpcup', $row['gpcup'])?></td></tr>
-					<tr>
-						<td><a href="#TB_inline?width=600&height=550&inlineId=NDB_search_modal" class="thickbox add-new-h2" id="link-nutrition">Link Nutrition Info</a><a style="display:none" id="unlink-nutrition">Unlink Nutrition Info</a></td>
-						<td></td></tr>
+			<div class="NDB" id="col-right">
+				<!-- Display linked NDB Ingredient -->
+				<table class="NDB_linked widefat">
+					<caption><a href="#TB_inline?width=600&height=550&inlineId=NDB_search_modal" class="thickbox add-new-h2" id="link-nutrition">Link Nutrition Info</a> <span id="NDB_ingrd"><?php echo $NDB_ingrd;?></span> <a class="<?php echo $hide_unlink; ?>" id="unlink-nutrition">Unlink Nutrition Info</a></caption>
+					<thead>
+						<tr><td>Measure</td><td>Grams</td></tr>
+					</thead>
+					<tr class="prototype tr_measure">
+						<td>
+							<span class="Amount">Amount</span> <span class="Msre_Desc">Msre_Desc</span>
+						</td>
+						<td><span class="Gm_Wgt">Gm_Wgt</span>g</td>
+					</tr>
+					<?php
+					// If ingredient is linked with nutrition DB, display the available measures
+					if ($row['NDB_No'] != '') {
+						$measures = $this->nutrient_db->get_measures_by_NDB_No($row['NDB_No']);
+						foreach ($measures as $measure) {
+							echo "<tr class='tr_measure'><td>";
+							echo "<span class='Amount'>" . $measure->Amount . "</span> ";
+							echo "<span class='Msre_Desc'>" . $measure->Msre_Desc . "</span>";
+							echo "</td><td>";
+							echo "<span class='Gm_Wgt'>" . $measure->Gm_Wgt . "</span>g";
+							echo "</td></tr>";
+						}
+					}
+					?>
 				</table>
-				<input type="submit" name="submit" value="<?php echo $submit_type ?>">
-			</form>
+			</div>
+			<div id="col-left">
+				<form name="add_ingredient" action method="get" accept-charset="utf-8">
+					<?php wp_nonce_field( 'add_ingredient', self::prefix . 'nonce' ); ?>
+					<input type="hidden" name="post_type" value="<?php echo self::post_type; ?>">
+					<input type="hidden" name="page" value="<?php echo $plugin_page?>">
+					<input type="hidden" name="food_id" value="<?php echo $food_id; ?>" id="food_id">
+					<input type="hidden" name="NDB_No" value="<?php echo $row['NDB_No']; ?>" id="NDB_No">
+					<table border="0" cellspacing="5" cellpadding="5">
+						<tr><td>Ingredient</td><td><?php self::text_html('ingrd', $row['ingrd']); ?></td></tr>
+						<tr><td>Measure</td><td><?php
+							self::radio_html('measure', array( 'volume' => 'Volume', 'weight' => 'Weight'), array(),$row['measure']);
+						?></td></tr>
+						<tr><td>Grams per Cup</td><td><?php self::text_html('gpcup', $row['gpcup'])?></td></tr>
+					</table>
+					<input type="submit" name="submit" value="<?php echo $submit_type ?>">
+				</form>
+			</div>
 		</div>
 		<!-- Modal Dialog box to search Nutrition DB for matching ingredients -->
 		<div id="NDB_search_modal" class="hidden">
@@ -873,21 +910,6 @@ class hrecipe_admin extends hrecipe_microformat
 								</td>
 								<td>
 									<span class="ingrd">Ingredient</span>
-									<!-- Sub-Table used to select a measure to use for conversions -->
-									<table class="measures hidden" border="0" cellspacing="5" cellpadding="5">
-										<thead>
-											<tr><td></td><td>Measure</td><td>Grams</td></tr>
-										</thead>
-										<tr class="prototype tr_measure">
-											<td>
-												<input type="radio" name="measure" value="Seq" class="Seq">
-											</td>
-											<td>
-												<span class="Amount">Amount</span> <span class="Msre_Desc">Msre_Desc</span>
-											</td>
-											<td><span class="Gm_Wgt">Gm_Wgt</span>g</td>
-										</tr>
-									</table>
 								</td>
 							</tr>
 						</tbody>
@@ -1177,7 +1199,7 @@ class hrecipe_admin extends hrecipe_microformat
 	 **/
 	function text_html($field, $value)
 	{
-		echo '<input type="text" name="' . $field . '" value="' . esc_attr($value) . '" />';
+		echo '<input type="text" name="' . $field . '" value="' . esc_attr($value) . '" id="' . $field . '" />';
 	}
 	
 	/**

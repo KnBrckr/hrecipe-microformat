@@ -21,6 +21,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  **/
 
+// Array of measures for indregrients
+var NDBMeasures = Object();
+
 // Autocomplete list for Units
 var availableUnits=[ // TODO Dynamically pull from WEIGHT database?
 	'cup',
@@ -51,6 +54,17 @@ var availableUnits=[ // TODO Dynamically pull from WEIGHT database?
 	'teaspoon',
 	'tsp'
 ];
+
+var convert2Cup = {
+	'cup' : 1,
+	'cups' : 1,
+	'fluid ounce' : 8,
+	'tbsp' : 16,
+	'tbs' : 16,
+	'tablespoon' : 16,
+	'tsp' : 48,
+	'teaspoon' : 48
+}
 
 jQuery(document).ready( function($) {
 	
@@ -123,11 +137,50 @@ jQuery(document).ready( function($) {
 		
 		// Record selected food from Nutrition DB with new ingredient
 		if ( 'selectIngrd' === NDBSearchAction && typeof this.elements.NDB_No != "undefined" && "" != this.elements.NDB_No.value ) {
-			// Fill in the NDB_No for the food
-			jQuery('#NDB_No').val(this.elements.NDB_No.value);
+			var NDB_No = this.elements.NDB_No.value;
 			
-			// FIXME Determine grams/cup
-			self.parent.tb_remove(); // Close the thickbox modal
+			// TODO Only update if this is a new NDB number being assigned
+			
+			// Fill in the NDB_No for the food
+			jQuery('#NDB_No').val(NDB_No);
+			
+			// Determine grams/cup if an appropriate measure is available
+			var gpcup = '';
+
+			// If Measures for this NDB Number are available, try to determine grams/cup
+			if (jQuery.isArray(NDBMeasures[NDB_No])) {
+				for (var i = 0; i < NDBMeasures[NDB_No].length; i++) {
+					if (NDBMeasures[NDB_No][i].Msre_Desc in convert2Cup) {
+						// Grams / Cup = (Gram Weight) / (Amount of Measures) * (Measure per cups)
+						// eg. g/c = (100g / 2 Tbs) * (16 Tbs / 1 cup)
+						gpcup = NDBMeasures[NDB_No][i].Gm_Wgt / NDBMeasures[NDB_No][i].Amount * convert2Cup[NDBMeasures[NDB_No][i].Msre_Desc]  ;
+						break;
+					}
+				}
+			}
+			
+			// Update form with Grams per cup
+			jQuery('#gpcup').val(gpcup);
+			
+			// Remove any rows present from previously linked food in the Measures Table
+			measuresTbl = jQuery('.NDB_linked');
+			measuresTbl.find('tbody>tr:not(.prototype)').remove();
+			
+			// FIXME Setup Table Caption
+			
+			// Add Measures for the newly linked food if they are defined
+			if (jQuery.isArray(NDBMeasures[NDB_No])) {
+				for (var i = 0; i < NDBMeasures[NDB_No].length; i++) {
+					var newRow = measuresTbl.find('.prototype').clone().removeClass('prototype');
+					newRow.find('.Amount').text(NDBMeasures[NDB_No][i].Amount);
+					newRow.find('.Msre_Desc').text(NDBMeasures[NDB_No][i].Msre_Desc);
+					newRow.find('.Gm_Wgt').text(NDBMeasures[NDB_No][i].Gm_Wgt);
+					measuresTbl.append(newRow);
+				}
+			}
+			
+			// Close the thickbox modal
+			self.parent.tb_remove(); 
 			return false;
 		}
 
@@ -272,13 +325,8 @@ function hrecipeNDBSearch(page) {
 }
 
 function hrecipeNDBMeasures(e) {
-	// Rehide measures tables
-	// TODO Don't hide table that is about to be displayed
-	jQuery('.measures').hide();
-	
-	// If data already collected for this NDB_No, just show it.
-	if (jQuery('.tr_ingrd[ndb_no='+e.currentTarget.value+'] .measures .tr_measure').size() > 1) {
-		jQuery('.tr_ingrd[ndb_no='+e.currentTarget.value+'] .measures').show();
+	// If data already collected for this NDB_No, return
+	if (e.currentTarget.value in NDBMeasures) {
 		return;
 	}
 	
@@ -292,24 +340,17 @@ function hrecipeNDBMeasures(e) {
 		},
 		success: function (data, textStatus, jqXHR) {
 			if (data) {
-				// FIXME Scan available measures for one that can be used to calculate grams/cup
-				
-				var measuresTbl = jQuery('.tr_ingrd[ndb_no=' + data[0].NDB_No + '] .measures').show();
-				
-				if (0 != measuresTbl) {
-					for (var i = 0; i < data.length; i++) {
-						var newRow = measuresTbl.find('.prototype').clone().removeClass('prototype');
-						newRow.find('.Seq').val(data[i].Seq);
-						newRow.find('.Amount').text(data[i].Amount);
-						newRow.find('.Msre_Desc').text(data[i].Msre_Desc);
-						newRow.find('.Gm_Wgt').text(data[i].Gm_Wgt);
-						measuresTbl.append(newRow);
-					}				
+				// Save measures in local table
+				for (var i = 0; i < data.length; i++) {
+					if (! jQuery.isArray(NDBMeasures[data[i].NDB_No])) {
+						NDBMeasures[data[i].NDB_No] = Array();
+					}
+					NDBMeasures[data[i].NDB_No].push(data[i]);
 				}
 			}
 		},
 		error: function (jqXHR, textStatus, errorThrown) {
-			// TODO Anything else needed here?
+			// TODO Display a search error
 		}
 	});
 }

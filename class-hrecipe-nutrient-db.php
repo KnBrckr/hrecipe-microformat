@@ -598,6 +598,21 @@ class hrecipe_nutrient_db {
 	}
 	
 	/**
+	 * Retrieve food name for given NDB_No
+	 *
+	 * @uses wpdb
+	 * @param $NDB_No string NDB Database Index
+	 * @return string
+	 **/
+	function get_name_by_NDB_No($NDB_No)
+	{
+		global $wpdb;
+		
+		$db_name = $this->options['table_prefix'] . 'food_des';
+		return $wpdb->get_var( "SELECT Long_Desc FROM ${db_name} WHERE `NDB_No` = '${NDB_No}'");
+	}
+	
+	/**
 	 * Retrieve measures information for given NDB_No
 	 *
 	 * @return array of rows

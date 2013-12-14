@@ -259,7 +259,7 @@ class hrecipe_ingrd_db {
 	{
 		global $wpdb;
 		
-		$row = $wpdb->get_row($wpdb->prepare("SELECT food_id,ingrd,measure,gpcup FROM " . $this->foods_table . " WHERE food_id = %d", $food_id), ARRAY_A);
+		$row = $wpdb->get_row($wpdb->prepare("SELECT food_id,ingrd,measure,gpcup,NDB_No FROM " . $this->foods_table . " WHERE food_id = %d", $food_id), ARRAY_A);
 		
 		return $row;
 	}
