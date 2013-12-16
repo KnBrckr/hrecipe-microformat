@@ -25,22 +25,22 @@
 
 jQuery(document).ready( function($) {
 	// Format recipe ratings with jQuery UI stars plugin
-	jQuery('.recipe-user-rating').stars({
+	$('.recipe-user-rating').stars({
 		cancelShow: false,
 		inputType: 'select',
 		callback: function(ui, type, value)
 		{
 			// Thank for the vote
-			jQuery('#recipe-stars-' + HrecipeMicroformat.postID + ' .thank-you').fadeIn(200);
+			$('#recipe-stars-' + hrecipeVars.postID + ' .thank-you').fadeIn(200);
 			
-			jQuery.post(
-				HrecipeMicroformat.ajaxurl, 
+			$.post(
+				hrecipeVars.ajaxurl, 
 				{
-					action: HrecipeMicroformat.pluginPrefix + 'recipe_rating',
-					postID: HrecipeMicroformat.postID,
+					action: hrecipeVars.pluginPrefix + 'recipe_rating',
+					postID: hrecipeVars.postID,
 					rating: value, // New rating value
-					prevRating: HrecipeMicroformat.userRating, // Last saved rating value from user
-					ratingNonce: HrecipeMicroformat.ratingNonce
+					prevRating: hrecipeVars.userRating, // Last saved rating value from user
+					ratingNonce: hrecipeVars.ratingNonce
 				}, 
 				function(json)
 				{
@@ -52,13 +52,13 @@ jQuery(document).ready( function($) {
 					recipeRating.find('.thank-you').delay(3000).fadeOut(800);
 					
 					// Use new nonce that was generated for next AJAX request
-					HrecipeMicroformat.ratingNonce = json.nonce;
+					hrecipeVars.ratingNonce = json.nonce;
 					
 					// Save users updated rating
-					HrecipeMicroformat.userRating = json.userRating;
+					hrecipeVars.userRating = json.userRating;
 					
 					// Setup new Nonce field so user can change their vote
-					HrecipeMicroformat.ratingNonce = json.ratingNonce;
+					hrecipeVars.ratingNonce = json.ratingNonce;
 
 					// Update user display with new averages
 					recipeRating.removeClass('unrated');
@@ -74,16 +74,3 @@ jQuery(document).ready( function($) {
 		}
 	});
 });
-
-// jQuery("#stars-wrapper1").stars({
-//     cancelShow: false,
-//     captionEl: jQuery("#stars-cap"),
-//     callback: function(ui, type, value)
-//     {
-//         jQuery.getJSON("ratings.php", {rate: value}, function(json)
-//         {
-//             jQuery("#fake-stars-on").width(Math.round( jQuery("#fake-stars-off").width() / ui.options.items * parseFloat(json.avg) ));
-//             jQuery("#fake-stars-cap").text(json.avg + " (" + json.votes + ")");
-//         });
-//     }
-// });

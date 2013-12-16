@@ -418,7 +418,7 @@ class hrecipe_microformat {
 			 */
 			wp_localize_script( 
 				self::prefix . 'js', 
-				'HrecipeMicroformat', 
+				'hrecipeVars', 
 				array( 
 					'ajaxurl' => admin_url( 'admin-ajax.php' ), 	// URL to file handling AJAX request (wp-admin/admin-ajax.php)
 					'pluginPrefix' => self::prefix, // Prefix for actions, etc.

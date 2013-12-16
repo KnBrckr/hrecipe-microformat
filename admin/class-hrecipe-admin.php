@@ -466,7 +466,7 @@ class hrecipe_admin extends hrecipe_microformat
 		$food_id = esc_attr($food_id);
 		
 		?>
-		<tr>
+		<tr class="recipe_ingrd_row">
 			<td class="ui-buttons">
 				<ul>
 				<li><span class="sort-handle ui-icon ui-icon-arrow-2-n-s ui-state-active"></span></li>
@@ -890,13 +890,12 @@ class hrecipe_admin extends hrecipe_microformat
 						<div class="tablenav-pages">
 							<span class="displaying-num"></span>
 							<span class="pagination-links">
-								<!-- TODO Improve pagination coding.  Use submit actions instead? -->
-								<a class="first-page disabled" title="Go to the first page" onclick="hrecipeNDBSearch(1)">«</a>
-								<a class="prev-page disabled" title="Go to the previous page" onclick="hrecipeNDBSearch(hrecipeNDBSearchResult.page - 1)">‹</a>
+								<a class="first-page disabled" title="Go to the first page" onclick="hrecipe.NDBSearch(1)">«</a>
+								<a class="prev-page disabled" title="Go to the previous page" onclick="hrecipe.NDBSearch(hrecipe.NDBSearchResult.page - 1)">‹</a>
 								<!-- FIXME Implement page number entry -->
 								<span class="paging-input"><input class="current-page" title="Current page" type="text" name="paged" value="1" size="1"> of <span class="total-pages"></span></span>
-								<a class="next-page disabled" title="Go to the next page" onclick="hrecipeNDBSearch(hrecipeNDBSearchResult.page + 1)">›</a>
-								<a class="last-page disabled" title="Go to the last page" onclick="hrecipeNDBSearch(hrecipeNDBSearchResult.pages)">»</a>
+								<a class="next-page disabled" title="Go to the next page" onclick="hrecipe.NDBSearch(hrecipe.NDBSearchResult.page + 1)">›</a>
+								<a class="last-page disabled" title="Go to the last page" onclick="hrecipe.NDBSearch(hrecipe.NDBSearchResult.pages)">»</a>
 							</span>						
 						</div>
 					</div>
@@ -1411,7 +1410,7 @@ class hrecipe_admin extends hrecipe_microformat
 	{
 		wp_localize_script( 
 			self::prefix . 'admin', 
-			'HrecipeMicroformat', 
+			'hrecipeAdminVars', 
 			array( 
 				'ajaxurl' => admin_url( 'admin-ajax.php' ), // URL to file handling AJAX request (wp-admin/admin-ajax.php)
 				'pluginPrefix' => self::prefix, // Prefix for actions, etc.

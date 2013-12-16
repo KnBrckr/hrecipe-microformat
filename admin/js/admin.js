@@ -21,336 +21,354 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  **/
 
-// Array of measures for indregrients
-var NDBMeasures = Object();
+var hrecipe = {
+	// Array of measures for indregrients
+	NDBMeasures : Object(),
 
-// Autocomplete list for Units
-var availableUnits=[ // TODO Dynamically pull from WEIGHT database?
-	'cup',
-	'cups',
-	'fl oz',
-	'fluid ounce',
-	'g',
-	'gallon',
-	'gram',
-	'grams',
-	'kg',
-	'kilogram',
-	'kilograms',
-	'l',
-	'lb',
-	'litre',
-	'ml',
-	'ounce',
-	'oz',
-	'pinch',
-	'pint',
-	'pound',
-	'quart',
-	'stick',
-	'tablespoon',
-	'tbs',
-	'tbsp',
-	'teaspoon',
-	'tsp'
-];
+	// Autocomplete list for Units
+	availableUnits : [ // TODO Dynamically pull from WEIGHT database?
+		'cup',
+		'cups',
+		'fl oz',
+		'fluid ounce',
+		'g',
+		'gallon',
+		'gram',
+		'grams',
+		'kg',
+		'kilogram',
+		'kilograms',
+		'l',
+		'lb',
+		'litre',
+		'ml',
+		'ounce',
+		'oz',
+		'pinch',
+		'pint',
+		'pound',
+		'quart',
+		'stick',
+		'tablespoon',
+		'tbs',
+		'tbsp',
+		'teaspoon',
+		'tsp'
+	],
 
-var convert2Cup = {
-	'cup' : 1,
-	'cups' : 1,
-	'fluid ounce' : 8,
-	'tbsp' : 16,
-	'tbs' : 16,
-	'tablespoon' : 16,
-	'tsp' : 48,
-	'teaspoon' : 48
-}
-
-jQuery(document).ready( function($) {
+	// Used to convert units of measure to cups for calculation of grams/cup
+	convert2Cup : {
+		'cup' : 1,
+		'cups' : 1,
+		'fluid ounce' : 8,
+		'tbsp' : 16,
+		'tbs' : 16,
+		'tablespoon' : 16,
+		'tsp' : 48,
+		'teaspoon' : 48
+	},
 	
-	// Make the recipe field sections sortable to configure head and footer contents
+	//
+	// Perform an AJAX search of NDB database for matching ingredients
+	//
+	NDBSearchResult : {
+		'page' : 1,
+		'pages' : 1,
+		'totalrows' : 0
+	},
 	
-	$('.recipe-fields').sortable(
-		{
-			items: '.menu-item-handle',
-			connectWith: '.recipe-fields', 
-			update: function(event, ui) {
-				// On update, fixup the hidden input tracking contents of head and footer
-				jQuery('.recipe-fields').each(function() {
-					var n = jQuery(this);
-					var new_list = n.find('li').map(function(){return this.attributes['name'].value;}).get().join();
-					n.find('input').attr('value', new_list);
-				});
-			}
-		});
+	// Run at document load
+	init: function($){
 		
-	/*
-		Add tools to Recipe Ingredient list section
-	*/
-	
-	// Make ingredients list sortable
-	$('.ingredients').sortable({ items: 'tbody tr' });
-			
-	// Setup autocomplete for fields in the table
-	hrecipeInitAutocomplete($('.ingredients'));
-	
-	// Setup Insert and Delete Row functions
-	$('.ingredients').ready( function($) {
-		// Insert a new row after the active row
-		jQuery('.insert').live('click', function(){
-			var row = jQuery(this).closest('tr');
-			var newRow = hrecipeNewIngredient(row);
+		/*
+			Tools for Admin Settings Section
+		*/
 		
-			// Put new row into the table after the current one
-			row.after(newRow);
-			jQuery('.ingredients').sortable('refresh');
-		});
-	
-		// Delete active row
-		jQuery('.delete').live('click', function() {
-			var btn = jQuery(this);
+		// Make the recipe field sections sortable to configure head and footer contents
+		$('.recipe-fields').sortable(
+			{
+				items: '.menu-item-handle',
+				connectWith: '.recipe-fields', 
+				update: function(event, ui) {
+					// On update, fixup the hidden input tracking contents of head and footer
+					$('.recipe-fields').each(function() {
+						var n = jQuery(this);
+						var new_list = n.find('li').map(function(){return this.attributes['name'].value;}).get().join();
+						n.find('input').attr('value', new_list);
+					});
+				}
+			});
 		
-			if (btn.closest('tbody').find('tr').length > 1) {
-				btn.closest('tr').remove();			
-			}
-		});
-	});
-	
-	/*
-		Tools for Add Ingredient page
-	*/
-	
-	// On Enter, submit search for ingredient in NDB database
-	$('#NDB_search_ingrd').keypress(function(e){
-		if (e.keyCode === 13) { 
-			hrecipeNDBSearch(1); 
+		/*
+			Add tools to Recipe Ingredient list section
+		*/
+		
+		var ingrdsTable = $('.ingredients');
+		if (ingrdsTable.length > 0) {
+			// Make ingredients list sortable and setup autocomplete for each row
+			ingrdsTable.sortable({ items: 'tbody tr' }).each(function(index,item){
+				hrecipe.autocompleteIngrdRow(item);
+			});
+				
+			// Setup Insert and Delete Row functions
+			ingrdsTable.on('click', '.insert', hrecipe.insertIngrdRow);
+			ingrdsTable.on('click', '.delete', hrecipe.deleteIngrdRow);
 		}
-	});
 	
-	// Handle submit event for NDB ingredient search
-	$('#NDB_search_form').submit(function(e){
+		/*
+			Tools for Add Ingredient page
+		*/
+	
+		// On Enter, submit search for ingredient in NDB database
+		$('#NDB_search_ingrd').keypress(function(e){
+			if (e.keyCode === 13) { 
+				hrecipe.NDBSearch(1); 
+			}
+		});
+	
+		// Handler for Submit and INPUT form field click actions for NDB ingredient search
+		$('#NDB_search_form').submit(hrecipe.NDBSearchSubmit).click(function(e) {
+			// Special click actions for some of the INPUT form fields
+			if ('INPUT' != e.target.nodeName) return;
+			var targetType = jQuery(e.target).prop('type');
+			
+			// For submit buttons, save ID of button clicked for submit handling
+			if ('submit' == targetType) {
+	  		  $(this).data('clicked',$(e.target).prop('id'));				
+			}
+			
+			// For radio buttons, collect measures for the related ingredient
+			if ('radio' == targetType) {
+				hrecipe.getNDBMeasures(e);
+			}
+		});
+	},
+	
+	// Insert an ingredient row
+	insertIngrdRow : function() {
+		// Travel up DOM to find the containing TR and clone it
+		var row = jQuery(this).closest('tr');
+		var newRow = row.clone();
+
+		// Clean out any values
+		newRow.find('input').each(function() { this.value = '';});
+
+		// Setup autocomplete for the new row elements
+		hrecipe.autocompleteIngrdRow(newRow);
+	
+		// Put new row into the table after the current one
+		row.after(newRow);
+		jQuery('.ingredients').sortable('refresh');
+	},
+	
+	// Delete an ingredient row
+	deleteIngrdRow : function() {
+		var btn = jQuery(this);
+
+		// Only remove if there will still be at least one row remaining
+		if (btn.closest('tbody').find('tr').length > 1) {
+			btn.closest('tr').remove();			
+		}
+	},
+		
+	//
+	// Setup Autocomplete for Ingredient rows in recipe edit screen
+	//
+	// target (DOM or jQuery Object referencing row of ingredient table)
+	autocompleteIngrdRow : function(target) {
+		// Autocomplete for the type (unit) column of ingredient list
+		jQuery(target).find('.type').autocomplete({source: hrecipe.availableUnits});
+	
+		// Autocomplete for the ingredient column of ingredient list
+		jQuery(target).find('.ingrd').autocomplete({
+			source: function( request, response ) {
+				jQuery.ajax({
+					url: hrecipeAdminVars.ajaxurl,
+					dataType: "json",
+					data: {
+						action: hrecipeAdminVars.pluginPrefix + 'ingrd_auto_complete',
+						maxRows: hrecipeAdminVars.maxRows,
+						name_contains: request.term
+					},
+					// When Ajax returns successfully, process the retrieved data
+					success: function( data ) {
+						if (0 == data) return null;
+	
+						// return array of mapping items for jQuery autocomplete tool to use
+						response(jQuery.map( data.list, function(item){
+							return {
+								label: item.ingrd,
+								food_id: item.food_id
+							} ;
+						}));
+					}
+				});
+			},
+			minLength: 3,
+			// change triggered when field is blurred if the value has changed
+			change: function( event, ui ) {
+				if (ui.item) {
+					// If an item was selected, record the food database record number
+					jQuery(this).addClass('food_linked').parent().siblings().find('.food_id').val(ui.item.food_id);				
+				} else {
+					// No matching item, clear food database record number
+					jQuery(this).removeClass('food_linked').parent().siblings().find('.food_id').val('');
+				}
+			}
+		});
+	},
+	
+	NDBSearch : function(page) {
+		var searchString = jQuery('#NDB_search_ingrd').val();
+		if (searchString) {
+			jQuery('#NDB_search_form .waiting').show();  // Show busy icon
+			jQuery.ajax({
+				'url': hrecipeAdminVars.ajaxurl,
+				'dataType': 'json',
+				'data': {
+					'action': hrecipeAdminVars.pluginPrefix + 'NDB_search',
+					'maxRows': hrecipeAdminVars.maxRows,
+					'pageNum': page,
+					'name_contains': searchString
+				},
+				// When Ajax returns successfully, process the retrieved data
+				success: function( data, textStatus, jqXHR ) {
+					jQuery('#NDB_search_form .waiting').hide(); // Hide busy icon
+	
+					if (data) {
+						hrecipe.NDBSearchResult = data;
+					} else {
+						hrecipe.NDBSearchResult = {
+							'page' : 1,
+							'pages' : 1,
+							'totalrows' : 0,
+							'rows' : {}
+						}					
+					}
+				
+					// Cleanup old table contents, but leave the prototype row
+					jQuery('.tr_ingrd:not(.prototype)').remove();
+	
+					// Add results to table for display
+					for (var i = 0; i < data.rows.length; i++) {
+						// Clone the prototype row and make it visible
+						var newRow = jQuery('.prototype.tr_ingrd').clone().removeClass('prototype');
+						newRow.attr('NDB_No', data.rows[i].NDB_No);
+						newRow.find('.ingrd').text(data.rows[i].Long_Desc);
+						newRow.find('.NDB_No').val(data.rows[i].NDB_No);
+						jQuery('.NDB_ingredients>tbody').append(newRow);
+					}
+					jQuery('#NDB_search_results').show();
+					jQuery('.total-pages').text(data.pages);
+					jQuery('.displaying-num').text(data.totalrows + ' items');
+					jQuery('.current-page').val(data.page);
+				},
+				error: function ( jqXHR, textStatus, errorThrown) {
+					jQuery('#NDB_search_form .waiting').hide();  // Hide busy icon
+					// TODO Anything else to do on error here?
+				}
+			});
+			event.returnValue = false;
+		} else {
+			// FIXME Error - Input box needs a value to continue
+		};
+	},
+	
+	getNDBMeasures : function(e) {
+		// If data already collected for this NDB_No, return
+		if (e.target.value in hrecipe.NDBMeasures) {
+			return;
+		}
+	
+		// Submit AJAX to get measures from DB
+		jQuery.ajax({
+			'url': hrecipeAdminVars.ajaxurl,
+			'dataType': 'json',
+			'data': {
+				'action': hrecipeAdminVars.pluginPrefix + 'NDB_measures',
+				'NDB_No': e.target.value
+			},
+			success: function (data, textStatus, jqXHR) {
+				// FIXME Deal with empty data return
+				if (data) {
+					// Save measures in local table
+					for (var i = 0; i < data.length; i++) {
+						if (! jQuery.isArray(hrecipe.NDBMeasures[data[i].NDB_No])) {
+							hrecipe.NDBMeasures[data[i].NDB_No] = Array();
+						}
+						hrecipe.NDBMeasures[data[i].NDB_No].push(data[i]);
+					}
+				}
+			},
+			error: function (jqXHR, textStatus, errorThrown) {
+				// TODO Display a search error
+			}
+		});
+	},
+	
+	NDBSearchSubmit : function(e){
+		// Action name was set from onclick function established on the form
+		var action = jQuery(this).data('clicked');
+		
 		// On a cancel action, close the ThickBox
-		if ( 'cancel' === NDBSearchAction ) {
+		if ( 'cancel' === action ) {
 			self.parent.tb_remove(); // Close the thickbox modal
 			return false;
 		}
-		
+	
 		// Record selected food from Nutrition DB with new ingredient
-		if ( 'selectIngrd' === NDBSearchAction && typeof this.elements.NDB_No != "undefined" && "" != this.elements.NDB_No.value ) {
+		if ( 'selectIngrd' === action && typeof this.elements.NDB_No != "undefined" && "" != this.elements.NDB_No.value ) {
 			var NDB_No = this.elements.NDB_No.value;
-			
+		
 			// TODO Only update if this is a new NDB number being assigned
-			
+		
 			// Fill in the NDB_No for the food
 			jQuery('#NDB_No').val(NDB_No);
-			
+		
 			// Determine grams/cup if an appropriate measure is available
 			var gpcup = '';
+			var measures;
 
 			// If Measures for this NDB Number are available, try to determine grams/cup
-			if (jQuery.isArray(NDBMeasures[NDB_No])) {
-				for (var i = 0; i < NDBMeasures[NDB_No].length; i++) {
-					if (NDBMeasures[NDB_No][i].Msre_Desc in convert2Cup) {
+			if (jQuery.isArray(hrecipe.NDBMeasures[NDB_No])) {
+				measures = hrecipe.NDBMeasures[NDB_No];
+				for (var i = 0; i < measures.length; i++) {
+					if (measures[i].Msre_Desc in hrecipe.convert2Cup) {
 						// Grams / Cup = (Gram Weight) / (Amount of Measures) * (Measure per cups)
 						// eg. g/c = (100g / 2 Tbs) * (16 Tbs / 1 cup)
-						gpcup = NDBMeasures[NDB_No][i].Gm_Wgt / NDBMeasures[NDB_No][i].Amount * convert2Cup[NDBMeasures[NDB_No][i].Msre_Desc]  ;
+						gpcup = measures[i].Gm_Wgt / measures[i].Amount * hrecipe.convert2Cup[measures[i].Msre_Desc]  ;
 						break;
 					}
 				}
 			}
-			
+		
 			// Update form with Grams per cup
 			jQuery('#gpcup').val(gpcup);
-			
+		
 			// Remove any rows present from previously linked food in the Measures Table
-			measuresTbl = jQuery('.NDB_linked');
+			var measuresTbl = jQuery('.NDB_linked');
 			measuresTbl.find('tbody>tr:not(.prototype)').remove();
-			
+		
 			// FIXME Setup Table Caption
-			
+		
 			// Add Measures for the newly linked food if they are defined
-			if (jQuery.isArray(NDBMeasures[NDB_No])) {
-				for (var i = 0; i < NDBMeasures[NDB_No].length; i++) {
+			if (measures) {
+				for (var i = 0; i < measures.length; i++) {
 					var newRow = measuresTbl.find('.prototype').clone().removeClass('prototype');
-					newRow.find('.Amount').text(NDBMeasures[NDB_No][i].Amount);
-					newRow.find('.Msre_Desc').text(NDBMeasures[NDB_No][i].Msre_Desc);
-					newRow.find('.Gm_Wgt').text(NDBMeasures[NDB_No][i].Gm_Wgt);
+					newRow.find('.Amount').text(measures[i].Amount);
+					newRow.find('.Msre_Desc').text(measures[i].Msre_Desc);
+					newRow.find('.Gm_Wgt').text(measures[i].Gm_Wgt);
 					measuresTbl.append(newRow);
 				}
 			}
-			
+		
 			// Close the thickbox modal
 			self.parent.tb_remove(); 
 			return false;
 		}
 
 		return false;
-	});
-	$('#NDB_search_form :submit').click(function(){ NDBSearchAction = this.name; });
-});
-
-//
-// Create a blank Ingredient row
-//
-// row (DOM element) ingredient row to clone
-//
-// return cloned Row, cleaned of input values
-function hrecipeNewIngredient(row) {
-	var clonedRow = row.clone();
-
-	// Clean out any values
-	clonedRow.find('input').each(function() { this.value = '';});
-
-	// Setup autocomplete for the new row elements
-	hrecipeInitAutocomplete(clonedRow);
-	
-	return clonedRow;
-}
-
-//
-// Init Autocomplete on a jQuery object
-//
-// target (jQuery Object)
-//
-// return void
-function hrecipeInitAutocomplete(target) {
-	// Autocomplete for the type (unit) column of ingredient list
-	jQuery(target).find('.type').autocomplete({source: availableUnits});
-	
-	// Autocomplete for the ingredient column of ingredient list
-	jQuery(target).find('.ingrd').autocomplete({
-		source: function( request, response ) {
-			jQuery.ajax({
-				url: HrecipeMicroformat.ajaxurl,
-				dataType: "json",
-				data: {
-					action: HrecipeMicroformat.pluginPrefix + 'ingrd_auto_complete',
-					maxRows: HrecipeMicroformat.maxRows,
-					name_contains: request.term
-				},
-				// When Ajax returns successfully, process the retrieved data
-				success: function( data ) {
-					if (0 == data) return null;
-	
-					// return array of mapping items for jQuery autocomplete tool to use
-					return(jQuery.map( data.list, function(item){
-						return {
-							label: item.ingrd,
-							food_id: item.food_id
-						} ;
-					}));
-				}
-			});
-		},
-		minLength: 2,
-		// change triggered when field is blurred if the value has changed
-		change: function( event, ui ) {
-			if (ui.item) {
-				// If an item was selected, record the food database record number
-				jQuery(this).addClass('food_linked').parent().siblings().find('.food_id').val(ui.item.food_id);				
-			} else {
-				// No matching item, clear food database record number
-				jQuery(this).removeClass('food_linked').parent().siblings().find('.food_id').val('');
-			}
-		}
-	});
-	
-	return;
-}
-
-//
-// Perform and AJAX search of NDB database for matching ingredients
-//
-var hrecipeNDBSearchResult = {
-	'page' : 1,
-	'pages' : 1,
-	'totalrows' : 0
-}
-
-function hrecipeNDBSearch(page) {
-	if (searchString = jQuery('#NDB_search_ingrd').val()) {
-		jQuery('#NDB_search_form .waiting').show();  // Show busy icon
-		jQuery.ajax({
-			'url': HrecipeMicroformat.ajaxurl,
-			'dataType': 'json',
-			'data': {
-				'action': HrecipeMicroformat.pluginPrefix + 'NDB_search',
-				'maxRows': HrecipeMicroformat.maxRows,
-				'pageNum': page,
-				'name_contains': searchString
-			},
-			// When Ajax returns successfully, process the retrieved data
-			success: function( data, textStatus, jqXHR ) {
-				jQuery('#NDB_search_form .waiting').hide(); // Hide busy icon
-	
-				if (data) {
-					hrecipeNDBSearchResult = data;
-				} else {
-					hrecipeNDBSearchResult = {
-						'page' : 1,
-						'pages' : 1,
-						'totalrows' : 0,
-						'rows' : {}
-					}					
-				}
-				
-				// Cleanup old table contents, but leave the prototype row
-				jQuery('.tr_ingrd:not(.prototype)').remove();
-	
-				// Add results to table for display
-				for (var i = 0; i < data.rows.length; i++) {
-					// Clone the prototype row and make it visible
-					var newRow = jQuery('.prototype.tr_ingrd').clone().removeClass('prototype');
-					newRow.attr('NDB_No', data.rows[i].NDB_No);
-					newRow.find('.ingrd').text(data.rows[i].Long_Desc);
-					newRow.find('.NDB_No').val(data.rows[i].NDB_No).click(function(e){
-						hrecipeNDBMeasures(e);
-					});
-					jQuery('.NDB_ingredients>tbody').append(newRow);
-				}
-				jQuery('#NDB_search_results').show();
-				jQuery('.total-pages').text(data.pages);
-				jQuery('.displaying-num').text(data.totalrows + ' items');
-				jQuery('.current-page').val(data.page);
-			},
-			error: function ( jqXHR, textStatus, errorThrown) {
-				jQuery('#NDB_search_form .waiting').hide();  // Hide busy icon
-				// TODO Anything else to do on error here?
-			}
-		});
-		event.returnValue = false;
-	} else {
-		// FIXME Flash Input box
-	};
-}
-
-function hrecipeNDBMeasures(e) {
-	// If data already collected for this NDB_No, return
-	if (e.currentTarget.value in NDBMeasures) {
-		return;
 	}
-	
-	// Submit AJAX to get measures from DB
-	jQuery.ajax({
-		'url': HrecipeMicroformat.ajaxurl,
-		'dataType': 'json',
-		'data': {
-			'action': HrecipeMicroformat.pluginPrefix + 'NDB_measures',
-			'NDB_No': e.currentTarget.value
-		},
-		success: function (data, textStatus, jqXHR) {
-			if (data) {
-				// Save measures in local table
-				for (var i = 0; i < data.length; i++) {
-					if (! jQuery.isArray(NDBMeasures[data[i].NDB_No])) {
-						NDBMeasures[data[i].NDB_No] = Array();
-					}
-					NDBMeasures[data[i].NDB_No].push(data[i]);
-				}
-			}
-		},
-		error: function (jqXHR, textStatus, errorThrown) {
-			// TODO Display a search error
-		}
-	});
-}
+};
+
+jQuery(document).ready(function($){hrecipe.init($)});
