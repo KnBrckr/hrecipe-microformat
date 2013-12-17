@@ -279,7 +279,7 @@ var hrecipe = {
 				});
 				event.returnValue = false;
 			} else {
-				// FIXME Error - Input box needs a value to continue
+				// FIXME Display Error - Input box needs a value to continue
 			};
 		},
 	

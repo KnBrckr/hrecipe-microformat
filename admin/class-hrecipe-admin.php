@@ -417,7 +417,7 @@ class hrecipe_admin extends hrecipe_microformat
 				<p class="ingrd-list-title">
 					<label for="<?php echo self::prefix; ?>ingrd-list-name" class="field-label">List Title:</label>
 					<input type="text" name="<?php echo self::prefix; ?>ingrd-list-name[<?php echo $list_id; ?>]" value="<?php echo esc_attr($list_title) ?>" />
-					<!-- FIXME Make copy-text highlightable for easy copy to clipboard (jquery.selectable?)-->
+					<!-- TODO Make copy-text highlightable for easy copy to clipboard (jquery.selectable?)-->
 					<span class="field-description">Use <span class="copy-text">[ingrd-list id="<?php echo $list_id; ?>"]</span> in recipe text to display this list.</span>
 				</p>
 				<table class="ingredients">
