@@ -784,6 +784,8 @@ class hrecipe_admin extends hrecipe_microformat
 	/**
 	 * Display HTML for page to add/edit ingredients
 	 *
+	 * TODO After completion of add ingredient, return to ingredients table if it was the previous screen.
+	 *
 	 * @uses $plugin_page, WP global defines plugin page name
 	 * @return void
 	 **/
@@ -890,12 +892,12 @@ class hrecipe_admin extends hrecipe_microformat
 						<div class="tablenav-pages">
 							<span class="displaying-num"></span>
 							<span class="pagination-links">
-								<a class="first-page disabled" title="Go to the first page" onclick="hrecipe.NDBSearch(1)">«</a>
-								<a class="prev-page disabled" title="Go to the previous page" onclick="hrecipe.NDBSearch(hrecipe.NDBSearchResult.page - 1)">‹</a>
+								<a class="first-page disabled" title="Go to the first page" onclick="hrecipe.addIngrdPage.NDBSearch(1)">«</a>
+								<a class="prev-page disabled" title="Go to the previous page" onclick="hrecipe.addIngrdPage.NDBSearch(hrecipe.pagination.page - 1)">‹</a>
 								<!-- FIXME Implement page number entry -->
 								<span class="paging-input"><input class="current-page" title="Current page" type="text" name="paged" value="1" size="1"> of <span class="total-pages"></span></span>
-								<a class="next-page disabled" title="Go to the next page" onclick="hrecipe.NDBSearch(hrecipe.NDBSearchResult.page + 1)">›</a>
-								<a class="last-page disabled" title="Go to the last page" onclick="hrecipe.NDBSearch(hrecipe.NDBSearchResult.pages)">»</a>
+								<a class="next-page disabled" title="Go to the next page" onclick="hrecipe.addIngrdPage.NDBSearch(hrecipe.pagination.page + 1)">›</a>
+								<a class="last-page disabled" title="Go to the last page" onclick="hrecipe.addIngrdPage.NDBSearch(hrecipe.pagination.pages)">»</a>
 							</span>						
 						</div>
 					</div>
