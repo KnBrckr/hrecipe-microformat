@@ -23,6 +23,11 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  **/
 
+/* ==================================== */
+/* = Admin Settings Screen Formatting = */
+/* ==================================== */
+
+/* Style drag-and-drop menu */
 .menu-item-handle {
 	cursor: move;
 	display: inline;
@@ -30,18 +35,18 @@
 	margin: 10px;
 }
 
+/* ======================================= */
+/* = Recipe Post Type Metabox formatting = */
+/* ======================================= */
+
 .sort-handle {
 	cursor: move;
 }
 
-.ui-buttons li {
+.recipe_ingrd_row li {
 	list-style-type: none;
 	float: left;
 }
-
-/* ======================================= */
-/* = Recipe Post Type Metabox formatting = */
-/* ======================================= */
 
 /**
   * #hrecipe_info id for metabox containing additional recipe info

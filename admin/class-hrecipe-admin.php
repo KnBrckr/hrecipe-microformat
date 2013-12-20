@@ -313,9 +313,13 @@ class hrecipe_admin extends hrecipe_microformat
 	
 	/**
 	 * Setup the admin screens
+	 *
+	 * @uses $wp_scripts, To retrieve version of jQuery for auto-loading of proper style sheets
 	 **/
 	function admin_init ()
 	{
+		global $wp_scripts;
+		
 		// Add section for reporting configuration errors and notices
 		add_action('admin_notices', array( &$this, 'display_admin_notices'));
 		
@@ -352,8 +356,9 @@ class hrecipe_admin extends hrecipe_microformat
 		wp_register_script(self::prefix . 'admin', self::$url . 'admin/js/admin.js',
 		                   array('jquery-ui-autocomplete','jquery-ui-sortable'), false, true);
 		
-		// Register jQuery UI stylesheet
-		wp_register_style(self::prefix . 'jquery-ui', self::$url . 'admin/css/jquery-ui.css');
+		// Register jQuery UI stylesheet 
+		// FIXME - Migrate to minified version after WP upgrade to jQuery version greater than 1.9.2
+		wp_register_style(self::prefix . 'jquery-ui', "http://ajax.googleapis.com/ajax/libs/jqueryui/{$wp_scripts->registered['jquery-ui-core']->ver}/themes/smoothness/jquery-ui.css");
 		
 		// Setup the Recipe Post Editing page
 		add_action('add_meta_boxes_' . self::post_type, array(&$this, 'configure_tinymce')); // TODO Best place for this?
@@ -433,14 +438,18 @@ class hrecipe_admin extends hrecipe_microformat
 					</thead>
 					<tbody>
 						<?php
+						// Setup prototype ingredient row
+						$this->recipe_edit_ingrd_row($list_id, '', '', '', '', '', true);
+						
+						// Add rows for recipe ingredients
 						if (count($ingrds) == 0) {
 							// Setup a few empty rows in the edit screen for new posts
 							for ($i=0; $i < 4; $i++) { 
-								$this->recipe_edit_ingrd_row($list_id, '', '', '', '', '');
+								$this->recipe_edit_ingrd_row($list_id, '', '', '', '', '', false);
 							}
 						} else {
 							foreach ($ingrds as $d) {
-								$this->recipe_edit_ingrd_row($list_id, $d->quantity, $d->unit, $d->ingrd, $d->comment, $d->food_id);
+								$this->recipe_edit_ingrd_row($list_id, $d->quantity, $d->unit, $d->ingrd, $d->comment, $d->food_id, false);
 							} // foreach $ingrds						
 						}
 						?>
@@ -454,9 +463,16 @@ class hrecipe_admin extends hrecipe_microformat
 	/**
 	 * Emit HTML for a row in the ingredients table on admin recipe edit screen
 	 *
+	 * @param $list_id, int, Containing recipe list ID for this ingredient
+	 * @param $qty, string, Quantity of recipe ingredient
+	 * @param $unit, string, unit of measure for recipe ingredient
+	 * @param $ingrd, string, ingredient name
+	 * @param $comment, string, comments for this ingredient row
+	 * @param $food_id, int, ID of linked ingredient in the ingredient database
+	 * @param $proto, boolean, true if creating a prototype row
 	 * @return void
 	 **/
-	function recipe_edit_ingrd_row($list_id, $qty, $unit, $ingrd, $comment, $food_id)
+	function recipe_edit_ingrd_row($list_id, $qty, $unit, $ingrd, $comment, $food_id, $proto)
 	{
 		// Escape special characters in the output
 		$qty = esc_attr($qty);
@@ -464,21 +480,34 @@ class hrecipe_admin extends hrecipe_microformat
 		$ingrd = esc_attr($ingrd);
 		$comment = esc_attr($comment);
 		$food_id = esc_attr($food_id);
+		$prototype = $proto ? 'prototype' : '';
+		
+		// If $food_id is specified, show this row as linked
+		// FIXME If food_id available, mark row as linked
+		$linked_state = $food_id ? "food_linked" : "";
 		
 		?>
-		<tr class="recipe_ingrd_row">
-			<td class="ui-buttons">
+		<tr class="recipe_ingrd_row <?php echo $prototype; ?>">
+			<td class="row_interaction">
 				<ul>
-				<li><span class="sort-handle ui-icon ui-icon-arrow-2-n-s ui-state-active"></span></li>
-				<li><span class="insert ui-icon ui-icon-plusthick ui-state-active"></span></li>
-				<li><span class="delete ui-icon ui-icon-minusthick ui-state-active"></span></li>
+				<li class="ui-state-default ui-corner-all"><span class="sort-handle ui-icon ui-icon-arrow-2-n-s"></span></li>
+				<li class="ui-state-default ui-corner-all"><span class="insert ui-icon ui-icon-plusthick"></span></li>
+				<li class="ui-state-default ui-corner-all"><span class="delete ui-icon ui-icon-minusthick"></span></li>
 				</ul>
 			</td>
 			<td><input type="text" name="<?php echo self::prefix; ?>quantity[<?php echo $list_id; ?>][]" class="value" value="<?php echo $qty ?>" /></td>
 			<td><input type="text" name="<?php echo self::prefix; ?>unit[<?php echo $list_id; ?>][]" class="type ui-widget" value="<?php echo $unit ?>"/></td>
-			<td><input type="text" name="<?php echo self::prefix; ?>ingrd[<?php echo $list_id; ?>][]" class="ingrd" value ="<?php echo $ingrd ?>"/></td>
+			<td >
+				<ul>
+					<li>
+						<input type="text" name="<?php echo self::prefix; ?>ingrd[<?php echo $list_id; ?>][]" class="ingrd  <?php echo $linked_state; ?>" value ="<?php echo $ingrd ?>"/>
+					</li>
+					<li class="ui-state-default ui-corner-all">
+						<span class="food-link-status ui-icon ui-icon-link"></span>
+					</li>
+			</td>
 			<td><input type="text" name="<?php echo self::prefix; ?>comment[<?php echo $list_id; ?>][]" class="comment" value="<?php echo $comment ?>"/></td>
-			<!-- FIXME If food_id available, mark row as linked -->
+			<!-- FIXME Only display food_id column in WP_DEBUG mode -->
 			<td><input type="text" name="<?php echo self::prefix ?>food_id[<?php echo $list_id; ?>][]" value="<?php echo $food_id; ?>" class="food_id" readonly="readonly"></td>
 		</tr>
 		<?php
@@ -1251,7 +1280,6 @@ class hrecipe_admin extends hrecipe_microformat
 	function add_tinymce_css($mce_css){
 		if (! empty($mce_css)) $mce_css .= ',';
 		$mce_css .= self::$url . 'admin/css/editor.css';
-		$mce_css .= ',' . self::$url . 'admin/css/jquery-ui.css';
 		return $mce_css; 
 	}
 	

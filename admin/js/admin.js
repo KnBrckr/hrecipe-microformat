@@ -30,7 +30,6 @@ var hrecipe = {
 	
 	// Run at document load
 	init: function($){
-		
 		/*
 			Tools for Admin Settings Section
 		*/
@@ -53,15 +52,16 @@ var hrecipe = {
 		/*
 			Add tools to Recipe Ingredient list section
 		*/
-		
+
+		// Enable manipulation of rows in ingredients table
 		var ingrdsTable = $('.ingredients');
 		if (ingrdsTable.length > 0) {
-			// Make ingredients list sortable and setup autocomplete for each row
+			// Make ingredients list sortable and setup UI elements for each row
 			ingrdsTable.sortable({ items: 'tbody tr' }).each(function(index,item){
-				hrecipe.recipePage.autocompleteIngrdRow(item);
+				hrecipe.recipePage.setupIngrdRow(item);
 			});
 				
-			// Setup Insert and Delete Row functions
+			// Setup Insert and Delete Row functions at table level
 			ingrdsTable.on('click', '.insert', hrecipe.recipePage.insertIngrdRow);
 			ingrdsTable.on('click', '.delete', hrecipe.recipePage.deleteIngrdRow);
 		}
@@ -134,14 +134,11 @@ var hrecipe = {
 		insertIngrdRow : function() {
 			// Travel up DOM to find the containing TR and clone it
 			var row = jQuery(this).closest('tr');
-			var newRow = row.clone();
+			var newRow = jQuery('.recipe_ingrd_row.prototype').clone().removeClass('prototype');
 
-			// Clean out any values
-			newRow.find('input').each(function() { this.value = '';});
-
-			// Setup autocomplete for the new row elements
-			hrecipe.autocompleteIngrdRow(newRow);
-	
+			// Setup UI elements for the new row elements
+			hrecipe.recipePage.setupIngrdRow(newRow);
+			
 			// Put new row into the table after the current one
 			row.after(newRow);
 			jQuery('.ingredients').sortable('refresh');
@@ -158,15 +155,27 @@ var hrecipe = {
 		},
 		
 		//
-		// Setup Autocomplete for Ingredient rows in recipe edit screen
+		// Setup UI elements for Ingredient rows in recipe edit screen
 		//
 		// target (DOM or jQuery Object referencing row of ingredient table)
-		autocompleteIngrdRow : function(target) {
+		setupIngrdRow : function(target) {
+			jTarget = jQuery(target);
+			
+			// Add some pizzaz to the buttons
+			jTarget.find( "li.ui-state-default" ).hover(
+				function() {
+					jQuery( this ).addClass( "ui-state-hover" );
+				},
+				function() {
+					jQuery( this ).removeClass( "ui-state-hover" );
+				}
+			);
+			
 			// Autocomplete for the type (unit) column of ingredient list
-			jQuery(target).find('.type').autocomplete({source: hrecipe.recipePage.availableUnits});
+			jTarget.find('.type').autocomplete({source: hrecipe.recipePage.availableUnits});
 	
 			// Autocomplete for the ingredient column of ingredient list
-			jQuery(target).find('.ingrd').autocomplete({
+			jTarget.find('.ingrd').autocomplete({
 				source: function( request, response ) {
 					jQuery.ajax({
 						url: hrecipeAdminVars.ajaxurl,
@@ -192,13 +201,14 @@ var hrecipe = {
 				},
 				minLength: 3,
 				// change triggered when field is blurred if the value has changed
+				// FIXME Some timing issues in having this reliably work
 				change: function( event, ui ) {
 					if (ui.item) {
 						// If an item was selected, record the food database record number
-						jQuery(this).addClass('food_linked').parent().siblings().find('.food_id').val(ui.item.food_id);				
+						jQuery(this).addClass('food_linked').closest('tr').find('.food_id').val(ui.item.food_id);				
 					} else {
 						// No matching item, clear food database record number
-						jQuery(this).removeClass('food_linked').parent().siblings().find('.food_id').val('');
+						jQuery(this).removeClass('food_linked').closest('tr').find('.food_id').val('');
 					}
 				}
 			});
