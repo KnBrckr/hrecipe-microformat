@@ -433,7 +433,7 @@ class hrecipe_admin extends hrecipe_microformat
 							<th>Unit</th>
 							<th>Ingredient</th>
 							<th>Comment</th>
-							<th>Food ID</th>
+							<?php if (WP_DEBUG) echo "<th>Food ID</th>"; ?>
 						</tr>
 					</thead>
 					<tbody>
@@ -480,10 +480,11 @@ class hrecipe_admin extends hrecipe_microformat
 		$ingrd = esc_attr($ingrd);
 		$comment = esc_attr($comment);
 		$food_id = esc_attr($food_id);
+		
 		$prototype = $proto ? 'prototype' : '';
 		
 		// If $food_id is specified, show this row as linked
-		// FIXME If food_id available, mark row as linked
+		// FIXME If food_id available, mark row as linked - Needs to be styled
 		$linked_state = $food_id ? "food_linked" : "";
 		
 		?>
@@ -503,12 +504,13 @@ class hrecipe_admin extends hrecipe_microformat
 						<input type="text" name="<?php echo self::prefix; ?>ingrd[<?php echo $list_id; ?>][]" class="ingrd  <?php echo $linked_state; ?>" value ="<?php echo $ingrd ?>"/>
 					</li>
 					<li class="ui-state-default ui-corner-all">
-						<span class="food-link-status ui-icon ui-icon-link"></span>
+						<span class="food-link-status ui-icon ui-icon-link"></span><input type="hidden" name="<?php echo self::prefix ?>food_id[<?php echo $list_id; ?>][]" value="<?php echo $food_id; ?>" class="food_id">
 					</li>
 			</td>
 			<td><input type="text" name="<?php echo self::prefix; ?>comment[<?php echo $list_id; ?>][]" class="comment" value="<?php echo $comment ?>"/></td>
-			<!-- FIXME Only display food_id column in WP_DEBUG mode -->
-			<td><input type="text" name="<?php echo self::prefix ?>food_id[<?php echo $list_id; ?>][]" value="<?php echo $food_id; ?>" class="food_id" readonly="readonly"></td>
+			<?php if (WP_DEBUG) : // Only display the food_id column in debug mode ?>
+			<td><input type="text" value="<?php echo $food_id; ?>" class="food_id" readonly="readonly"></td>				
+			<?php endif; ?>
 		</tr>
 		<?php
 	}
