@@ -109,13 +109,19 @@ class hrecipe_admin extends hrecipe_microformat
 	/**
 	 * register callbacks with WP
 	 *
+	 * This function is called to establish the initial WP callbacks needed to set everything up for use
+	 *
 	 * @return void
 	 **/
-	function register_admin()
+	function register_wp_callbacks()
 	{
+		// Do parent class work
+		parent::register_wp_callbacks();
+		
 		// Add menu item for plugin options page
 		add_action('admin_menu', array(&$this, 'admin_menu'));
 
+		// Register for admin_init
 		add_action('admin_init', array( &$this, 'admin_init'));
 
 		// If logging is enabled, setup save in the footer.
@@ -143,7 +149,7 @@ class hrecipe_admin extends hrecipe_microformat
 		// Setup USDA Standard Reference database			
 		if (! $this->nutrient_db->setup_nutrient_db(WP_PLUGIN_DIR . '/' . self::p . '/db/')) {
 			// There was a problem creating DB
-			// FIXME Return failure - How?  Use WP_Error class?  Also fix for below
+			// FIXME Return failure - How?  Use WP_Error class?  Also fix for below return
 			return 0;
 		}
 		
@@ -151,7 +157,7 @@ class hrecipe_admin extends hrecipe_microformat
 		 * Setup Ingredient Database
 		 */
 		if (! $this->ingrd_db->create_schema()) {
-			// There was a problem creating DB, delete nutrient DB created above
+			// FIXME There was a problem creating DB, delete nutrient DB created above and return failure
 			$this->nutrient_db->drop_nutrient_schema();
 			return 0;
 		}

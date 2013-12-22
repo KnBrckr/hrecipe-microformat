@@ -65,13 +65,12 @@ foreach ($required_libs as $lib) {
 
 if (is_admin()) {
 	$hrecipe_microformat = new hrecipe_admin();
-	$hrecipe_microformat->register_admin();
 } else {
 	$hrecipe_microformat = new hrecipe_microformat();
 }
 
 // Register callbacks with WP
-$hrecipe_microformat->register();
+$hrecipe_microformat->register_wp_callbacks();
 
 // Setup plugin activation function to populate the taxonomies
 register_activation_hook( __FILE__, 'hrecipe_microformat_plugin_activation');

@@ -224,9 +224,11 @@ class hrecipe_microformat {
 	/**
 	 * Register callbacks with wordpress
 	 *
+	 * This function is called to establish the initial WP callbacks needed to set everything up for use
+	 *
 	 * @return void
 	 **/
-	function register()
+	function register_wp_callbacks()
 	{
 		add_action('init', array(&$this, 'wp_init'));
 
