@@ -215,9 +215,18 @@ class import_shopncook {
 		
 		if (is_array($ingrd)) {
 			// Treat INGREDIENTTEXT tag as a Recipe list title
-			// TODO Special handling for multi-line INGREDIENTTEXT values?
 			if (array_key_exists('@orig_tag', $ingrd) && 'INGREDIENTTEXT' == $ingrd['@orig_tag']) {
-				array_push($ingrd_norm, array('list-title' => $ingrd['@value']));
+				// In event Ingredient Text is multi-line, explode and process each line
+				$text = explode("\n", $ingrd['@value']);
+				// Use first line as the title
+				array_push($ingrd_norm, array('list-title' => array_shift($text)));
+				while ($ingrd = array_shift($text)) {
+					// Remaining lines entered as ingredients
+					array_push(
+						$ingrd_norm, 
+						array('ingrd' => $ingrd, 'value' => NULL, 'type' => NULL, 'comment' => NULL)
+					);							
+				}
 			} else {
 				if ($ingrd['@attrib']['QUANTITY']) {
 					$qty = $ingrd['@attrib']['QUANTITY'];
