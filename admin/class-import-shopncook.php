@@ -172,7 +172,13 @@ class import_shopncook {
 		/**
 		 * Add the actual recipe text to the content
 		 */
-		array_push($recipe['content'], array('type' => 'text', 'data' => $scx['RECIPETEXT']));
+		
+		// Filter extraneous Nutrition info from text if present, format: "Nutr. Assoc. : 0 0 0 0 0 0 0 20176 0 0"
+		$nutr_pattern = '/Nutr. Assoc. :( \d+){1,}/';
+		array_push(
+			$recipe['content'], 
+			array('type' => 'text', 'data' => preg_replace($nutr_pattern, "", $scx['RECIPETEXT']))
+		);
 
 		return $recipe;
 	}
