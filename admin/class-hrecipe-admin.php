@@ -36,7 +36,10 @@ if (!defined('WP_PLUGIN_DIR')) {
 }
 
 // Load additional classes
-foreach (array('class-hrecipe-importer.php', 'class-hrecipe-ingredient-table.php') as $lib) {
+foreach (array(
+			'class-hrecipe-importer.php',
+			'class-hrecipe-ingredient-table.php'
+		 	) as $lib) {
 	if (!include_once($lib)) {
 		return false;
 	}
@@ -326,17 +329,24 @@ class hrecipe_admin extends hrecipe_microformat
 	{
 		global $wp_scripts;
 		
+		// When post loads upgrade the recipe contents from table in recipe to ingredients database
+		// FIXME Move this to a general purpose upgrade for all recipes vs. upgrade on page load
+		add_action('edit_form_after_title', array($this, 'upgrade_recipe_ingrds_table'));
+		
 		// Add section for reporting configuration errors and notices
-		add_action('admin_notices', array( &$this, 'display_admin_notices'));
+		add_action('admin_notices', array( $this, 'display_admin_notices'));
 		
 		// Page hooks - format: load-PostType_page_PageName 
 		// Do actions for ingredients table
-		add_action(
+		add_action(	
 			'load-' . self::post_type . '_page_' . self::prefix . 'ingredients-table', 
 			array($this, 'ingredients_table_page_action')
 		);
 		// Save ingredients provided by admin
-		add_action('load-' . self::post_type . '_page_' . self::prefix . 'add-ingredient', array( $this, 'save_ingredient'));
+		add_action(
+			'load-' . self::post_type . '_page_' . self::prefix . 'add-ingredient', 
+			array( $this, 'save_ingredient')
+		);
 
 		// Add plugin admin style
 		add_action( 'admin_print_styles-post.php', array(&$this, 'enqueue_admin_styles'), 1000 );
@@ -362,7 +372,7 @@ class hrecipe_admin extends hrecipe_microformat
 		wp_register_script(self::prefix . 'admin', self::$url . 'admin/js/admin.js',
 		                   array('jquery-ui-autocomplete','jquery-ui-sortable'), false, true);
 		
-		// Register jQuery UI stylesheet 
+		// Register jQuery UI stylesheet - use googleapi version based on what version of core is running
 		// FIXME - Migrate to minified version after WP upgrade to jQuery version greater than 1.9.2
 		wp_register_style(self::prefix . 'jquery-ui', "http://ajax.googleapis.com/ajax/libs/jqueryui/{$wp_scripts->registered['jquery-ui-core']->ver}/themes/smoothness/jquery-ui.css");
 		
@@ -519,6 +529,111 @@ class hrecipe_admin extends hrecipe_microformat
 			<?php endif; ?>
 		</tr>
 		<?php
+	}
+	
+	/**
+	 * Upgrades the post content for a recipe post to be consistent with latest formatting
+	 *
+	 * Original version had a table embedded in the recipe post with ingredient content.
+	 * New version uses an ingredient database so the table must be converted to database entries and the
+	 * table text replace with an ingredient table shortcode to retrieve the ingredients when the recipe is displayed.
+	 *
+	 * <table class="ingredients">
+	 *  <thead>
+	 *   <tr><th><span class="ingredients-title">Title</span></th></tr>
+	 *  </thead>
+	 *  <tbody>
+	 *   <tr>
+	 *    <td><span class="value">value</span><span class="type">measure</span></td>
+	 *    <td><span class="ingrd">ingredient</span><span class="comment"</span></td>
+	 *   </tr>
+	 *   ... Repeat <tr> as needed
+	 *  </tbody>
+	 *
+	 * @uses $post, reference to post object to modify
+	 * @param $iPost, 
+	 * @return void, no return needed since post object is modified directly
+	 **/
+	function upgrade_recipe_ingrds_table($iPost = NULL)
+	{
+		global $post;
+		
+		// Use post passed as parameter if available, otherwise use the global
+		$current_post = ($iPost == NULL) ? $post : $iPost;
+		
+		// Only do this for recipe posts
+		if (get_post_type($current_post->ID) != self::post_type) return;
+		
+		// Wrap the content in tags for XML to handle it properly.  Must be removed at the back-end.
+		$content = new DOMDocument();
+		$content->preserveWhiteSpace = false;
+		$content->loadXML('<content>'.$current_post->post_content.'</content>');
+		$xpath = new DOMXPath($content);
+		
+		/*
+			For each ingredients table found, convert it to Database entries and change the table to a short code
+		*/
+
+		// Locate tables in the content marked with ingredients class
+		$tables = $xpath->query("//table[contains(concat(' ', normalize-space(@class), ' '), ' ingredients ')]");
+		
+		// Start with list id 1 and empty array of titles
+		$ingrds_list_id = 1;
+		$ingrds_list_title = array();
+		
+		foreach ($tables as $table) {
+			// Grab title for this table and add to the list
+			$ingrd_titles = $xpath->query("./thead//span[contains(concat(' ', normalize-space(@class), ' '), ' ingredients-title ')]", $table);
+			$ingrds_list_title[$ingrds_list_id] = $ingrd_titles->length > 0 ? $ingrd_titles->item(0)->nodeValue : '';
+			
+			// For each row in the table, create a DB entry in the ingredients db
+			$ingrds_list = array();
+			$ingrd_rows = $xpath->query(".//tr[contains(concat(' ', normalize-space(@class), ' '), ' ingredient ')]", $table);
+			foreach ($ingrd_rows as $row) {
+				// Extract value, type, ingrd and comment from each table row
+				$result = $xpath->query("td/span[contains(concat(' ', normalize-space(@class), ' '), ' ingrd ')]", $row);
+				// FIXME Use normalize ingredient from the importer
+				$ingrd['ingrd'] = $result->length > 0 ? $result->item(0)->nodeValue : '';
+				
+				$result = $xpath->query("td/span[contains(concat(' ', normalize-space(@class), ' '), ' value ')]", $row);
+				$ingrd['quantity'] = $result->length > 0 ? $result->item(0)->nodeValue : '';
+				
+				$result = $xpath->query("td/span[contains(concat(' ', normalize-space(@class), ' '), ' type ')]", $row);
+				$ingrd['unit'] = $result->length > 0 ? $result->item(0)->nodeValue : '';
+				
+				$result = $xpath->query("td/span[contains(concat(' ', normalize-space(@class), ' '), ' comment ')]", $row);
+				$ingrd['comment'] = $result->length > 0 ? $result->item(0)->nodeValue : '';
+				
+				$ingrds_list[] = $ingrd;
+			}
+			
+			if (count($ingrds_list) > 0) {
+				// FIXME Handle insert errors
+				// Add ingredients to the DB
+				$this->ingrd_db->insert_ingrds_for_recipe($current_post->ID, $ingrds_list_id, $ingrds_list);
+			}
+
+			// Replace table with short code text to complete the conversion
+			$sc_text = $content->createTextNode( "[ingrd-list id='". $ingrds_list_id . "']");
+			$table->parentNode->replaceChild($sc_text, $table);
+			
+			$ingrds_list_id++;			
+		} // End processing for each table
+		
+		// If at least one list was processed, content was updated
+		if ($ingrds_list_id > 1) {
+			// Remove the wrapping tag from the content and update content.
+		    $innerHTML = ""; 
+		    $children  = $content->documentElement->childNodes;
+
+		    foreach ($children as $child) 
+		    { 
+		        $innerHTML .= $content->saveXML($child);
+		    }
+			
+			// Save new version of content but convert <br/> back into <br /> -- WP seems to not like the former
+			$current_post->post_content = str_replace("<br/>", "<br />", $innerHTML);
+		}
 	}
 	
 	/**
