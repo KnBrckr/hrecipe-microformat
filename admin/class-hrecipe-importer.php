@@ -28,12 +28,13 @@
 // TODO Import Text File format
 // TODO Import hrecipe format
 
-// Protect from direct execution
-if (!defined('WP_PLUGIN_DIR')) {
-	header('Status: 403 Forbidden');
-  header('HTTP/1.1 403 Forbidden');
-  exit();
-}
+// Only start including WP files when WP environment is setup.
+if (defined('WP_PLUGIN_DIR')) {
+	/**
+	 * Register the importer with Wordpress - must include the import module as it's not included by default
+	 */
+	include_once(ABSPATH . 'wp-admin/includes/import.php');
+}	
 
 $required_libs = array('class-import-shopncook.php');
 foreach ($required_libs as $lib) {
@@ -71,6 +72,13 @@ class hrecipe_importer {
 	private $transient_id;
 	
 	/**
+	 * Attributes of an ingredient that should be treated as comments, not part of the ingredient name
+	 *
+	 * @var array of strings
+	 **/
+	private $ingrd_attributes;
+	
+	/**
 	 * Class Constructor
 	 *
 	 */
@@ -83,6 +91,67 @@ class hrecipe_importer {
 		$this->category_taxonomy = $category;
 		$this->transient_id = $domain . '-recipes_import'; // TODO Use a session var for concurrency?
 		$this->ingrd_db = $ingrd_db;
+
+		$this->ingrd_attributes = array(
+			"boned",
+			"bottled",
+			"canned",
+			"chilled",
+			"chopped",
+			"(?:hot )?cooked",
+			"cored",
+			"cracked",
+			"crumbled",
+			"crushed",
+			"cubed",
+			"debearded",
+			"deveined",
+			"(?:each )?(?:julienne[- ])?cut (?:lengthwise\s?)?(?:in|into|crosswise|diagonally)? .*(?:slices|strips|cubes|pieces|squares|wedges|chunks|sticks|rings|quarters)",
+			"diced",
+			"divided",
+			"drained",
+//			"fresh",
+			"frozen",
+			"grated",
+			"grilled",
+			"ground",
+			"halved(?: lengthwise)?",
+			"julienne[- ]cut",
+			"mashed cooked",
+			"mashed peeled",
+			"mashed",
+			"melted",
+			"minced",
+			"peeled lengthwise",
+			"peeled",
+			"pitted",
+			"quartered",
+			"refrigerated",
+			"rinsed",
+			"ripe",
+			"scrubbed",
+			"seeded",
+			"shelled",
+			"shredded",
+			"sifted",
+			"skinned",
+			"(?:pre[- ])?sliced",
+			"slivered",
+			"softened",
+			"thawed",
+			"thin",
+			"thin-skin(?:ed)?",
+			"thick-skin(?:ed)?",
+			"toasted",
+			"torn",
+			"trimmed",
+			"uncooked",
+			"undrained",
+			"unpeeled",
+			"warm",
+		);
+		
+		usort($this->ingrd_attributes, function($a, $b) { return strlen($b) - strlen($a); });
 	}
 	
 	/**
@@ -551,6 +620,16 @@ class hrecipe_importer {
 						
 						// Normalize ingredient name.  Result contains ingrd, comment and food_id
 						$row = $this->normalize_ingrd($d['ingrd']);
+
+						/**
+						 * Try locating ingredient in the ingredients database
+						 FIXME Also try singular form if 's' present at end of name
+						 */
+						$ingrd_db_rows = $this->ingrd_db->get_ingrds_by_name( $row['ingrd'], 1, true );
+						if ($ingrd_db_rows) {
+							$retval['food_id'] = $ingrd_db_rows[0]->food_id;
+						}
+
 						// If row and data comment exist, concat them, else return one or the other
 						$row['comment'] = isset($row['comment']) ? 
 							($d['comment'] != '' ? $row['comment']. ', ' . $d['comment'] : $row['comment']) : $d['comment'] ;
@@ -662,8 +741,7 @@ class hrecipe_importer {
 	}
 	
 	/**
-	 * Normalize an ingredient name by moving common qualifiers to comments and match against the ingredient
-	 * database to provide unit conversions
+	 * Normalize an ingredient name by moving common qualifiers to comments
 	 *
 	 * @param $ingrd, string, Ingredient text from recipe
 	 * @uses $hrecipe_microformat hrecipe_microformat object
@@ -671,102 +749,33 @@ class hrecipe_importer {
 	 **/
 	function normalize_ingrd($ingrd)
 	{
-		global $hrecipe_microformat;
-		
-		// FIXME Update attributes list - sort by length
-		$attributes = array(
-			"coarsely chopped",
-			"coarsely ground",
-			"coarsely mashed",
-			"finely chopped",
-			"finely crushed",
-			"finely grated",
-			"freshly ground",
-			"Freshly ground",
-			"mashed cooked",
-			"mashed peeled",
-			"very thinly sliced",
-			"vertically sliced",
-			"thinly sliced",
-			"very thin",
-			"very warm",
-			"hot cooked",
-			"uncooked",
-			"undrained",	
-			"chopped",
-			"Chopped",
-			"Grilled",
-			"Minced",
-			"Sliced",
-			"Fresh",
-			"diced",
-			"halved",
-			"bottled",
-			"chilled",
-			"minced",
-			"cubed",
-			"mashed",
-			"drained",
-			"deveined",
-			"cubed",
-			"peeled",
-			"warm",
-			"sliced",
-			"quartered",
-			"shelled",
-			"cooked",
-			"shredded",
-			"cored",
-			"sifted",
-			"skinned",
-			"slivered",
-			"thawed",
-			"ripe",
-			"unpeeled",
-			"seeded",
-			"julienne-cut",
-			"loosely packed",
-			"diagonally sliced",
-			"diagonally cut",
-			"firmly packed",
-			"tightly packed",
-			"torn",
-			"trimmed",
-			"grated",
-			"fresh",
-			"frozen",
-			"canned"
-		);
-	
 		$orig_ingrd = $ingrd;
 		
 		// Trim adjectives from the ingredient name
 		$found = array();
-		foreach ($attributes as $attr) {
-			$ingrd = str_replace($attr, '', $ingrd, $count);
-			if ($count) $found[] = $attr;
+		$matches = array();
+		foreach ($this->ingrd_attributes as $attr) {
+			// Look for attributes that such as "very finely diced"
+			$regex = '/^(.*?)((?:very\s|fresh\s)?(?:\w+ly\s)?' . $attr . ')\b(.*?)$/i';
+			if (preg_match($regex, $ingrd, $matches)) {
+				$ingrd = $matches[1] . $matches[3];
+				$found[] = $matches[2];
+			}
 		}
+		
+		// Cleanup multiple spaces
 		$ingrd = preg_replace('/\s\s+/', ' ', trim($ingrd));
 		
-		/**
-		 * Try locating ingredient in the ingredients database
-		 FIXME Also try singular form if 's' present at end of name
-		 */
-		$rows = $hrecipe_microformat->ingrd_db->get_ingrds_by_name( $ingrd, 1, true );
-		if ($rows) {
-			$retval['food_id'] = $rows[0]->food_id;
-			$retval['ingrd'] = $ingrd;
-			$retval['comment'] = implode(', ', $found);
-		} else {
-			$retval['ingrd'] = $orig_ingrd;
-		}
+		// Cleanup leading ', ', 'and ', 'or '
+		$ingrd = preg_replace('/^((-|,|and\b|or\b) ?)+/', '', $ingrd);
+		
+		// Cleanup trailing ':'
+		$ingrd = preg_replace('/:$/', '', $ingrd);
+		
+		$retval['ingrd'] = $ingrd;
+		$retval['comment'] = implode(', ', $found);
 		
 		return $retval;
 	}
 } // End hrecipe_importer class
-
-/**
- * Register the importer with Wordpress - must include the import module as it's not included by default
- */
-include_once(ABSPATH . 'wp-admin/includes/import.php');
 ?>
