@@ -278,6 +278,12 @@ class hrecipe_ingrd_db {
 	{
 		global $wpdb;
 		
+		// Don't insert using invalid post ids!
+		if ($post_id <= 0) {
+			error_log("Tried to insert recipe ingredients using invalid post id: '$post_id'");
+			return false;
+		}
+		
 		/**
 		 * Delete saved list if one already exists
 		 */

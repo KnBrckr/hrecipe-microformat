@@ -82,7 +82,7 @@ class hrecipe_admin extends hrecipe_microformat
 	 * @access private
 	 * @var object
 	 **/
-	private $recipe_importer;
+	private $hrecipe_importer;
 	
 	/**
 	 * Setup plugin defaults and register with WordPress for use in Admin screens
@@ -107,6 +107,9 @@ class hrecipe_admin extends hrecipe_microformat
 			self::msg_ingredient_deleted => 'Deleted ingredient(s).',
 			self::msg_ingredient_blank => 'Blank ingredient specified, not added to database'
 		);
+		
+		// Setup Importer Class
+		$this->hrecipe_importer = new hrecipe_importer(self::p, $this->recipe_category_taxonomy, $this->ingrd_db);
 	}
 	
 	/**
@@ -199,8 +202,7 @@ class hrecipe_admin extends hrecipe_microformat
 		 * Register the recipe importer to display in the import menu
 		 */
 		if(function_exists('register_importer')) {
-			$hrecipe_import = new hrecipe_importer(self::p, $this->recipe_category_taxonomy, $this->ingrd_db);
-			register_importer($hrecipe_import->id, $hrecipe_import->name, $hrecipe_import->desc, array ($hrecipe_import, 'dispatch'));
+			register_importer($this->hrecipe_importer->id, $this->hrecipe_importer->name, $this->hrecipe_importer->desc, array ($this->hrecipe_importer, 'dispatch'));
 		}
 		
 		/**
@@ -329,10 +331,6 @@ class hrecipe_admin extends hrecipe_microformat
 	{
 		global $wp_scripts;
 		
-		// When post loads upgrade the recipe contents from table in recipe to ingredients database
-		// FIXME Move this to a general purpose upgrade for all recipes vs. upgrade on page load
-		add_action('edit_form_after_title', array($this, 'upgrade_recipe_ingrds_table'));
-		
 		// Add section for reporting configuration errors and notices
 		add_action('admin_notices', array( $this, 'display_admin_notices'));
 		
@@ -383,6 +381,10 @@ class hrecipe_admin extends hrecipe_microformat
 		
 		// Cleanup when deleting a recipe
 		add_action('delete_post', array($this, 'action_delete_post'));
+		
+		// When post loads for edit upgrade the recipe contents from table in recipe to ingredients database
+		//   (Priority 10, 2 parameters expected)
+		add_filter('content_edit_pre', array($this, 'upgrade_recipe_ingrds_table'), 10, 2);
 	}
 	
 	/**
@@ -550,24 +552,19 @@ class hrecipe_admin extends hrecipe_microformat
 	 *   ... Repeat <tr> as needed
 	 *  </tbody>
 	 *
-	 * @uses $post, reference to post object to modify
-	 * @param $iPost, 
-	 * @return void, no return needed since post object is modified directly
+	 * @param $post_content, Post content being edited
+	 * @param $post_id, Post ID
+	 * @return modified $post_content
 	 **/
-	function upgrade_recipe_ingrds_table($iPost = NULL)
+	function upgrade_recipe_ingrds_table($post_content, $post_id)
 	{
-		global $post;
-		
-		// Use post passed as parameter if available, otherwise use the global
-		$current_post = ($iPost == NULL) ? $post : $iPost;
-		
 		// Only do this for recipe posts
-		if (get_post_type($current_post->ID) != self::post_type) return;
+		if (get_post_type($post_id) != self::post_type) return $post_content;
 		
 		// Wrap the content in tags for XML to handle it properly.  Must be removed at the back-end.
 		$content = new DOMDocument();
 		$content->preserveWhiteSpace = false;
-		$content->loadXML('<content>'.$current_post->post_content.'</content>');
+		$content->loadXML('<content>'.$post_content.'</content>');
 		$xpath = new DOMXPath($content);
 		
 		/*
@@ -592,8 +589,12 @@ class hrecipe_admin extends hrecipe_microformat
 			foreach ($ingrd_rows as $row) {
 				// Extract value, type, ingrd and comment from each table row
 				$result = $xpath->query("td/span[contains(concat(' ', normalize-space(@class), ' '), ' ingrd ')]", $row);
-				// FIXME Use normalize ingredient from the importer
-				$ingrd['ingrd'] = $result->length > 0 ? $result->item(0)->nodeValue : '';
+				if ($result->length > 0) {
+					// Move some standard ingredient descriptors to comments – Sets both 'ingrd' and 'comment' values
+					$ingrd = $this->hrecipe_importer->normalize_ingrd($result->item(0)->nodeValue);
+				} else {
+					$ingrd['ingrd'] = '';
+				}
 				
 				$result = $xpath->query("td/span[contains(concat(' ', normalize-space(@class), ' '), ' value ')]", $row);
 				$ingrd['quantity'] = $result->length > 0 ? $result->item(0)->nodeValue : '';
@@ -602,7 +603,25 @@ class hrecipe_admin extends hrecipe_microformat
 				$ingrd['unit'] = $result->length > 0 ? $result->item(0)->nodeValue : '';
 				
 				$result = $xpath->query("td/span[contains(concat(' ', normalize-space(@class), ' '), ' comment ')]", $row);
-				$ingrd['comment'] = $result->length > 0 ? $result->item(0)->nodeValue : '';
+				$comment = $result->length > 0 ? $result->item(0)->nodeValue : '';
+				if (array_key_exists('comment', $ingrd)) {
+					// concat comment extracted from ingredient and part found in the comment if present
+					if (strlen($comment > 0)) {
+						$ingrd['comment'] .= ", " . $comment;
+					}
+				} else {
+					$ingrd['comment'] = $comment;
+				}
+				
+				/**
+				 * Try locating ingredient in the ingredients database
+				 * TODO Also try singular form if 's' present at end of name
+				 */
+				// Request 1 return result with exact match
+				$ingrd_db_rows = $this->ingrd_db->get_ingrds_by_name( $ingrd['ingrd'], 1, true );
+				if ($ingrd_db_rows) {
+					$ingrd['food_id'] = $ingrd_db_rows[0]->food_id;
+				}
 				
 				$ingrds_list[] = $ingrd;
 			}
@@ -610,7 +629,7 @@ class hrecipe_admin extends hrecipe_microformat
 			if (count($ingrds_list) > 0) {
 				// FIXME Handle insert errors
 				// Add ingredients to the DB
-				$this->ingrd_db->insert_ingrds_for_recipe($current_post->ID, $ingrds_list_id, $ingrds_list);
+				$this->ingrd_db->insert_ingrds_for_recipe($post_id, $ingrds_list_id, $ingrds_list);
 			}
 
 			// Replace table with short code text to complete the conversion
@@ -626,14 +645,15 @@ class hrecipe_admin extends hrecipe_microformat
 		    $innerHTML = ""; 
 		    $children  = $content->documentElement->childNodes;
 
-		    foreach ($children as $child) 
-		    { 
+		    foreach ($children as $child) { 
 		        $innerHTML .= $content->saveXML($child);
 		    }
 			
 			// Save new version of content but convert <br/> back into <br /> -- WP seems to not like the former
-			$current_post->post_content = str_replace("<br/>", "<br />", $innerHTML);
+			$post_content = str_replace("<br/>", "<br />", $innerHTML);
 		}
+		
+		return $post_content;
 	}
 	
 	/**
