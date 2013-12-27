@@ -30,7 +30,7 @@ class hrecipe_microformat {
 	/**
 	 * Minimum version of WordPress required by plugin
 	 **/
-	const wp_version_required = '3.3.1';
+	const wp_version_required = '3.8';
 	
 	/**
 	 * Minimum version of PHP required by the plugin
