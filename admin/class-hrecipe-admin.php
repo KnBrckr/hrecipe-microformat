@@ -651,6 +651,9 @@ class hrecipe_admin extends hrecipe_microformat
 			
 			// Save new version of content but convert <br/> back into <br /> -- WP seems to not like the former
 			$post_content = str_replace("<br/>", "<br />", $innerHTML);
+			
+			// Add a notification that the post content has been updated and should be saved.
+			$this->log_admin_notice("Recipe content format upgraded to new ingredient format!  Please Save the updated recipe after review.");
 		}
 		
 		return $post_content;
@@ -1009,7 +1012,7 @@ class hrecipe_admin extends hrecipe_microformat
 			<div class="NDB" id="col-right">
 				<!-- Display linked NDB Ingredient -->
 				<table class="NDB_linked widefat">
-					<caption><a href="#TB_inline?width=600&height=550&inlineId=NDB_search_modal" class="thickbox add-new-h2" id="link-nutrition">Link Nutrition Info</a> <span id="NDB_ingrd"><?php echo $NDB_ingrd;?></span> <a class="<?php echo $hide_unlink; ?>" id="unlink-nutrition">Unlink Nutrition Info</a></caption>
+					<caption>Data from USDA National Nutrition Database<br/>Linked Ingredient: <span id="NDB_ingrd"><?php echo $NDB_ingrd;?></span></caption>
 					<thead>
 						<tr><td>Measure</td><td>Grams</td></tr>
 					</thead>
@@ -1043,11 +1046,12 @@ class hrecipe_admin extends hrecipe_microformat
 					<input type="hidden" name="food_id" value="<?php echo $food_id; ?>" id="food_id">
 					<input type="hidden" name="NDB_No" value="<?php echo $row['NDB_No']; ?>" id="NDB_No">
 					<table border="0" cellspacing="5" cellpadding="5">
-						<tr><td>Ingredient</td><td><?php self::text_html('ingrd', $row['ingrd']); ?></td></tr>
+						<tr><td>Ingredient</td><td><?php self::text_html('ingrd', $row['ingrd']); ?><a href="#TB_inline?width=600&height=550&inlineId=NDB_search_modal" class="thickbox add-new-h2" id="link-nutrition">Search USDA Nutrition Database</a></td></tr>
 						<tr><td>Measure</td><td><?php
 							self::radio_html('measure', array( 'volume' => 'Volume', 'weight' => 'Weight'), array(),$row['measure']);
 						?></td></tr>
 						<tr><td>Grams per Cup</td><td><?php self::text_html('gpcup', $row['gpcup'])?></td></tr>
+						<tr><td></td><td><a class="<?php echo $hide_unlink; ?>" id="unlink-nutrition">Unlink Nutrition Info</a></td></tr>
 					</table>
 					<input type="submit" name="submit" value="<?php echo $submit_type ?>">
 				</form>
@@ -1056,8 +1060,9 @@ class hrecipe_admin extends hrecipe_microformat
 		<!-- Modal Dialog box to search Nutrition DB for matching ingredients -->
 		<div id="NDB_search_modal" class="hidden">
 			<form id="NDB_search_form" name="NDB_search_form">
-				<p>
-					<label for="NDB_search_ingrd">Search for Ingredient: </label><input type="text" name="NDB_search_ingrd" value="" id="NDB_search_ingrd"><img class="waiting hidden" src="<?php echo esc_url( admin_url( 'images/wpspin_light.gif' ) ); ?>" alt="" width="16"/>
+				<p> 
+					<label for="NDB_search_ingrd">Search for Ingredient: </label><input type="text" name="NDB_search_ingrd" value="<?php echo $row['ingrd']; ?>" id="NDB_search_ingrd"><span class="ui-state-default ui-corner-all"><span class="search_button ui-icon ui-icon-search" style="display:inline-block"></span></span><img class="waiting hidden" src="<?php echo esc_url( admin_url( 'images/wpspin_light.gif' ) ); ?>" alt="" width="16"/>
+					
 				</p>
 				<div id="NDB_search_results" class="hidden">
 					<div class="tablenav top">

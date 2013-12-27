@@ -69,12 +69,35 @@ var hrecipe = {
 		/*
 			Tools for Add Ingredient page
 		*/
+		
+		// Copy Ingredient to search form
+		$('.hrecipe_page_hrecipe_add-ingredient #ingrd').blur(function(){
+			$('#NDB_search_ingrd').val(this.value);
+		});
 	
 		// On Enter, submit search for ingredient in NDB database
 		$('#NDB_search_ingrd').keypress(function(e){
 			if (e.keyCode === 13) { 
 				hrecipe.addIngrdPage.NDBSearch(1); 
 			}
+		});
+		
+		// Setup search icon
+		$('#NDB_search_modal .search_button').click(function() {
+			hrecipe.addIngrdPage.NDBSearch(1); 
+		});
+		$('#NDB_search_modal .ui-state-default' ).hover(
+			function() {
+				jQuery( this ).addClass( "ui-state-hover" );
+			},
+			function() {
+				jQuery( this ).removeClass( "ui-state-hover" );
+			}
+		);
+		
+		// Setup the unlink button
+		$('.hrecipe_page_hrecipe_add-ingredient #unlink-nutrition').click(function() {
+			hrecipe.addIngrdPage.unlinkNutrition();
 		});
 	
 		// Handler for Submit and INPUT form field click actions for NDB ingredient search
@@ -230,6 +253,24 @@ var hrecipe = {
 			'tsp' : 48,
 			'teaspoon' : 48
 		},
+		
+		//
+		// Unlink Ingredient from USDA Nutrition DB
+		//
+		unlinkNutrition : function() {
+			// Clear the NDB_No from data
+			jQuery('#NDB_No').val(null);
+			
+			// Remove any rows present from previously linked food in the Measures Table
+			var measuresTbl = jQuery('.NDB_linked');
+			measuresTbl.find('tbody>tr:not(.prototype)').remove();
+			
+			// Remove linked ingredient name
+			jQuery('#NDB_ingrd').text('');
+			
+			// Hide the unlink button again
+			jQuery('#unlink-nutrition').addClass('hidden');
+		},
 	
 		//
 		// Perform an AJAX search of NDB database for matching ingredients
@@ -326,7 +367,8 @@ var hrecipe = {
 				}
 			});
 		},
-	
+
+		// Submitting selection from modal used to search for foods in USDA Nutrition DB
 		NDBSearchSubmit : function(e){
 			// Action name was set from onclick function established on the form
 			var action = jQuery(this).data('clicked');
@@ -351,6 +393,7 @@ var hrecipe = {
 				var measures;
 
 				// If Measures for this NDB Number are available, try to determine grams/cup
+				// FIXME Change search for matching measures to prefer larger measure size when multiple present in data
 				if (jQuery.isArray(hrecipe.addIngrdPage.NDBMeasures[NDB_No])) {
 					measures = hrecipe.addIngrdPage.NDBMeasures[NDB_No];
 					for (var i = 0; i < measures.length; i++) {
@@ -385,6 +428,9 @@ var hrecipe = {
 						measuresTbl.append(newRow);
 					}
 				}
+				
+				// Expose the "Unlink" option now that the food is linked
+				jQuery('#unlink-nutrition').removeClass('hidden');
 		
 				// Close the thickbox modal
 				self.parent.tb_remove(); 
