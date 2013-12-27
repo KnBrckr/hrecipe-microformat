@@ -459,7 +459,7 @@ class hrecipe_microformat {
 	function pre_get_posts_filter($query)
 	{
 		// If not main query or on admin page, bail
-		if ( !is_main_query() || is_admin() ) return $query;
+		if ( !$query->is_main_query() || is_admin() ) return $query;
 		
 		// Add plugin post type to home and feed queries
 		if ((is_home() && $this->options['display_in_home']) || (is_feed() && $this->options['display_in_feed'])) {

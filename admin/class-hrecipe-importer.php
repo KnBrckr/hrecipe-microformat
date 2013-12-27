@@ -226,7 +226,7 @@ class hrecipe_importer {
 	 **/
 	function upload_form() {
 		$bytes = apply_filters( 'import_upload_size_limit', wp_max_upload_size() );
-		$size = wp_convert_bytes_to_hr( $bytes );
+		$size = size_format( $bytes );
 		?>
 		<h2><?php _e('Import Recipes', $this->domain)?></h2>
 		<p><?php _e('The following recipe formats can be imported:', $this->domain)?></p>
