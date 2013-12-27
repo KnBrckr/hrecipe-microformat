@@ -88,7 +88,7 @@ class hrecipe_microformat {
 	 * @var Array
 	 * @access protected
 	 **/
-	protected static $taxonomies;
+	protected $taxonomies;
 	
 	/**
 	 * Name of recipe category taxonomy
