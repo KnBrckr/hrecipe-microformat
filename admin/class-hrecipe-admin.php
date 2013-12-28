@@ -26,7 +26,6 @@
 // TODO Add cuisine types - mexican, spanish, indian, etc.
 // TODO Create admin widget for Recipe Categories - only allow one category to be selected
 // TODO Phone-home with error log
-// FIXME Restore from saved revision needs to restore ingredients
 
 // Protect from direct execution
 if (!defined('WP_PLUGIN_DIR')) {
@@ -371,13 +370,14 @@ class hrecipe_admin extends hrecipe_microformat
 		                   array('jquery-ui-autocomplete','jquery-ui-sortable'), false, true);
 		
 		// Register jQuery UI stylesheet - use googleapi version based on what version of core is running
-		// FIXME - Migrate to minified version after WP upgrade to jQuery version greater than 1.9.2
-		wp_register_style(self::prefix . 'jquery-ui', "http://ajax.googleapis.com/ajax/libs/jqueryui/{$wp_scripts->registered['jquery-ui-core']->ver}/themes/smoothness/jquery-ui.css");
+		wp_register_style(self::prefix . 'jquery-ui', "http://ajax.googleapis.com/ajax/libs/jqueryui/{$wp_scripts->registered['jquery-ui-core']->ver}/themes/smoothness/jquery-ui.min.css");
 		
 		// Setup the Recipe Post Editing page
 		add_action('add_meta_boxes_' . self::post_type, array(&$this, 'configure_tinymce')); // TODO Best place for this?
 		add_action('add_meta_boxes_' . self::post_type, array(&$this, 'setup_meta_boxes'));  // Setup plugin metaboxes
-		add_action('save_post' , array(&$this, 'save_post_meta')); // Save the post metadata
+		add_action('save_post_' . self::post_type , array($this, 'action_save_post'), 10, 3); // Save post metadata
+		add_action('save_post_revision', array($this, 'action_save_post_revision'), 10, 3); // Save metadata for revisions
+		add_action('wp_restore_post_revision', array($this, 'action_wp_restore_post_revision'), 10, 2);
 		
 		// Cleanup when deleting a recipe
 		add_action('delete_post', array($this, 'action_delete_post'));
@@ -467,7 +467,7 @@ class hrecipe_admin extends hrecipe_microformat
 							}
 						} else {
 							foreach ($ingrds as $d) {
-								$this->recipe_edit_ingrd_row($list_id, $d->quantity, $d->unit, $d->ingrd, $d->comment, $d->food_id, false);
+								$this->recipe_edit_ingrd_row($list_id, $d['quantity'], $d['unit'], $d['ingrd'], $d['comment'], $d['food_id'], false);
 							} // foreach $ingrds						
 						}
 						?>
@@ -564,7 +564,7 @@ class hrecipe_admin extends hrecipe_microformat
 		// Wrap the content in tags for XML to handle it properly.  Must be removed at the back-end.
 		$content = new DOMDocument();
 		$content->preserveWhiteSpace = false;
-		$content->loadXML('<content>'.$post_content.'</content>');
+		$content->loadXML('<content>'.$post_content.'</content>');  // FIXME Warning: DOMDocument::loadXML(): Entity 'nbsp' not defined in Entity - happens when there's empty space at bottom of recipe text
 		$xpath = new DOMXPath($content);
 		
 		/*
@@ -676,15 +676,15 @@ class hrecipe_admin extends hrecipe_microformat
 		foreach ($this->recipe_field_map as $key => $field) {
 			// Include 'info' fields in this metabox
 			if ('info' == $field['metabox']) {
-				$value = get_post_meta($post->ID, $field['id'], true) | '';
+				$value = get_post_meta($post->ID, $field['key'], true) | '';
 				echo '<p id="' . self::prefix . 'info_' . $key . '"><label><span class="field-label">' . $field['label'] . '</span>';
 				switch ($field['type']) {
 					case 'text':
-						self::text_html($field['id'], $value);
+						self::text_html($field['key'], $value);
 						break;
 					
 					case 'radio':
-						self::radio_html($field['id'], $field['options'], $field['option_descriptions'], $value);
+						self::radio_html($field['key'], $field['options'], $field['option_descriptions'], $value);
 						break;
 				}
 				if (isset($field['description'])) echo '<span class="field-description">' . $field['description'] . '</span>';
@@ -696,36 +696,26 @@ class hrecipe_admin extends hrecipe_microformat
 	/**
 	 * Save Recipe Post meta data and Ingredients
 	 *
-	 * @uses $post Post data
-	 * @param $post_id int post id
+	 * @param int     $post_id  The Post id
+	 * @param object  $post     Post Object
+	 * @param boolean $update   false => this is a new post, true => post is being updated
 	 * @return void
 	 **/
-	function save_post_meta($post_id)
+	function action_save_post($post_id, $post, $update)
 	{
-		global $post;
-		
-		// Don't save meta data on autosaves
-		if ( defined('DOING_AUTOSAVE') && DOING_AUTOSAVE ) 
-			return $post_id;
-			
 		// Confirm nonce field
 		$nonce_field = self::prefix . 'nonce';
 		if ( ! ( isset($_REQUEST[$nonce_field]) && wp_verify_nonce( $_REQUEST[$nonce_field], 'info_metabox')) ) {
-			return $post_id;
-		}
-		
-		// User allowed to edit?
-		if ( self::post_type != $_POST['post_type'] || !current_user_can( 'edit_post', $post_id) ) {
-			return $post_id;
+			return;
 		}
 		
 		/**
 		 * Save Ingredient List Titles and ingredients
 		 */
-		$ingrd_list_title = array();
+		$ingrd_list_titles = array();
 		foreach ($_POST[self::prefix . 'ingrd-list-name'] as $list_id => $title) {
 			// Save list title to add to Post Meta Data
-			$ingrd_list_title[$list_id] = $title;
+			$ingrd_list_titles[$list_id] = $title;
 			
 			// Strip slashes from input values - Write to DB will do the appropriate escaping of text
 			
@@ -758,33 +748,126 @@ class hrecipe_admin extends hrecipe_microformat
 		}
 		
 		// List Titles saved as Post Meta Data
-		update_post_meta($post_id, self::prefix . 'ingrd-list-title', $ingrd_list_title);
+		update_post_meta($post_id, self::prefix . 'ingrd-list-title', $ingrd_list_titles);
 		
-		
-		// FIXME Sort out the right way to handle post revisions (http://pastebin.com/LAuBtmSZ, http://lud.icro.us/post-meta-revisions-wordpress)
-		$the_post = wp_is_post_revision($post_id);
-		if (! $the_post) $the_post = $post_id;
-
-		// Save meta data for the info metabox
+		// Save meta data for each part of the info metabox
 		foreach ($this->recipe_field_map as $field) {
 			if ('info' == $field['metabox']) {
-				$id = $field['id'];
-				$new_data = isset($_POST[$id]) ? $_POST[$id] : '';
-				$old_data = get_post_meta($the_post, $id, true);
-				if ('' == $old_data && $new_data != '') {
-					// New meta data to save
-					add_post_meta($the_post, $id, $new_data, true);
-				} elseif ('' == $new_data) {
-					// New data is empty - remove related meta data
-					delete_post_meta($the_post, $id);
-				}	elseif ($new_data != $old_data) {
-					// New and old don't match, update
-					update_post_meta($the_post, $id, $new_data);
+				$meta_key = $field['key'];
+				$meta_data = isset($_POST[$meta_key]) ? $_POST[$meta_key] : '';
+				if ('' == $meta_data) {
+					delete_post_meta($post_id, $meta_key);
+				} else {
+					update_post_meta($post_id, $meta_key, $meta_data);
 				}
 			} 
 		}
+
+		return;
+	}
+	
+	/**
+	 * Save meta information for recipe posts related to revisions
+	 *
+	 * Action called during autosave and to make copy of a recipe before saving new updates
+	 *
+	 * Based partly on https://lud.icro.us/post-meta-revisions-wordpress
+	 *
+	 * @param int     $post_id  The Post id revision being saved
+	 * @param object  $post     Post Object
+	 * @param boolean $update   false => this is a new post, true => post is being updated
+	 * @return void
+	 **/
+	function action_save_post_revision($post_id, $post, $update) {
+		$parent_id = wp_is_post_revision( $post_id );
+		if (! $parent_id) return;  // Shouldn't happen, but just in case
 		
-		return $post_id;
+		// Only interested in recipe posts
+		if (get_post_type($parent_id) != self::post_type) return;
+		
+		// Save copy of ingredients lists
+		$ingrd_list_titles = get_post_meta($parent_id, self::prefix . 'ingrd-list-title', true);
+		
+		if (is_array($ingrd_list_titles)) {
+			// If we have a list of titles, save in the recipe revision
+			update_metadata('post', $post_id, self::prefix . 'ingrd-list-title', $ingrd_list_titles);
+			
+			// For each list, copy the ingredients over too
+			foreach ($ingrd_list_titles as $list_id => $list_title) {
+				// Retrieve ingredients for the list from the parent
+				$ingrds = $this->ingrd_db->get_ingrds_for_recipe($parent_id, $list_id);
+				
+				// Save list for the revision
+				$this->ingrd_db->insert_ingrds_for_recipe($post_id, $list_id, $ingrds);
+			}
+		} else {
+			// Delete title list if present
+			delete_metadata('post', $post_id, self::prefix . 'ingrd-list-title');
+			
+			// Remove any ingredients associated with the recipe
+			$this->ingrd_db->delete_all_ingrds_for_recipe($post_id);
+		}
+		
+		// Copy meta data from the parent to save for the child
+		foreach ($this->recipe_field_map as $field) {
+			if ('info' == $field['metabox']) {
+				$meta_key = $field['key'];
+				$meta_data = get_post_meta($parent_id, $meta_key, true);
+				if (false === $meta_data) {
+					delete_metadata('post', $post_id, $meta_key);
+				} else {
+					update_metadata('post', $post_id, $meta_key, $meta_data);
+				}
+			} 
+		}
+	}
+	
+	/**
+	 * Restore Recipe fields from saved revision
+	 *
+	 * @param int $post_id      The Post ID
+	 * @param int $revision_id  Revision ID being restored
+	 * @return void
+	 **/
+	function action_wp_restore_post_revision($post_id, $revision_id) {
+		// Only interested in doing this for recipe posts
+		if (get_post_type($post_id) != self::post_type) return;
+		
+		// Restore recipe ingredients
+		$ingrd_list_titles = get_post_meta($revision_id, self::prefix . 'ingrd-list-title', true);
+		
+		if (is_array($ingrd_list_titles)) {
+			// If we have a list of titles, save in the recipe revision
+			update_metadata('post', $post_id, self::prefix . 'ingrd-list-title', $ingrd_list_titles);
+			
+			// For each list, copy the ingredients over too
+			foreach ($ingrd_list_titles as $list_id => $list_title) {
+				// Retrieve ingredients for the list from the parent
+				$ingrds = $this->ingrd_db->get_ingrds_for_recipe($revision_id, $list_id);
+				
+				// Save list for the revision
+				$this->ingrd_db->insert_ingrds_for_recipe($post_id, $list_id, $ingrds);
+			}
+		} else {
+			// Delete title list if present
+			delete_metadata('post', $post_id, self::prefix . 'ingrd-list-title');
+			
+			// Remove any ingredients associated with the recipe
+			$this->ingrd_db->delete_all_ingrds_for_recipe($post_id);
+		}
+		
+		// Copy meta data from saved revision to the recipe
+		foreach ($this->recipe_field_map as $field) {
+			if ('info' == $field['metabox']) {
+				$meta_key = $field['key'];
+				$meta_data = get_metadata('post', $revision_id, $meta_key, true);
+				if (false === $meta_data) {
+					delete_post_meta($post_id, $meta_key);
+				} else {
+					update_post_meta($post_id, $meta_key, $meta_data);
+				}
+			} 
+		}
 	}
 	
 	/**
@@ -1568,7 +1651,7 @@ class hrecipe_admin extends hrecipe_microformat
 	}
 	
 	/**
-	 * Return WordPress Post Meta Key field ID for specified hrecipe microformat key
+	 * Return WordPress Post Meta Key field name for specified hrecipe microformat key
 	 *
 	 * @access public
 	 * @param string $microformat Microformat tag
@@ -1576,7 +1659,7 @@ class hrecipe_admin extends hrecipe_microformat
 	 **/
 	public function post_meta_key($microformat)
 	{
-		return isset($this->recipe_field_map[$microformat]) ? $this->recipe_field_map[$microformat]['id'] : false;
+		return isset($this->recipe_field_map[$microformat]) ? $this->recipe_field_map[$microformat]['key'] : false;
 	}
 	
 	/**

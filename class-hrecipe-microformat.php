@@ -143,13 +143,13 @@ class hrecipe_microformat {
 			'yield'      => array( 'label' => __('Yield', self::p), # TODO Use value, unit for yield (x cookies, x servings, ...)?
 														 'description' => __('Amount the recipe produces, generally the number of servings.', self::p),
 														 'type' => 'text',
-														 'id' => self::prefix . 'yield',
+														 'key' => self::prefix . 'yield',
 														 'metabox' => 'info',
 														 'format' => 'text'),
 			'difficulty' => array( 'label' => __('Difficulty', self::p),
 														 'description' => __('Difficulty or complexity of the recipe.', self::p),
 														 'type' => 'radio',
-														 'id' => self::prefix . 'difficulty',
+														 'key' => self::prefix . 'difficulty',
 														 'metabox' => 'info',
 														 'options' => array(
 																'1' => __('Basic', self::p),
@@ -178,31 +178,31 @@ class hrecipe_microformat {
 			'duration'   => array( 'label' => __('Duration', self::p),
 														 'description' => __('Total time it takes to make the recipe.', self::p),
 														 'type' => 'text',
-														 'id' => self::prefix . 'duration',
+														 'key' => self::prefix . 'duration',
 														 'metabox' => 'info',
 														 'format' => 'text'),
 			'preptime'   => array( 'label' => __('Prep Time', self::p),
 														 'description' => __('Time it takes in the preparation step of the recipe.', self::p),
 														 'type' => 'text',
-														 'id' => self::prefix . 'preptime',
+														 'key' => self::prefix . 'preptime',
 														 'metabox' => 'info',
 														 'format' => 'text'),
 			'cooktime'   => array( 'label' => __('Cook Time', self::p),
 														 'description' => __('Time it takes in the cooking step of the recipe.', self::p),
 														 'type' => 'text',
-														 'id' => self::prefix . 'cooktime',
+														 'key' => self::prefix . 'cooktime',
 														 'metabox' => 'info',
 														 'format' => 'text'),
 			'published'  => array( 'label' => __('Published', self::p),
 														 'description' => __('Date of publication of the recipe', self::p),
 														 'type' => 'text',
-														 'id' => self::prefix . 'published',
+														 'key' => self::prefix . 'published',
 														 'metabox' => 'info',
 														 'format' => 'text'),
 			'author'     => array( 'label' => __('Author', self::p),
 														 'description' => __('Recipe Author, if different from person posting the recipe.', self::p),
 														 'type' => 'text',
-														 'id' => self::prefix . 'author',
+														 'key' => self::prefix . 'author',
 														 'metabox' => 'info',
 														 'format' => 'text'),
 			'nutrition'  => array( 'label' => __('Nutrition', self::p),
@@ -955,7 +955,7 @@ class hrecipe_microformat {
 		/**
 		 * Add row to table for each ingredient in list
 		 *
-		 * Input: $d->food_id, $d->quantity, $d->unit, $d->ingrd, $d->comment
+		 * Input: $d['food_id], $d['quantity'], $d['unit'], $d['ingrd'], $d['comment']
 		 *
 		 * hrecipe microformat definition (see readme for source):
 		 * ingredient. required. 1 or more. text with optional valid (x)HTML markup.
@@ -966,8 +966,8 @@ class hrecipe_microformat {
 			$text .= '<tr class="ingredient"><td>';
 			$text .= $this->convert_units($d);
 			$text .= '</td><td>';
-			if ('' != $d->ingrd) $text .= '<span class="ingrd">' . esc_attr($d->ingrd) . '</span>';
-			if ('' != $d->comment) $text .= '<span class="comment">' . esc_attr($d->comment) . '</span>';
+			if ('' != $d['ingrd']) $text .= '<span class="ingrd">' . esc_attr($d['ingrd']) . '</span>';
+			if ('' != $d['comment']) $text .= '<span class="comment">' . esc_attr($d['comment']) . '</span>';
 			$text .= '</td></tr>';
 		}
 		
@@ -1003,7 +1003,7 @@ class hrecipe_microformat {
 	 *
 	 * TODO Decide on display format for unit conversions
 	 *
-	 * @param $ingrd object Ingredient object from Database lookup
+	 * @param associative-array $ingrd Ingredient object from Database lookup
 	 * @return string HTML text for units
 	**/
 	function convert_units($ingrd)
@@ -1041,9 +1041,9 @@ class hrecipe_microformat {
 			'stick' => 118.29,
 		);
 		
-		$qty = $ingrd->quantity;
-		$unit = $ingrd->unit;
-		$food_id = $ingrd->food_id;
+		$qty = $ingrd['quantity'];
+		$unit = $ingrd['unit'];
+		$food_id = $ingrd['food_id'];
 		
 		$orig_measure = '';
 		$imperial_measure = '';

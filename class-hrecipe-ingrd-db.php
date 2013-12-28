@@ -307,13 +307,13 @@ class hrecipe_ingrd_db {
 	 * @uses $wpdb
 	 * @param $post_id Retrieve ingredients for post_id
 	 * @param $ingrd_list_id Which ingredient list in post to get
-	 * @return array of ingredient rows
+	 * @return array of associative arrays, representing ingredient rows
 	 **/
 	function get_ingrds_for_recipe($post_id,$ingrd_list_id)
 	{
 		global $wpdb;
 
-		$result = $wpdb->get_results($wpdb->prepare("SELECT food_id,quantity,unit,ingrd,comment FROM " . $this->recipe_ingrds_table . " WHERE post_id LIKE %d AND ingrd_list_id LIKE %d ORDER BY list_order ASC", $post_id, $ingrd_list_id));
+		$result = $wpdb->get_results($wpdb->prepare("SELECT food_id,quantity,unit,ingrd,comment FROM " . $this->recipe_ingrds_table . " WHERE post_id LIKE %d AND ingrd_list_id LIKE %d ORDER BY list_order ASC", $post_id, $ingrd_list_id), ARRAY_A);
 		return $result;
 	}
 	
