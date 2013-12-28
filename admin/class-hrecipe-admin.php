@@ -558,13 +558,16 @@ class hrecipe_admin extends hrecipe_microformat
 	 **/
 	function upgrade_recipe_ingrds_table($post_content, $post_id)
 	{
+		// FIXME A new revision of the modified post is not being created on save!
 		// Only do this for recipe posts
 		if (get_post_type($post_id) != self::post_type) return $post_content;
 		
 		// Wrap the content in tags for XML to handle it properly.  Must be removed at the back-end.
 		$content = new DOMDocument();
 		$content->preserveWhiteSpace = false;
-		$content->loadXML('<content>'.$post_content.'</content>');  // FIXME Warning: DOMDocument::loadXML(): Entity 'nbsp' not defined in Entity - happens when there's empty space at bottom of recipe text
+		
+		// Use loadHTML for loose interpretation of DOM, text will be in DOM <body>
+		$content->loadHTML($post_content);
 		$xpath = new DOMXPath($content);
 		
 		/*
@@ -641,10 +644,10 @@ class hrecipe_admin extends hrecipe_microformat
 		
 		// If at least one list was processed, content was updated
 		if ($ingrds_list_id > 1) {
-			// Remove the wrapping tag from the content and update content.
-		    $innerHTML = ""; 
-		    $children  = $content->documentElement->childNodes;
-
+			// Extract the Body portion of the DOM object as new version of recipe content
+		    $innerHTML = "";
+			$children = $xpath->query("//body")->item(0)->childNodes;
+			
 		    foreach ($children as $child) { 
 		        $innerHTML .= $content->saveXML($child);
 		    }
@@ -655,7 +658,7 @@ class hrecipe_admin extends hrecipe_microformat
 			// Add a notification that the post content has been updated and should be saved.
 			$this->log_admin_notice("Recipe content format upgraded to new ingredient format!  Please Save the updated recipe after review.");
 		}
-		
+
 		return $post_content;
 	}
 	
