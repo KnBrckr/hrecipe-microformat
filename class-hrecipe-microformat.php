@@ -1404,10 +1404,17 @@ class hrecipe_microformat {
 			die(self::p . ' plugin requires minimum WordPress v' . self::wp_version_required . '.  You are running v' . $wp_version);
 		}
 
-		$this->register_taxonomies();  // Register the needed taxonomies so they can be populated
-		$this->create_post_type();			// Create the hrecipe post type so that rewrite rules can be flushed.
+		// Register the needed taxonomies so they can be populated
+		$this->register_taxonomies();  
 		
-		$this->on_activation();
+		// Create the hrecipe post type so that rewrite rules can be flushed.
+		$this->create_post_type();			
+		
+		// Call the admin activation stuff
+		if (! $this->on_activation()) {
+			// TODO Collect errors and display them here
+			die(self::p. " plugin failed activation - Please check server log for details.");
+		}
 	}
 	
 	/**

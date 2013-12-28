@@ -142,29 +142,28 @@ class hrecipe_admin extends hrecipe_microformat
 	 * When plugin is activated, populate taxonomy and flush the rewrite rules
 	 * TODO Save default version of options that includes any TRUE boolean values.
 	 *
-	 * @return void
+	 * @return boolean, true ==> Activated OK
 	 **/
 	function on_activation()
 	{
 		/*
-		 * Setup the Food Database
+		 * Setup the USDA Standard Reference Nutrition Database
+		 * TODO Run database load out of band from activation!  Makes activation take too long
 		 */
-		// TODO Run database load out of band from activation!  Makes activation take too long
    	 	// TODO During page loads detect DB version loaded and on mismatch put notice in admin screen.  Add button in Options to load new DB version on demand.
-		// Setup USDA Standard Reference database			
 		if (! $this->nutrient_db->setup_nutrient_db(WP_PLUGIN_DIR . '/' . self::p . '/db/')) {
 			// There was a problem creating DB
-			// FIXME Return failure - How?  Use WP_Error class?  Also fix for below return
-			return 0;
+			$this->log_err("Unable to setup Nutrient DB, aborting activation");
+			return false;
 		}
 		
 		/*
 		 * Setup Ingredient Database
 		 */
 		if (! $this->ingrd_db->create_schema()) {
-			// FIXME There was a problem creating DB, delete nutrient DB created above and return failure
 			$this->nutrient_db->drop_nutrient_schema();
-			return 0;
+			$this->log_err("Unable to setup Ingredients DB, aborting activation");
+			return false;
 		}
 			
 		// Only insert terms if the category taxonomy doesn't already exist.
@@ -188,6 +187,8 @@ class hrecipe_admin extends hrecipe_microformat
 		
 		// On activation, flush rewrite rules to make sure plugin is setup correctly. 
 		flush_rewrite_rules();
+		
+		return true;
 	}
 	
 	/**
