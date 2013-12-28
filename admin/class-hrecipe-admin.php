@@ -706,12 +706,37 @@ class hrecipe_admin extends hrecipe_microformat
 	 **/
 	function action_save_post($post_id, $post, $update)
 	{
+		// Only interested in recipe posts
+		if (get_post_type($post_id) != self::post_type) return;
+		
 		// Confirm nonce field
 		$nonce_field = self::prefix . 'nonce';
 		if ( ! ( isset($_REQUEST[$nonce_field]) && wp_verify_nonce( $_REQUEST[$nonce_field], 'info_metabox')) ) {
 			return;
 		}
 		
+		// Only expect this action to be called for a parent post
+		$parent_id = wp_is_post_revision( $post_id );
+		if ($parent_id) return;
+		
+		$this->_action_save_post($post_id, $post, $update);
+
+		return;
+	}
+	
+	/**
+	 * The work horse used to save recipe post data using the provided post ID
+	 *
+	 * Called either to save a parent recipe or to perform autosave or preview save of a child version
+	 *
+	 * @uses  array   $_POST    Submitted data being saved
+	 * @param int     $post_id  The Post id (can be either child or parent post)
+	 * @param object  $post     Post Object
+	 * @param boolean $update   false => this is a new post, true => post is being updated
+	 * @return void
+	 **/
+	private function _action_save_post($post_id, $post, $update)
+	{
 		/**
 		 * Save Ingredient List Titles and ingredients
 		 */
@@ -750,8 +775,12 @@ class hrecipe_admin extends hrecipe_microformat
 			$this->ingrd_db->insert_ingrds_for_recipe($post_id, $list_id, $ingrds);
 		}
 		
+		/*
+			Use update_metadata vs. update_post_meta below because the later will convert to use parent ID
+		*/
+		
 		// List Titles saved as Post Meta Data
-		update_post_meta($post_id, self::prefix . 'ingrd-list-title', $ingrd_list_titles);
+		update_metadata('post', $post_id, self::prefix . 'ingrd-list-title', $ingrd_list_titles);
 		
 		// Save meta data for each part of the info metabox
 		foreach ($this->recipe_field_map as $field) {
@@ -759,34 +788,51 @@ class hrecipe_admin extends hrecipe_microformat
 				$meta_key = $field['key'];
 				$meta_data = isset($_POST[$meta_key]) ? $_POST[$meta_key] : '';
 				if ('' == $meta_data) {
-					delete_post_meta($post_id, $meta_key);
+					delete_metadata('post', $post_id, $meta_key);
 				} else {
-					update_post_meta($post_id, $meta_key, $meta_data);
+					update_metadata('post', $post_id, $meta_key, $meta_data);
 				}
 			} 
 		}
-
-		return;
 	}
 	
 	/**
 	 * Save meta information for recipe posts related to revisions
 	 *
-	 * Action called during autosave and to make copy of a recipe before saving new updates
+	 * Action called during autosave, save for preview and to make copy of a recipe before saving new updates
+	 * In the case of autosave and save for preview, the $_POST[] content should be saved vs. making copy of parent
 	 *
 	 * Based partly on https://lud.icro.us/post-meta-revisions-wordpress
 	 *
+	 * @uses $action            wordpress action
 	 * @param int     $post_id  The Post id revision being saved
 	 * @param object  $post     Post Object
 	 * @param boolean $update   false => this is a new post, true => post is being updated
 	 * @return void
 	 **/
 	function action_save_post_revision($post_id, $post, $update) {
+		global $action;
+		
 		$parent_id = wp_is_post_revision( $post_id );
 		if (! $parent_id) return;  // Shouldn't happen, but just in case
 		
-		// Only interested in recipe posts
+		// Only interested in recipe posts - check vs. the parent though, child has special post type
 		if (get_post_type($parent_id) != self::post_type) return;
+
+		/*
+			Need to save new content on preview or autosave operation - not copy old
+		*/
+		$preview = ("preview" == $action);  // True when save is for a post preview
+		$autosave = (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE);  // True for WP autosaves
+		if ($autosave || $preview) {
+			// Save browser data -- not a copy of current post content
+			$this->_action_save_post($post_id, $post, $update);
+			return;
+		}
+		
+		/*
+			Make a copy of the parent post to this child
+		*/
 		
 		// Save copy of ingredients lists
 		$ingrd_list_titles = get_post_meta($parent_id, self::prefix . 'ingrd-list-title', true);

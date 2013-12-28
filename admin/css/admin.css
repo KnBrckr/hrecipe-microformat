@@ -63,7 +63,7 @@
 .ingrd-list {
 	margin: 1em 0;
 }
-/* FIXME Adjust widths of ingredient input fields - how to make dynamic to fit browser width? */
+/* TODO Adjust widths of ingredient input fields - how to make dynamic to fit browser width? */
 .ingrd-list-title input {
 	width: 400px;
 	font-size: 130%;

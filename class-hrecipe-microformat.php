@@ -922,6 +922,15 @@ class hrecipe_microformat {
 	{
 		global $post;
 		
+		// If this is a preview, try to get the autosave post to use its ID when looking up meta data
+		$post_id = $post->ID;
+		if (is_preview()) {
+			$preview = wp_get_post_autosave($post_id);
+			if (is_object($preview)) {
+				$post_id = $preview->ID;
+			}
+		}
+		
 		$text = ''; // Init Output HTML text
 		
 		extract( shortcode_atts( array(
@@ -935,7 +944,7 @@ class hrecipe_microformat {
 		 *
 		 * Empty replacement if id does not exist
 		 */
-		$ingrd_list_title = get_post_meta($post->ID, self::prefix . 'ingrd-list-title', true);
+		$ingrd_list_title = get_post_meta($post_id, self::prefix . 'ingrd-list-title', true);
 		
 		if (! array_key_exists($id, $ingrd_list_title)) {
 			return $text;
@@ -944,7 +953,7 @@ class hrecipe_microformat {
 		/**
 		 * Get the ingredients for the given list id
 		 */
-		$ingrds = $this->ingrd_db->get_ingrds_for_recipe($post->ID, $list_id);
+		$ingrds = $this->ingrd_db->get_ingrds_for_recipe($post_id, $list_id);
 		
 		/**
 		 * Generate HTML table for the ingredient list
