@@ -26,6 +26,7 @@
 // TODO Add cuisine types - mexican, spanish, indian, etc.
 // TODO Create admin widget for Recipe Categories - only allow one category to be selected
 // TODO Phone-home with error log
+// TODO Quick edit of recipe post_type does not update the list view without a screen refresh
 
 // Protect from direct execution
 if (!defined('WP_PLUGIN_DIR')) {
@@ -376,7 +377,7 @@ class hrecipe_admin extends hrecipe_microformat
 		// Setup the Recipe Post Editing page
 		add_action('add_meta_boxes_' . self::post_type, array(&$this, 'configure_tinymce')); // TODO Best place for this?
 		add_action('add_meta_boxes_' . self::post_type, array(&$this, 'setup_meta_boxes'));  // Setup plugin metaboxes
-		add_action('save_post_' . self::post_type , array($this, 'action_save_post'), 10, 3); // Save post metadata
+		add_action('save_post_' . self::post_type , array($this, 'action_save_post_hrecipe'), 10, 3); // Save post metadata
 		add_action('save_post_revision', array($this, 'action_save_post_revision'), 10, 3); // Save metadata for revisions
 		add_action('wp_restore_post_revision', array($this, 'action_wp_restore_post_revision'), 10, 2);
 		
@@ -560,6 +561,7 @@ class hrecipe_admin extends hrecipe_microformat
 	function upgrade_recipe_ingrds_table($post_content, $post_id)
 	{
 		// FIXME A new revision of the modified post is not being created on save!
+		// FIXME Save a recipe version in post meta data and only do upgrade when the version is not available.
 		// Only do this for recipe posts
 		if (get_post_type($post_id) != self::post_type) return $post_content;
 		
@@ -699,27 +701,28 @@ class hrecipe_admin extends hrecipe_microformat
 	/**
 	 * Save Recipe Post meta data and Ingredients
 	 *
+	 * Hook this function using add_action(save_post_<post_type>) so it only gets called for recipe posts
+	 *
 	 * @param int     $post_id  The Post id
 	 * @param object  $post     Post Object
 	 * @param boolean $update   false => this is a new post, true => post is being updated
 	 * @return void
 	 **/
-	function action_save_post($post_id, $post, $update)
+	function action_save_post_hrecipe($post_id, $post, $update)
 	{
-		// Only interested in recipe posts
-		if (get_post_type($post_id) != self::post_type) return;
+		// Hooking via save_post_<post_type> action ensures post type matches
+		assert(get_post_type($post_id) == self::post_type, 'Post Type must be ' . self::post_type);
+		// revisions have post_type 'revision' so will not end up in here
+		assert(wp_is_post_revision( $post_id ) == 0, 'Post parent id must be 0');
 		
-		// FIXME Is this called for bulk edits or DOING_JSON (quick edit?)
-		
-		// Confirm nonce field
+		/*
+			Confirm nonce field for recipe content - nonce is only available on the post edit screen
+			helps protect from incomplete $_POST data such as during a bulk edit, autosave or AJAX processing
+		*/
 		$nonce_field = self::prefix . 'nonce';
 		if ( ! ( isset($_REQUEST[$nonce_field]) && wp_verify_nonce( $_REQUEST[$nonce_field], 'info_metabox')) ) {
 			return;
 		}
-		
-		// Only expect this action to be called for a parent post
-		$parent_id = wp_is_post_revision( $post_id );
-		if ($parent_id) return;
 		
 		$this->_action_save_post($post_id, $post, $update);
 
@@ -729,7 +732,7 @@ class hrecipe_admin extends hrecipe_microformat
 	/**
 	 * The work horse used to save recipe post data using the provided post ID
 	 *
-	 * Called either to save a parent recipe or to perform autosave or preview save of a child version
+	 * Called either to save a parent recipe or to perform save for a preview (using a child post ID)
 	 *
 	 * @uses  array   $_POST    Submitted data being saved
 	 * @param int     $post_id  The Post id (can be either child or parent post)
@@ -820,34 +823,30 @@ class hrecipe_admin extends hrecipe_microformat
 	 *
 	 * Based partly on https://lud.icro.us/post-meta-revisions-wordpress
 	 *
-	 * @uses $action            wordpress action
+	 * @uses $action            wordpress action, set to 'preview' when a post preview has been requested
 	 * @param int     $post_id  The Post id revision being saved
 	 * @param object  $post     Post Object
 	 * @param boolean $update   false => this is a new post, true => post is being updated
 	 * @return void
 	 **/
-	function action_save_post_revision($post_id, $post, $update) {
+	function action_save_post_revision($revision_id, $post, $update) {
 		global $action;
 		
 		// Autosaves do not pass in the meta data so there's nothing to process
 		if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
 		
-		// FIXME Is there also a problem with bulk edit and DOING_AJAX (quick edit?)
-		
-		$parent_id = wp_is_post_revision( $post_id );
+		$parent_id = wp_is_post_revision( $revision_id );
 		if (! $parent_id) return;  // Shouldn't happen, but just in case
 		
-		// Only interested in recipe posts - check vs. the parent though, child has special post type
+		// Only interested in recipe posts - make sure parent is a recipe post
 		if (get_post_type($parent_id) != self::post_type) return;
 
 		/*
-			Need to save new content on preview or autosave operation - not copy old
+			Need to save new content on preview - not copy old
 		*/
-		$preview = ("preview" == $action);  // True when save is for a post preview
-		// $autosave = (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE);  // True for WP autosaves
-		if ($preview /* || $autosave ||*/) {
-			// Save provided browser data -- not a copy of current post content
-			$this->_action_save_post($post_id, $post, $update);
+		if ("preview" == $action) {
+			// Save provided browser data for the preview
+			$this->_action_save_post($revision_id, $post, $update);
 			return;
 		}
 		
@@ -860,7 +859,7 @@ class hrecipe_admin extends hrecipe_microformat
 		
 		if (is_array($ingrd_list_titles)) {
 			// If we have a list of titles, save in the recipe revision
-			update_metadata('post', $post_id, self::prefix . 'ingrd-list-title', $ingrd_list_titles);
+			update_metadata('post', $revision_id, self::prefix . 'ingrd-list-title', $ingrd_list_titles);
 			
 			// For each list, copy the ingredients over too
 			foreach ($ingrd_list_titles as $list_id => $list_title) {
@@ -868,14 +867,14 @@ class hrecipe_admin extends hrecipe_microformat
 				$ingrds = $this->ingrd_db->get_ingrds_for_recipe($parent_id, $list_id);
 				
 				// Save list for the revision
-				$this->ingrd_db->insert_ingrds_for_recipe($post_id, $list_id, $ingrds);
+				$this->ingrd_db->insert_ingrds_for_recipe($revision_id, $list_id, $ingrds);
 			}
 		} else {
 			// Delete title list if present
-			delete_metadata('post', $post_id, self::prefix . 'ingrd-list-title');
+			delete_metadata('post', $revision_id, self::prefix . 'ingrd-list-title');
 			
 			// Remove any ingredients associated with the recipe
-			$this->ingrd_db->delete_all_ingrds_for_recipe($post_id);
+			$this->ingrd_db->delete_all_ingrds_for_recipe($revision_id);
 		}
 		
 		// Copy meta data from the parent to save for the child
@@ -884,9 +883,9 @@ class hrecipe_admin extends hrecipe_microformat
 				$meta_key = $field['key'];
 				$meta_data = get_post_meta($parent_id, $meta_key, true);
 				if (false === $meta_data) {
-					delete_metadata('post', $post_id, $meta_key);
+					delete_metadata('post', $revision_id, $meta_key);
 				} else {
-					update_metadata('post', $post_id, $meta_key, $meta_data);
+					update_metadata('post', $revision_id, $meta_key, $meta_data);
 				}
 			} 
 		}
