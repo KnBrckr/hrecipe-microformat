@@ -709,6 +709,8 @@ class hrecipe_admin extends hrecipe_microformat
 		// Only interested in recipe posts
 		if (get_post_type($post_id) != self::post_type) return;
 		
+		// FIXME Is this called for bulk edits or DOING_JSON (quick edit?)
+		
 		// Confirm nonce field
 		$nonce_field = self::prefix . 'nonce';
 		if ( ! ( isset($_REQUEST[$nonce_field]) && wp_verify_nonce( $_REQUEST[$nonce_field], 'info_metabox')) ) {
@@ -741,6 +743,7 @@ class hrecipe_admin extends hrecipe_microformat
 		 * Save Ingredient List Titles and ingredients
 		 */
 		$ingrd_list_titles = array();
+		// TODO Need some error checking to make sure the various items are really present in $_POST before using them
 		foreach ($_POST[self::prefix . 'ingrd-list-name'] as $list_id => $title) {
 			// Save list title to add to Post Meta Data
 			$ingrd_list_titles[$list_id] = $title;
@@ -801,6 +804,20 @@ class hrecipe_admin extends hrecipe_microformat
 	 * Action called during autosave, save for preview and to make copy of a recipe before saving new updates
 	 * In the case of autosave and save for preview, the $_POST[] content should be saved vs. making copy of parent
 	 *
+	 * TODO But...  For autosaves, WP does not send the needed meta data so there is nothing to save.
+	 *
+	 * Should autosave data be made available, the restore operation should be revisited to allow restore
+	 * of the autosave data.
+	 *
+	 * Some options on how to make this work:
+	 *  1) Hook into the data that autosave provides in the AJAX request in wp-includes/js/autosave.js  
+	 *     The data is gathered by the function wp.autosave.getPostData().  The function could be replaced 
+	 *     with a routine that first calls the original and then adds more content to the data object to be 
+	 *     included in the autosave request. 
+	 *  2) Hook the send operation using jQuery.ajaxSend() to add a function that is called before the
+	 *     event is submitted.  The additional data could be added to the stream at this point
+	 *  3) Build a private version of autosave.
+	 *
 	 * Based partly on https://lud.icro.us/post-meta-revisions-wordpress
 	 *
 	 * @uses $action            wordpress action
@@ -812,6 +829,11 @@ class hrecipe_admin extends hrecipe_microformat
 	function action_save_post_revision($post_id, $post, $update) {
 		global $action;
 		
+		// Autosaves do not pass in the meta data so there's nothing to process
+		if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
+		
+		// FIXME Is there also a problem with bulk edit and DOING_AJAX (quick edit?)
+		
 		$parent_id = wp_is_post_revision( $post_id );
 		if (! $parent_id) return;  // Shouldn't happen, but just in case
 		
@@ -822,9 +844,9 @@ class hrecipe_admin extends hrecipe_microformat
 			Need to save new content on preview or autosave operation - not copy old
 		*/
 		$preview = ("preview" == $action);  // True when save is for a post preview
-		$autosave = (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE);  // True for WP autosaves
-		if ($autosave || $preview) {
-			// Save browser data -- not a copy of current post content
+		// $autosave = (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE);  // True for WP autosaves
+		if ($preview /* || $autosave ||*/) {
+			// Save provided browser data -- not a copy of current post content
 			$this->_action_save_post($post_id, $post, $update);
 			return;
 		}
@@ -880,7 +902,10 @@ class hrecipe_admin extends hrecipe_microformat
 	function action_wp_restore_post_revision($post_id, $revision_id) {
 		// Only interested in doing this for recipe posts
 		if (get_post_type($post_id) != self::post_type) return;
-		
+
+		// If the revision is an autosave, bail out since there's nothing to recover
+		if (wp_is_post_autosave($revision_id)) return;
+
 		// Restore recipe ingredients
 		$ingrd_list_titles = get_post_meta($revision_id, self::prefix . 'ingrd-list-title', true);
 		
