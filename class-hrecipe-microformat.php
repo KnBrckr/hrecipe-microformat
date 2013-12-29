@@ -1248,8 +1248,8 @@ class hrecipe_microformat {
 	 * TODO If cookies can't be saved, don't allow voting by the user - test for WP test cookie presence
 	 * TODO Make cookie storage more efficient - store all votes in one cookie
 	 *
-	 * @internal	Ballot box stuffing is possible since the presence of a vote is saved in the user's browser
-	 * @return does not return
+	 * @internal Ballot box stuffing is possible since the presence of a vote is saved in the user's browser
+	 * @return calls exit
 	 **/
 	function ajax_recipe_rating()
 	{
@@ -1301,7 +1301,7 @@ class hrecipe_microformat {
 	/**
 	 * Handle AJAX request for auto-completion information for an ingredient name
 	 *
-	 * @return does not return
+	 * @return calls exit
 	 **/
 	function ajax_ingrd_auto_complete()
 	{
@@ -1331,7 +1331,7 @@ class hrecipe_microformat {
 	/**
 	 * Handle AJAX request for food definitions in USDA Nutrition DB
 	 *
-	 * @return does not return
+	 * @return calls exit
 	 **/
 	function ajax_NDB_search()
 	{
@@ -1362,7 +1362,7 @@ class hrecipe_microformat {
 	/**
 	 * Handle AJAX request to retrieve measures for a food from USDA Nutrition DB
 	 *
-	 * @return does not return
+	 * @return calls exit
 	 **/
 	function ajax_NDB_measures()
 	{
@@ -1385,9 +1385,8 @@ class hrecipe_microformat {
 	/**
 	 * Perform Plugin Activation handling
 	 *  * Confirm that plugin environment requirements are met
-	 *	* FIXME - Relationship has been reversed! Run parent class activation
 	 *
-	 * @return void
+	 * @return void, dies on error conditions
 	 **/
 	function plugin_activation()
 	{

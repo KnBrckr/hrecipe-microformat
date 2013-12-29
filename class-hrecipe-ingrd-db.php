@@ -22,9 +22,6 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  **/
 
-// FIXME On post (auto)save, new ingredient list needs to be saved to go with that post revision
-// FIXME Handle DB errors, including any cleanup needed on failed create
-
 if (! class_exists('hrecipe_ingrd_db')) :
 class hrecipe_ingrd_db {
 	
@@ -100,7 +97,6 @@ class hrecipe_ingrd_db {
 		) $charset_collate;";	
 
 		// Run SQL to create the table
-		// FIXME Handle error here
 		dbDelta($sql);
 		
 		/**
@@ -122,8 +118,7 @@ class hrecipe_ingrd_db {
 		) $charset_collate;";	
 
 		// Run SQL to create the table
-		// FIXME Handle error
-		return dbDelta($sql);
+		dbDelta($sql);
 	}
 	
 	/**
@@ -243,8 +238,8 @@ class hrecipe_ingrd_db {
 		} else {
 			$like = '%' . $name_contains . '%';			
 		}
-		$rows = $wpdb->get_results($wpdb->prepare("SELECT food_id,ingrd FROM " . $this->foods_table . " WHERE ingrd LIKE %s LIMIT 0,%d", $like, $max_rows));
 		
+		$rows = $wpdb->get_results($wpdb->prepare("SELECT food_id,ingrd FROM " . $this->foods_table . " WHERE ingrd LIKE %s LIMIT 0,%d", $like, $max_rows));	
 		return $rows;
 	}
 	
@@ -260,7 +255,6 @@ class hrecipe_ingrd_db {
 		global $wpdb;
 		
 		$row = $wpdb->get_row($wpdb->prepare("SELECT food_id,ingrd,measure,gpcup,NDB_No FROM " . $this->foods_table . " WHERE food_id = %d", $food_id), ARRAY_A);
-		
 		return $row;
 	}
 	
@@ -297,7 +291,7 @@ class hrecipe_ingrd_db {
 			$row['post_id'] = $post_id;
 			$row['ingrd_list_id'] = $ingrd_list_id;
 			$row['list_order'] = $list_order++;
-			$result = $wpdb->insert($this->recipe_ingrds_table, $row);
+			$wpdb->insert($this->recipe_ingrds_table, $row);
 		}
 	}
 	

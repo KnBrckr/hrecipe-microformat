@@ -25,8 +25,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  **/
 
-// FIXME Return failures on DB errors
-// FIXME Remove tables that are not needed
+// TODO Remove tables that are not needed
 
 // Protect from direct execution
 if (!defined('WP_PLUGIN_DIR')) {
@@ -392,7 +391,7 @@ class hrecipe_nutrient_db {
 			$wpdb->query("DROP TABLE IF EXISTS " . $this->options['table_prefix'] . $table);
 		}
 		
-		// Delete class options
+		// Delete class options from WP database
 		delete_option($this->options_name);
 	}
 	
@@ -418,7 +417,9 @@ class hrecipe_nutrient_db {
 		// Setup DB schema
 		$this->create_nutrient_schema();
 		
-		// FIXME From this point forward, if returning an error then drop the schema
+		/*
+			From this point forward, if returning an error then drop the schema
+		*/
 
 		// Table food_des
 		$sr = new hrecipe_usda_sr_txt($db_path . 'FOOD_DES.txt');

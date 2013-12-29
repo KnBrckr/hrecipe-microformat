@@ -631,7 +631,6 @@ class hrecipe_admin extends hrecipe_microformat
 			}
 			
 			if (count($ingrds_list) > 0) {
-				// FIXME Handle insert errors
 				// Add ingredients to the DB
 				$this->ingrd_db->insert_ingrds_for_recipe($post_id, $ingrds_list_id, $ingrds_list);
 			}
@@ -772,7 +771,6 @@ class hrecipe_admin extends hrecipe_microformat
 					}
 			}
 			
-			// FIXME Handle Insert failures
 			$this->ingrd_db->insert_ingrds_for_recipe($post_id, $list_id, $ingrds);
 		}
 		

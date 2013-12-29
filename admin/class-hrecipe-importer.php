@@ -623,7 +623,7 @@ class hrecipe_importer {
 
 						/**
 						 * Try locating ingredient in the ingredients database
-						 FIXME Also try singular form if 's' present at end of name
+						 * TODO Try also locating singular version?
 						 */
 						$ingrd_db_rows = $this->ingrd_db->get_ingrds_by_name( $row['ingrd'], 1, true );
 						if ($ingrd_db_rows) {
@@ -648,8 +648,6 @@ class hrecipe_importer {
 				
 				// Add list to the DB
 				if ( count($ingrds) > 0 ) {
-					// FIXME Handle insert errors
-					
 					// Add ingredients to the DB and move to next ingredient list id
 					$this->ingrd_db->insert_ingrds_for_recipe($post_id, $ingrd_list_id++, $ingrds);
 				}
