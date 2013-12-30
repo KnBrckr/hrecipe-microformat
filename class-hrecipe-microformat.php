@@ -38,13 +38,22 @@ class hrecipe_microformat {
 	const php_version_required = '5.3.6';
 	
 	/**
+	 * Version of recipe format used in saved recipe post.
+	 *
+	 * The version used for a recipe is saved in the recipe meta data
+	 *
+	 * Undefined	Original release used tables embedded in recipe text for ingredients.
+	 * 1.0			short codes for ingredient lists backed by database using numeric list ids
+	 **/
+	const recipe_version = '1.0';
+	
+	/**
 	 * Define some shorthand
-	 */
-	const required_db_ver = 1;
-	const p = 'hrecipe-microformat';  // Plugin name
-	const prefix = 'hrecipe_';				// prefix for ids, names, etc.
-	const post_type = 'hrecipe';				// Applied to entry as a class
-	const settings = 'hrecipe_microformat_settings';
+	 */	
+	const p = 'hrecipe-microformat';				// Plugin Name
+	const prefix = 'hrecipe_';						// prefix for ids, names, etc.
+	const post_type = 'hrecipe';					// Applied to entry as a class
+	const settings = 'hrecipe_microformat_settings';// Name for plugin settings in WP DB
 	
 	protected static $dir; // Base directory for Plugin
 	protected static $url; // Base URL for plugin directory
@@ -66,7 +75,6 @@ class hrecipe_microformat {
 	
 	/**
 	 * Hash holding plugin options
-	 *	'database_ver'     :  Database Structure version in use - Used to upgrade old versions to new format as required
 	 *	'display_in_home'  :  True if recipes should be displayed in the home page
 	 *	'display_in_feed'  :  True if recipes should be displayed in the main feed
 	 *	'include_metadata' : True if recipe meta data should be added to content section
@@ -1519,7 +1527,6 @@ class hrecipe_microformat {
 		
 		// Establish defaults used when sanitizing options
 		$options_defaults = array(
-			'database_ver' => self::required_db_ver,
 			'display_in_home' => false,
 			'display_in_feed' => false,
 			'posts_per_page' => 30,
@@ -1532,7 +1539,6 @@ class hrecipe_microformat {
 
 		// Option types for sanitizing data.  debug_log is not included as it has special handling
 		$options_type = array(
-			'database_ver' => 'int',
 			'display_in_home' => 'bool',
 			'display_in_feed' => 'bool',
 			'posts_per_page' => 'int',

@@ -95,11 +95,6 @@ class hrecipe_admin extends hrecipe_microformat
 		$this->admin_notices = array();
 		$this->admin_notice_errors = array();
 
-		// If database version does not match, an upgrade is needed
-		if (self::required_db_ver != $this->options['database_ver']) {
-			$this->upgrade_database($this->options['database_ver']);
-		}
-		
 		$this->message = array(
 			self::msg_added_new_ingredient => 'Added new ingredient.',
 			self::msg_updated_ingredient => 'Updated ingredient.',
@@ -561,10 +556,15 @@ class hrecipe_admin extends hrecipe_microformat
 	function upgrade_recipe_ingrds_table($post_content, $post_id)
 	{
 		// FIXME A new revision of the modified post is not being created on save!
-		// FIXME Save a recipe version in post meta data and only do upgrade when the version is not available.
 		// Only do this for recipe posts
 		if (get_post_type($post_id) != self::post_type) return $post_content;
-		
+
+		/*
+			Use the saved recipe version to determine if an upgrade is needed, and if so, what upgrade(s) to do
+		*/
+		$recipe_ver = get_post_meta($post_id, self::prefix . 'recipe_version', true);
+		if ($recipe_ver == self::recipe_version) return $post_content;
+
 		// Wrap the content in tags for XML to handle it properly.  Must be removed at the back-end.
 		$content = new DOMDocument();
 		$content->preserveWhiteSpace = false;
@@ -659,6 +659,12 @@ class hrecipe_admin extends hrecipe_microformat
 			
 			// Add a notification that the post content has been updated and should be saved.
 			$this->log_admin_notice("Recipe content format upgraded to new ingredient format!  Please Save the updated recipe after review.");
+		} else {
+			/*
+				Content was not updated, but recipe versions don't match.
+			    Upgrade the recipe version to current release since the recipe text is already in compliance
+			*/
+			update_post_meta($post_id, self::prefix . 'recipe_version', self::recipe_version);
 		}
 
 		return $post_content;
@@ -782,6 +788,9 @@ class hrecipe_admin extends hrecipe_microformat
 			Use update_metadata vs. update_post_meta below because the later will convert to use parent ID
 		*/
 		
+		// Record format used to store this recipe
+		update_metadata('post', $post_id, self::prefix . 'recipe_version', self::recipe_version);
+		
 		// List Titles saved as Post Meta Data
 		update_metadata('post', $post_id, self::prefix . 'ingrd-list-title', $ingrd_list_titles);
 		
@@ -874,6 +883,10 @@ class hrecipe_admin extends hrecipe_microformat
 			Make a copy of the parent post to this child
 		*/
 		
+		// Copy recipe version - use 0.1 if it was not setup previously
+		$recipe_ver = get_post_meta($parent_id, self::prefix . 'recipe_version', true) || 0.1;
+		update_metadata('post', $revision_id, self::prefix . 'recipe_version', $recipe_ver);
+		
 		// Save copy of ingredients lists
 		$ingrd_list_titles = get_post_meta($parent_id, self::prefix . 'ingrd-list-title', true);
 		
@@ -924,6 +937,10 @@ class hrecipe_admin extends hrecipe_microformat
 
 		// If the revision is an autosave, bail out since there's nothing to recover
 		if (wp_is_post_autosave($revision_id)) return;
+		
+		// Copy recipe version - use 0.1 if it was not setup previously
+		$recipe_ver = get_post_meta($revision_id, self::prefix . 'recipe_version', true) || 0.1;
+		update_metadata('post', $post_id, self::prefix . 'recipe_version', $recipe_ver);
 
 		// Restore recipe ingredients
 		$ingrd_list_titles = get_post_meta($revision_id, self::prefix . 'ingrd-list-title', true);
@@ -1732,16 +1749,6 @@ class hrecipe_admin extends hrecipe_microformat
 		}
 	}
 		
-	/**
-	 * Update recipe database on version mismatches
-	 *
-	 * @return void
-	 **/
-	function upgrade_database()
-	{
-		$this->log_admin_error(sprintf(__('Recipe database version mismatch; using v%1$d, required v%2$d', self::p), $this->options['database_ver'], self::required_db_ver));
-	}
-	
 	/**
 	 * Return WordPress Post Meta Key field name for specified hrecipe microformat key
 	 *

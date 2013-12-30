@@ -25,6 +25,8 @@
 if (! class_exists('hrecipe_ingrd_db')) :
 class hrecipe_ingrd_db {
 	
+	// TODO Add a Database version for update management
+	
 	/**
 	 * Table of defined foods for use in recipes
 	 *
