@@ -725,8 +725,6 @@ class hrecipe_admin extends hrecipe_microformat
 		}
 		
 		$this->_action_save_post($post_id, $post, $update);
-
-		return;
 	}
 	
 	/**
@@ -804,15 +802,37 @@ class hrecipe_admin extends hrecipe_microformat
 	/**
 	 * Save meta information for recipe posts related to revisions
 	 *
-	 * Action called during autosave, save for preview and to make copy of a recipe before saving new updates
-	 * In the case of autosave and save for preview, the $_POST[] content should be saved vs. making copy of parent
+	 * Called in various contexts during a post save operation:
 	 *
-	 * TODO But...  For autosaves, WP does not send the needed meta data so there is nothing to save.
+	 *  - Saving a post
+	 *    Global $action = "editpost"
+	 *    DOING_AUTOSAVE and DOING_AJAX both undefined
+	 *    $_REQUEST has full content of the page edit screen
+	 *  - Autosave
+	 *    Global $action = ""
+	 *    DOING_AUTOSAVE == true, DOING_AJAX == true
+	 *    $_REQUEST has specific limited content, no custom meta fields are available
+	 *  - Preview
+	 *    Global $action = "preview"
+	 *    DOING_AUTOSAVE and DOING_AJAX both undefined
+	 *    $_REQUEST has full content of the page edit screen
+	 *  - Bulk Edit
+	 *    Global $action = ""
+	 *    DOING_AUTOSAVE and DOING_AJAX both undefined
+	 *    $_REQUEST has limited content related to the bulk edit context
+	 *    $_REQUEST[bulk_edit] = 'Update'
+	 *  - Quick Edit
+	 *    Global $action = ""
+	 *    DOING_AUTOSAVE undefined, DOING_AJAX == true
+	 *    $_REQUEST has limited content related to the quick edit context
+	 *    $_REQUEST[action] = 'inline-save'
+	 *
+	 * In the case of save for preview, the $_POST[] content should be saved vs. making copy of parent
 	 *
 	 * Should autosave data be made available, the restore operation should be revisited to allow restore
 	 * of the autosave data.
 	 *
-	 * Some options on how to make this work:
+	 * Some options on how to make autosave work:
 	 *  1) Hook into the data that autosave provides in the AJAX request in wp-includes/js/autosave.js  
 	 *     The data is gathered by the function wp.autosave.getPostData().  The function could be replaced 
 	 *     with a routine that first calls the original and then adds more content to the data object to be 
@@ -821,7 +841,7 @@ class hrecipe_admin extends hrecipe_microformat
 	 *     event is submitted.  The additional data could be added to the stream at this point
 	 *  3) Build a private version of autosave.
 	 *
-	 * Based partly on https://lud.icro.us/post-meta-revisions-wordpress
+	 * Initial implementation based on https://lud.icro.us/post-meta-revisions-wordpress
 	 *
 	 * @uses $action            wordpress action, set to 'preview' when a post preview has been requested
 	 * @param int     $post_id  The Post id revision being saved
