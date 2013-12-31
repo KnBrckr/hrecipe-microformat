@@ -27,7 +27,6 @@
 // TODO Create admin widget for Recipe Categories - only allow one category to be selected
 // TODO Phone-home with error log
 // TODO Quick edit of recipe post_type does not update the list view without a screen refresh
-// FIXME 'default_content' filter to add default post text that includes the first ingredient list in the post
 
 // Protect from direct execution
 if (!defined('WP_PLUGIN_DIR')) {
@@ -370,7 +369,10 @@ class hrecipe_admin extends hrecipe_microformat
 		// Register jQuery UI stylesheet - use googleapi version based on what version of core is running
 		wp_register_style(self::prefix . 'jquery-ui', "http://ajax.googleapis.com/ajax/libs/jqueryui/{$wp_scripts->registered['jquery-ui-core']->ver}/themes/smoothness/jquery-ui.min.css");
 		
-		// Setup the Recipe Post Editing page
+		/*
+			Setup the Recipe Post Editing page
+		*/
+		add_filter('default_content', array($this, 'filter_default_content'), 10, 2);
 		add_action('add_meta_boxes_' . self::post_type, array(&$this, 'configure_tinymce')); // TODO Best place for this?
 		add_action('add_meta_boxes_' . self::post_type, array(&$this, 'setup_meta_boxes'));  // Setup plugin metaboxes
 		add_action('save_post_' . self::post_type , array($this, 'action_save_post_hrecipe'), 10, 3); // Save post metadata
@@ -702,6 +704,22 @@ class hrecipe_admin extends hrecipe_microformat
 				echo '</label></p>';
 			}
 		} // End foreach
+	}
+	
+	/**
+	 * WP Filter to add default recipe content to a new recipe
+	 *
+	 * @param string      $content   Input content to be modified
+	 * @param post-object $post      New Post object
+	 * @return $content, updated content string
+	 * @author Kenneth J. Brucker <ken.brucker@action-a-day.com>
+	 **/
+	function filter_default_content($content, $post)
+	{
+		// Only apply default content for hrecipe posts
+		if (self::post_type != $post->post_type) return $content;
+		
+		return $content . "[ingrd-list id=\"1\"]";
 	}
 	
 	/**
