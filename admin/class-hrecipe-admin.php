@@ -27,6 +27,7 @@
 // TODO Create admin widget for Recipe Categories - only allow one category to be selected
 // TODO Phone-home with error log
 // TODO Quick edit of recipe post_type does not update the list view without a screen refresh
+// FIXME 'default_content' filter to add default post text that includes the first ingredient list in the post
 
 // Protect from direct execution
 if (!defined('WP_PLUGIN_DIR')) {
@@ -381,7 +382,7 @@ class hrecipe_admin extends hrecipe_microformat
 		
 		// When post loads for edit upgrade the recipe contents from table in recipe to ingredients database
 		//   (Priority 10, 2 parameters expected)
-		add_filter('content_edit_pre', array($this, 'upgrade_recipe_ingrds_table'), 10, 2);
+		add_filter('edit_post_content', array($this, 'upgrade_recipe_ingrds_table'), 10, 2);
 	}
 	
 	/**
@@ -555,7 +556,6 @@ class hrecipe_admin extends hrecipe_microformat
 	 **/
 	function upgrade_recipe_ingrds_table($post_content, $post_id)
 	{
-		// FIXME A new revision of the modified post is not being created on save!
 		// Only do this for recipe posts
 		if (get_post_type($post_id) != self::post_type) return $post_content;
 
@@ -883,8 +883,8 @@ class hrecipe_admin extends hrecipe_microformat
 			Make a copy of the parent post to this child
 		*/
 		
-		// Copy recipe version - use 0.1 if it was not setup previously
-		$recipe_ver = get_post_meta($parent_id, self::prefix . 'recipe_version', true) || 0.1;
+		// Copy recipe version
+		$recipe_ver = get_post_meta($parent_id, self::prefix . 'recipe_version', true);
 		update_metadata('post', $revision_id, self::prefix . 'recipe_version', $recipe_ver);
 		
 		// Save copy of ingredients lists
@@ -938,8 +938,8 @@ class hrecipe_admin extends hrecipe_microformat
 		// If the revision is an autosave, bail out since there's nothing to recover
 		if (wp_is_post_autosave($revision_id)) return;
 		
-		// Copy recipe version - use 0.1 if it was not setup previously
-		$recipe_ver = get_post_meta($revision_id, self::prefix . 'recipe_version', true) || 0.1;
+		// Copy recipe version
+		$recipe_ver = get_post_meta($revision_id, self::prefix . 'recipe_version', true);
 		update_metadata('post', $post_id, self::prefix . 'recipe_version', $recipe_ver);
 
 		// Restore recipe ingredients

@@ -580,12 +580,16 @@ class hrecipe_importer {
 			return -1;
 		}
 		
+		// TODO Use a callback to do recipe save operation - want to encapsulate save into a single place
 		// Insert post
 		$post_id = wp_insert_post($new_post);
 		if (! $post_id) {
 			$this->error_msg = sprintf(__('Failed to import recipe "%s"', $this->domain), $new_post['post_title']);
 			return NULL;
 		}
+		
+		// Save recipe version
+		add_post_meta($post_id, $hrecipe_microformat::prefix . "recipe_version", $hrecipe_microformat::recipe_version);
 		
 		// Save Recipe meta-data
 		$meta_fields = array('yield', 'duration', 'preptime', 'cooktime', 'author', 'difficulty');

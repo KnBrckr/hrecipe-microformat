@@ -23,6 +23,15 @@
  **/
 
 // TODO List Formatting for Recipe Steps
+/*
+	TODO Follow this model to handle database errors
+		if ( false === $wpdb->update( $wpdb->posts, $data, $where ) ) {
+			if ( $wp_error )
+				return new WP_Error('db_update_error', __('Could not update post in the database'), $wpdb->last_error);
+			else
+				return 0;
+        }
+*/
 
 if ( ! class_exists('hrecipe_microformat')) :
 
