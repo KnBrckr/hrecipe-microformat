@@ -142,6 +142,7 @@ class hrecipe_importer {
 			"thin",
 			"thin-skin(?:ed)?",
 			"thick-skin(?:ed)?",
+			"to taste",
 			"toasted",
 			"torn",
 			"trimmed",
