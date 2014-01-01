@@ -193,7 +193,7 @@ class hrecipe_ingrd_db {
 		/**
 		 * Add ordering parameters
 		 */
-	    $orderby = !empty($orderby) ? $orderby : 'food_id';
+	    $orderby = !empty($orderby) ? $orderby : 'ingrd';
 	    $order = !empty($order) ? $order : 'ASC';
 	    if(!empty($orderby) & !empty($order)) { $query.=' ORDER BY '.$orderby.' '.$order; }
 		
