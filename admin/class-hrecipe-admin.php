@@ -450,8 +450,8 @@ class hrecipe_admin extends hrecipe_microformat
 							<th>Amount</th>
 							<th>Unit</th>
 							<th>Ingredient</th>
+							<th></th>
 							<th>Comment</th>
-							<?php if (WP_DEBUG) echo "<th>Food ID</th>"; ?>
 						</tr>
 					</thead>
 					<tbody>
@@ -501,34 +501,42 @@ class hrecipe_admin extends hrecipe_microformat
 		
 		$prototype = $proto ? 'prototype' : '';
 		
-		// If $food_id is specified, show this row as linked
-		// FIXME If food_id available, mark row as linked - Needs to be styled
-		$linked_state = $food_id ? "food_linked" : "";
+		// If $food_id is specified, show this row as linked and make ingredient input field readonly
+		$linked_state = $food_id ? "food-linked" : "";
+		$readonly = $food_id ? "readonly" : "";
 		
 		?>
-		<tr class="recipe_ingrd_row <?php echo $prototype; ?>">
+		<tr class="recipe-ingrd-row <?php echo $prototype; ?> <?php echo $linked_state; ?>">
 			<td class="row_interaction">
 				<ul>
-				<li class="ui-state-default ui-corner-all"><span class="sort-handle ui-icon ui-icon-arrow-2-n-s"></span></li>
-				<li class="ui-state-default ui-corner-all"><span class="insert ui-icon ui-icon-plusthick"></span></li>
-				<li class="ui-state-default ui-corner-all"><span class="delete ui-icon ui-icon-minusthick"></span></li>
+				<li class="ui-state-default ui-corner-all">
+					<span class="sort-handle ui-icon ui-icon-arrow-2-n-s" title="Drag to Sort ingredients"></span>
+				</li>
+				<li class="ui-state-default ui-corner-all">
+					<span class="insert ui-icon ui-icon-plusthick" title="Insert New Ingredient"></span>
+				</li>
+				<li class="ui-state-default ui-corner-all">
+					<span class="delete ui-icon ui-icon-minusthick" title="Delete this Ingredient"></span>
+				</li>
 				</ul>
 			</td>
 			<td><input type="text" name="<?php echo self::prefix; ?>quantity[<?php echo $list_id; ?>][]" class="value" value="<?php echo $qty ?>" /></td>
 			<td><input type="text" name="<?php echo self::prefix; ?>unit[<?php echo $list_id; ?>][]" class="type ui-widget" value="<?php echo $unit ?>"/></td>
-			<td >
-				<ul>
-					<li>
-						<input type="text" name="<?php echo self::prefix; ?>ingrd[<?php echo $list_id; ?>][]" class="ingrd  <?php echo $linked_state; ?>" value ="<?php echo $ingrd ?>"/>
-					</li>
-					<li class="ui-state-default ui-corner-all">
-						<span class="food-link-status ui-icon ui-icon-link"></span><input type="hidden" name="<?php echo self::prefix ?>food_id[<?php echo $list_id; ?>][]" value="<?php echo $food_id; ?>" class="food_id">
-					</li>
+			<td>
+				<input type="text" name="<?php echo self::prefix; ?>ingrd[<?php echo $list_id; ?>][]" class="ingrd" value ="<?php echo $ingrd ?>" <?php echo $readonly ?>/>
+				<input type="hidden" name="<?php echo self::prefix ?>food_id[<?php echo $list_id; ?>][]" value="<?php echo $food_id; ?>" class="food_id">
 			</td>
-			<td><input type="text" name="<?php echo self::prefix; ?>comment[<?php echo $list_id; ?>][]" class="comment" value="<?php echo $comment ?>"/></td>
-			<?php if (WP_DEBUG) : // Only display the food_id column in debug mode ?>
-			<td><input type="text" value="<?php echo $food_id; ?>" class="food_id" readonly="readonly"></td>				
-			<?php endif; ?>
+			<td>
+				<p class="food-linked-status ui-state-highlight">
+					<span class="ui-icon ui-icon-alert" title="Ingredient is not associated with ingredient from database."></span>
+				</p>
+				<p class="ingrd-locked ui-state-default">
+					<span class="ui-icon ui-icon-unlocked" title="Unlink ingredient from database for edit"></span>
+				</p>
+			</td>
+			<td>
+				<input type="text" name="<?php echo self::prefix; ?>comment[<?php echo $list_id; ?>][]" class="comment" value="<?php echo $comment ?>"/>
+			</td>
 		</tr>
 		<?php
 	}
@@ -1281,7 +1289,6 @@ class hrecipe_admin extends hrecipe_microformat
 							<span class="pagination-links">
 								<a class="first-page disabled" title="Go to the first page" onclick="hrecipe.addIngrdPage.NDBSearch(1)">«</a>
 								<a class="prev-page disabled" title="Go to the previous page" onclick="hrecipe.addIngrdPage.NDBSearch(hrecipe.pagination.page - 1)">‹</a>
-								<!-- FIXME Implement page number entry -->
 								<span class="paging-input"><input class="current-page" title="Current page" type="text" name="paged" value="1" size="1"> of <span class="total-pages"></span></span>
 								<a class="next-page disabled" title="Go to the next page" onclick="hrecipe.addIngrdPage.NDBSearch(hrecipe.pagination.page + 1)">›</a>
 								<a class="last-page disabled" title="Go to the last page" onclick="hrecipe.addIngrdPage.NDBSearch(hrecipe.pagination.pages)">»</a>

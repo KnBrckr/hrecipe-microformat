@@ -43,7 +43,7 @@
 	cursor: move;
 }
 
-.recipe_ingrd_row li {
+.recipe-ingrd-row li {
 	list-style-type: none;
 	float: left;
 }
@@ -85,6 +85,24 @@
 	padding: 5px;
 	border: 1px solid #dfdfdf;
 	border-radius: 6px;
+}
+
+/* Hide the lock status if ingredient is not linked to member in the DB */
+.recipe-ingrd-row .ingrd-locked {
+	display: none;
+}
+/* Display locked state for an ingredient */
+.recipe-ingrd-row.food-linked .ingrd-locked{
+	display: block;
+}
+
+/* No border on the alert for linked food item */
+.recipe-ingrd-row .food-linked-status {
+	border: 0px;
+}
+/* Hide Alert icon when there is a linked food */
+.recipe-ingrd-row.food-linked .food-linked-status {
+	display: none;
 }
 
 #hrecipe_info .field-label, .ingrd-list .field-label {

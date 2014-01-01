@@ -235,6 +235,9 @@ class hrecipe_ingrd_db {
 	{
 		global $wpdb;
 		
+		// Trim whitespace
+		$name_contains = trim($name_contains);
+		
 		if ($exact) {
 			$like = $name_contains;
 		} else {

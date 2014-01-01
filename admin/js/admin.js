@@ -64,6 +64,7 @@ var hrecipe = {
 			// Setup Insert and Delete Row functions at table level
 			ingrdsTable.on('click', '.insert', hrecipe.recipePage.insertIngrdRow);
 			ingrdsTable.on('click', '.delete', hrecipe.recipePage.deleteIngrdRow);
+			ingrdsTable.on('click', '.ingrd-locked', hrecipe.recipePage.unlinkIngrd);
 		}
 	
 		/*
@@ -79,6 +80,13 @@ var hrecipe = {
 		$('#NDB_search_ingrd').keypress(function(e){
 			if (e.keyCode === 13) { 
 				hrecipe.addIngrdPage.NDBSearch(1); 
+			}
+		});
+		
+		// On Enter, submit search based on page #
+		$('#NDB_search_form [name=paged]').keypress(function(e){
+			if (e.keyCode === 13) {
+				hrecipe.addIngrdPage.NDBSearch(this.value);
 			}
 		});
 		
@@ -157,7 +165,7 @@ var hrecipe = {
 		insertIngrdRow : function() {
 			// Travel up DOM to find the containing TR and clone it
 			var row = jQuery(this).closest('tr');
-			var newRow = jQuery('.recipe_ingrd_row.prototype').clone().removeClass('prototype');
+			var newRow = jQuery('.recipe-ingrd-row.prototype').clone().removeClass('prototype');
 
 			// Setup UI elements for the new row elements
 			hrecipe.recipePage.setupIngrdRow(newRow);
@@ -223,18 +231,29 @@ var hrecipe = {
 					});
 				},
 				minLength: 3,
-				// change triggered when field is blurred if the value has changed
-				// FIXME Some timing issues in having this reliably work
-				change: function( event, ui ) {
+				// Called when an item is selected
+				select: function (event, ui) {
+					// Make sure we have an item - should be present!
 					if (ui.item) {
-						// If an item was selected, record the food database record number
-						jQuery(this).addClass('food_linked').closest('tr').find('.food_id').val(ui.item.food_id);				
-					} else {
-						// No matching item, clear food database record number
-						jQuery(this).removeClass('food_linked').closest('tr').find('.food_id').val('');
+						// Mark this row as having a linked food - Set field readonly, must be unlocked for edit
+						var ingrdRow = jQuery(this).attr('readonly', true).closest('tr').addClass('food-linked');
+						// Record food the associated food_id
+						ingrdRow.find('.food_id').val(ui.item.food_id);
 					}
 				}
 			});
+		},
+		
+		/*
+			Ingredients linked to DB item will be readonly.  Unlinking will allow edits to be made
+		*/
+		unlinkIngrd : function (event) {
+			// Locate the containing table row
+			var ingrdRow = jQuery(event.target).closest('tr').removeClass('food-linked');
+			// Clear readonly status on the ingredient input field
+			ingrdRow.find('.ingrd').attr('readonly', false);
+			// Clear the linked food ID
+			ingrdRow.find('.food_id').val(0);
 		}		
 	},
 	
