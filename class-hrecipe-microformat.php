@@ -280,7 +280,7 @@ class hrecipe_microformat {
 		wp_register_script(self::prefix . 'js', self::$url . 'js/hrecipe.js', array('jquery'), false, true);
 		
 		// Register jQuery UI plugin for Ratings
-		// FIXME Upgrade to supported Star Rating plugin
+		// XXX Might need to upgrade to supported Star Rating plugin in the future
 		wp_register_script('jquery.ui.stars', self::$url . 'lib/jquery.ui.stars-3.0/jquery.ui.stars.min.js', array('jquery-ui-core', 'jquery-ui-widget'), '3.0.1');
 		wp_register_style('jquery.ui.stars', self::$url . 'lib/jquery.ui.stars-3.0/jquery.ui.stars.min.css', array(), '3.0.1');
 		

@@ -771,8 +771,8 @@ class hrecipe_importer {
 		// Cleanup leading ', ', 'and ', 'or '
 		$ingrd = preg_replace('/^((-|,|and\b|or\b) ?)+/', '', $ingrd);
 		
-		// Cleanup trailing ':'
-		$ingrd = preg_replace('/:$/', '', $ingrd);
+		// Cleanup trailing ':' and ','
+		$ingrd = preg_replace('/[:,]+$/', '', $ingrd);
 		
 		$retval['ingrd'] = $ingrd;
 		$retval['comment'] = implode(', ', $found);

@@ -160,7 +160,7 @@ class import_shopncook {
 				$ingrd_norm = array_merge($ingrd_norm, $this->scx_ingredient($ingrd));
 			}
 		} else {
-			// Single recipe element FIXME test single recipe element!
+			// Single recipe element
 			$ingrd_norm = array_merge($ingrd_norm, $this->scx_ingredient($ingrd_list['INGREDIENT']));
 		}
 		
