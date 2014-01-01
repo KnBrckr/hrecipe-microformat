@@ -632,7 +632,8 @@ class hrecipe_importer {
 						 */
 						$ingrd_db_rows = $this->ingrd_db->get_ingrds_by_name( $row['ingrd'], 1, true );
 						if ($ingrd_db_rows) {
-							$retval['food_id'] = $ingrd_db_rows[0]->food_id;
+							$row['food_id'] = $ingrd_db_rows[0]->food_id;
+							$row['ingrd'] = $ingrd_db_rows[0]->ingrd;
 						}
 
 						// If row and data comment exist, concat them, else return one or the other
