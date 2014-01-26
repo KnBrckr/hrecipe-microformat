@@ -258,9 +258,12 @@ class hrecipe_microformat {
 	/**
 	 * Executes during WP init phase
 	 *
+	 * @uses $wp_scripts, To retrieve version of jQuery for auto-loading of proper style sheets
 	 * @return void
 	 */
 	function wp_init() {
+		global $wp_scripts;
+		
 		// Register custom taxonomies
 		$this->register_taxonomies();
 
@@ -277,7 +280,10 @@ class hrecipe_microformat {
 		wp_register_style(self::prefix . 'style', self::$url . 'hrecipe.css');
 		
 		// Register Plugin javascript, but put it in the footer so that it can be localized if needed
-		wp_register_script(self::prefix . 'js', self::$url . 'js/hrecipe.js', array('jquery'), false, true);
+		wp_register_script(self::prefix . 'js', self::$url . 'js/hrecipe.js', array('jquery','jquery-ui-button'), false, true);
+		
+		// Register jQuery UI stylesheet - use googleapi version based on what version of core is running
+		wp_register_style(self::prefix . 'jquery-ui', "http://ajax.googleapis.com/ajax/libs/jqueryui/{$wp_scripts->registered['jquery-ui-core']->ver}/themes/smoothness/jquery-ui.min.css");
 		
 		// Register jQuery UI plugin for Ratings
 		// XXX Might need to upgrade to supported Star Rating plugin in the future
@@ -362,6 +368,9 @@ class hrecipe_microformat {
 		
 		// Load plugin javascript
 		wp_enqueue_script(self::prefix . 'js');
+		
+		// jQuery UI style
+		wp_enqueue_style( self::prefix . 'jquery-ui' );
 	}
 	
 	/**
@@ -976,7 +985,14 @@ class hrecipe_microformat {
 		 * Generate HTML table for the ingredient list
 		 */
 		$text .= '<table class="ingredients" id="ingredients-' . $list_id . '">';
-		$text .= '<thead><tr><th colspan="2"><span class="ingredients-title">' . $ingrd_list_title[$list_id] . '</span></th></tr></thead>';
+		$text .= '<thead><tr><th colspan="2">'; // Table Header Start
+		$text .= '<span class="ingredients-title">' . $ingrd_list_title[$list_id] . '</span>'; // List Title
+		$text .= '<ul class="ingredients-display-as">';
+		$text .=  '<li><button class="measure-button" value="original">default</button></li>';
+		$text .=  '<li><button class="measure-button" value="us">US</button></li>';
+		$text .=  '<li><button class="measure-button" value="metric">metric</button></li>';
+		$text .= '</ul>';
+		$text .= '</th></tr></thead>'; // Table Header End
 
 		/**
 		 * Add row to table for each ingredient in list
@@ -989,8 +1005,8 @@ class hrecipe_microformat {
 		 * comment. optional. text. child of ingredient. [ziplist extension]
 		 */
 		foreach ($ingrds as $d) {
-			$text .= '<tr class="ingredient"><td>';
-			$text .= $this->convert_units($d);
+			$text .= '<tr class="ingredient"><td class="measure">';
+			$text .= $this->quantity_html($d);
 			$text .= '</td><td>';
 			if ('' != $d['ingrd']) $text .= '<span class="ingrd">' . esc_attr($d['ingrd']) . '</span>';
 			if ('' != $d['comment']) $text .= '<span class="comment">' . esc_attr($d['comment']) . '</span>';
@@ -1003,7 +1019,7 @@ class hrecipe_microformat {
 	}
 	
 	/**
-	 * Create HTML for units in US and metric including fractional display where appropriate
+	 * Create HTML for quantity & units in US and metric including fractional display where appropriate
 	 *
 	 * Some foods are traditionally measured by volume in US recipes (dry goods i.e. flour, sugar)
 	 * and by weight in metric based recipes.  Convert such ingredients from volume to weight
@@ -1026,27 +1042,33 @@ class hrecipe_microformat {
 	 *     else
 	 *       Convert grams to oz/lb
 	 *
-	 *
-	 * TODO Decide on display format for unit conversions
-	 *
 	 * @param associative-array $ingrd Ingredient object from Database lookup
+	 *        $ingrd['food_id']
+	 *        $ingrd['quantity']
+	 *        $ingrd['unit']
+	 *        $ingrd['ingrd']
+	 *        $ingrd['comment']
+	 *        $ingrd['NDB_No']
+	 *        $ingrd['measure']
+	 *        $ingrd['gpcup']
 	 * @return string HTML text for units
 	**/
-	function convert_units($ingrd)
+	function quantity_html($ingrd)
 	{
 		/**
-		 * List of measures that will be considered metric
+		 * List of measures that will be considered metric and conversion to ounces or US fluid ounces
 		 */
 		static $metric_measures = array(
-			'g', 
-			'gram', 
-			'grams', 
-			'kilogram',
-			'kilograms',
-			'kg', 
-			'l',
-			'litre',
-			'ml', 
+			'g' => array('per' => 0.035274, 'us' => 'ounce'), 
+			'gram' => array('per' => 0.035274, 'us' => 'ounce'), 
+			'grams' => array('per' => 0.035274, 'us' => 'ounce'), 
+			'kilogram' => array('per' => 35.274, 'us' => 'ounce'),
+			'kilograms' => array('per' => 35.274, 'us' => 'ounce'),
+			'kg' => array('per' => 35.274, 'us' => 'ounce'), 
+			'kgs' => array('per' => 35.274, 'us' => 'ounce'), 
+			'l' => array('per' => 4.22675, 'us' => 'cup'),
+			'litre' => array('per' => 4.22675, 'us' => 'cup'),
+			'ml' => array('per' => 0.00422675, 'us' => 'cup'), 
 		);
 		
 		/**
@@ -1056,81 +1078,123 @@ class hrecipe_microformat {
 		 *
 		 * tablespoons and teaspoons omitted from list so they don't get converted
 		 */
-		static $volume_to_ml = array (
-			'cup' => 236.59,
-			'cups' => 236.59,
-			'fl oz' => 29.57,
-			'fluid ounce' => 29.57,
-			'gallon' => 3785.41,
-			'pint' => 473.18,
-			'quart' => 946.35,
-			'stick' => 118.29,
+		static $us_measures = array (
+			'cup' => array('per' => 236.59, 'metric' => 'ml'),
+			'cups' => array('per' => 236.59, 'metric' => 'ml'),
+			'fl oz' => array('per' => 29.57, 'metric' => 'ml'),
+			'fluid ounce' => array('per' => 29.57, 'metric' => 'ml'),
+			'gallon' => array('per' => 3785.41, 'metric' => 'ml'),
+			'pint' => array('per' => 473.18, 'metric' => 'ml'),
+			'quart' => array('per' => 946.35, 'metric' => 'ml'),
+			'stick' => array('per' => 118.29, 'metric' => 'ml'),// FIXME Maybe want to convert butter to weight?
+			'oz' => array('per' => 28.3495, 'metric' => 'g'),
+			'ounce' => array('per' => 28.3495, 'metric' => 'g'),
+			'lb' => array('per' => 453.592, 'metric' => 'g'),
+			'pound' => array('per' => 453.592, 'metric' => 'g'),
 		);
 		
-		$qty = $ingrd['quantity'];
-		$unit = $ingrd['unit'];
-		$food_id = $ingrd['food_id'];
-		
-		$orig_measure = '';
-		$imperial_measure = '';
-		$metric_measure = '';
-		$text = '';
-		
-		/**
-		 * If either quantity or unit is missing, no conversion possible
+		/*
+		 * Conversion table to cups
+		 * FIXME Should tbs, tsp be converted to grams?
 		 */
-		if ( '' == $qty || '' == $unit ) {
-			if ('' != $qty) $text .= '<span class="value">' . esc_attr($qty) . '</span>';
-			if ('' != $unit) $text .= '<span class="type">' . esc_attr($unit) . '</span>';
-			return $text;
-		}
+		static $per_cup = array(
+			'cup' => 1,
+			'cups' => 1,
+			'fluid ounce' => 8,
+			'tbsp' => 16,
+			'tbs' => 16,
+			'tablespoon' => 16,
+			'tsp' => 48,
+			'teaspoon' => 48
+		);
 		
-		/**
+		/*
+		 * gram conversions
+		 */
+		static $grams = array(
+			'g' => 1,
+			'gram' => 1,
+			'grams' => 1,
+			'kg' => 1000,
+			'kgs' => 1000,
+			'kilogram' => 1000,
+			'kilograms' => 1000
+		);
+		
+		$text = '';      // Starting HTML content
+		extract($ingrd); // Pull associative array into symbol table ($quantity = $ingrd['quantity'], ...)
+
+		/*
 		 * Do unit conversions.
 		 */
 		
-		/**
-		 * FIXME Do unit conversions based on ingredient type
-		 * ingrd_id : NDB_No : ingrd : [weight | volume ] : g/cup
-		 */
+		// FIXME mark converted values as approximate quantity in recipe, especially when going from metric to US
 		
-		// FIXME Convert items with no DB match using generic conversion
-		// FIXME mark converted values as approximate qty in recipe, especially when going from metric to US
-		
-		/**
-		 * Is unit metric?  or US? or something else?
-		 */
-		if (in_array($unit, $metric_measures)) {
-			$orig_type = "metric_measure";
-		} else {
-			$orig_type = "us_measure";
+		if ( !is_numeric($quantity) || '' == $unit ) {
+			$metric_qty = $us_qty = $quantity;
+			$metric_unit = $us_unit = $unit;
+		} elseif (array_key_exists($unit, $metric_measures)) {
+			// Found Metric units
+			$metric_qty = $quantity;
+			$metric_unit = $unit;
 			
-			/**
-			 * Convert to metric
-			 */
-			if (array_key_exists($unit, $volume_to_ml)) {
-				$convert_measure = '<span class="metric_measure">';
-				$convert_measure .= '<span class="value">' . round($qty * $volume_to_ml[$unit]) . '</span>';
-				$convert_measure .= '<span class="type">ml</span>';
-				$convert_measure .= '</span>';
+			// Convert to US measure
+			if (array_key_exists($unit, $grams) && $gpcup) {
+				$us_qty_volume = $quantity * $grams[$unit] / $gpcup;
+				$us_unit_volume = 'cup';
+			}
+
+			$us_qty = $quantity * $metric_measures[$unit]['per'];
+			$us_unit = $metric_measures[$unit]['us'];
+		} else {
+			// Assume US measure
+			$us_qty = $quantity;
+			$us_unit = $unit;
+			
+			// For weight conversions, need to be able to convert quantity to cups
+			if ('weight' == $measure && array_key_exists($unit, $per_cup)) {
+				// metric weight = quantity in cups * grams per cup
+				$cups = $quantity / $per_cup[$unit];
+				$metric_qty = round($cups * $gpcup);
+				$metric_unit = 'g';
+			} elseif (array_key_exists($unit, $us_measures)) {
+				/*
+				 * Direct conversion to metric if starting unit is known 
+				 * (us weight->metric weight, us volume=>metric volume)
+				 */
+				$metric_qty = round($quantity * $us_measures[$unit]['per']);
+				$metric_unit = $us_measures[$unit]['metric'];
+			} else {
+				// Unknown unit
+				$metric_qty = $quantity;
+				$metric_unit = $unit;
 			}
 		}
 		
-		$orig_measure = '<span class="orig_measure ' . $orig_type . '">';
-		// FIXME what if $qty has non-numeric text?
-		$orig_measure .= '<span class="value">' . $this->decimal_to_fraction($qty, $unit) . '</span>';
-		$orig_measure .= '<span class="type">' . esc_attr($unit) . '</span>';
-		$orig_measure .= '</span>';
+		// Original measure
+		$text = '<ul><li class="measure-original selected-measure"><span class="value quantity">'. $this->decimal_to_fraction($quantity, $unit) . '</span>';
+		$text .= '<span class="type unit">' . esc_attr($unit) . '</span></li>';
 		
-		if (isset($convert_measure)) {
-			$text = $convert_measure . ' (' . $orig_measure . ')';
-		} else {
-			$text = $orig_measure;
+		// Metric measure
+		$text .= '<li class="measure-metric"><span class="metric-value quantity">'. $this->decimal_to_fraction($metric_qty, $metric_unit) . '</span>';
+		$text .= '<span class="metric-type unit">' . esc_attr($metric_unit) . '</span></li>';
+		
+		// US measure
+		$text .= '<li class="measure-us">';
+		// If US volume measurement use it for primary value; eg. "1 cup (7 ounces)"
+		if (isset($us_qty_volume)) {
+			$text .= '<span class="us-value quantity">' . $this->decimal_to_fraction($us_qty_volume, $us_unit_volume) . '</span>';
+			$text .= '<span class="us-type unit">' . esc_attr($us_unit_volume) . '</span>';
+			$text .= '<span class="measure-us-alt">('; // Put weight measurement in parens
 		}
+		$text .= '<span class="us-value quantity">'. $this->decimal_to_fraction($us_qty, $us_unit) . '</span>';
+		$text .= '<span class="us-type unit">' . esc_attr($us_unit) . '</span>';
+		if (isset($us_qty_volume)) $text .= ')</span>'; // Close weight paren
+		$text .= '</li></ul>';
 		
 		return $text;
 	}
-	
+		
 	/**
 	 * Convert decimal to common fractions based on unit type
 	 *
@@ -1204,9 +1268,12 @@ class hrecipe_microformat {
 			'tsp',
 		);
 		
-		/**
-		 * Only convert some unit types to fractions
-		 */
+		// Only Convert numbers
+		if (! is_numeric($value)) {
+			return esc_attr($value);
+		}
+		
+		// Only convert some unit types to fractions
 		if (! in_array($unit, $fractional_measures)) {
 			return $value;
 		}

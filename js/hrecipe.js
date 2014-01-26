@@ -73,4 +73,19 @@ jQuery(document).ready( function($) {
 			})*/;
 		}
 	});
+	
+	// Setup buttons for recipe unit conversion
+	$('.ingredients-display-as button').
+	button().click(function(e){
+		var displayMeasure = 'measure-';
+		// Value of button determines which measures to display
+		displayMeasure += jQuery(this).val(); 
+		// Hide measure currently displayed
+		$('.ingredients .selected-measure').removeClass('selected-measure');
+		// ... and show the desired target
+		$('.ingredients .' + displayMeasure).addClass('selected-measure');
+
+		e.preventDefault(); // Don't need default handler to fire
+		return false;
+	});
 });

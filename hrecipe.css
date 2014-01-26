@@ -45,6 +45,8 @@
 /* ================================ */
 /* = Recipe Header/Footer content = */
 /* ================================ */
+/*
+	TODO - This don't appear to be used
 .hrecipe-head, .hrecipe-footer {
 	border: 1px solid ;
 	padding: 3px;
@@ -57,6 +59,7 @@
 	padding: 3px;
 	margin: 3px;
 }
+*/
 
 /* ===================== */
 /* = Recipe Difficulty = */
@@ -143,12 +146,14 @@
 /* =================================== */
 /* = Ingredient and Ingredient Lists = */
 /* =================================== */
+
+/* Style the ingredients card */
 .ingredients {
 	clear: both;
 	margin: 5px 0px;
 	padding: 5px;
 	border: black solid 1px;
-	font-family: 'Annie Use Your Telescope', arial, serif;
+	font-family: 'Annie Use Your Telescope', arial, serif;	
 	background: rgb(255,255,255);
 }
 
@@ -158,15 +163,64 @@
 	height: 2em;
 }
 
-tr.ingredient td, tr.ingredient:nth-child(2n) td {
+.ingredients-title {
+	float: left;
+}
+
+/* 
+   Ingredients card header 
+*/
+.ingredients-display-as {
+	float: right;
+	display: inline-block;
+	padding: 0;
+	margin: 0;
+}
+
+/* Push unit conversion tool to right side of ingredients title line */
+.ingredients-display-as li {
+	list-style-type: none;
+	list-style-image: none;
+	float: left;
+}
+
+/* Hide measures selection tools if javascript is not available */
+.no-js .ingredients-display-as {
+	display: none;
+}
+.measure-button.ui-widget {
+	font-size: .6em;
+}
+
+
+tr.ingredient td, 
+tr.ingredient:nth-child(2n) td {
 	background: inherit;
 	border-bottom: rgb(99, 195, 251) solid 1px;
 }
 
-.ingredient .value {
+.measure ul {
+	list-style-type: none;
+	margin: 0;
+	padding: 0;
+}
+
+/* Only the selected measures (quantity + unit) are displayed */
+.measure li {
+	display: none;
+	float: left;
+}
+li.selected-measure {
+	display: inline-block;
+}
+
+.ingredient .quantity {
 	padding-right: .5em;
 }
-.ingredient .type {
+.ingredient .measure-us-alt {
+	padding-left: .5em;
+}
+.ingredient .unit {
 }
 .ingredient .ingrd {
 }
@@ -175,9 +229,6 @@ tr.ingredient td, tr.ingredient:nth-child(2n) td {
 }
 .ingredient .comment {
 	font-style: italic;
-}
-.ingredient .NDB_No {
-	display: none;
 }
 
 /* ================ */

@@ -321,12 +321,9 @@ class hrecipe_admin extends hrecipe_microformat
 	/**
 	 * Setup the admin screens
 	 *
-	 * @uses $wp_scripts, To retrieve version of jQuery for auto-loading of proper style sheets
 	 **/
 	function admin_init ()
 	{
-		global $wp_scripts;
-		
 		// Add section for reporting configuration errors and notices
 		add_action('admin_notices', array( $this, 'display_admin_notices'));
 		
@@ -364,10 +361,7 @@ class hrecipe_admin extends hrecipe_microformat
 		
 		// Register admin javascript, place in footer so it can be localized as needed
 		wp_register_script(self::prefix . 'admin', self::$url . 'admin/js/admin.js',
-		                   array('jquery-ui-autocomplete','jquery-ui-sortable'), false, true);
-		
-		// Register jQuery UI stylesheet - use googleapi version based on what version of core is running
-		wp_register_style(self::prefix . 'jquery-ui', "http://ajax.googleapis.com/ajax/libs/jqueryui/{$wp_scripts->registered['jquery-ui-core']->ver}/themes/smoothness/jquery-ui.min.css");
+		                   array('jquery-ui-autocomplete', 'jquery-ui-sortable', 'jquery-ui-button'), false, true);
 		
 		/*
 			Setup the Recipe Post Editing page
@@ -432,7 +426,7 @@ class hrecipe_admin extends hrecipe_microformat
 		/**
 		 * For each ingredient list, output a table
 		 */
-		// FIXME If Lists can be added/deleted/reordered, array indexes might get mucked up
+		// RFE If Lists can be added/deleted/reordered, array indexes might get mucked up
 		foreach ($ingrd_list_title as $list_id => $list_title) {
 			$ingrds = $this->ingrd_db->get_ingrds_for_recipe($post->ID, $list_id);
 			?>

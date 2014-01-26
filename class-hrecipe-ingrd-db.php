@@ -303,6 +303,8 @@ class hrecipe_ingrd_db {
 	/**
 	 * Retrieve ingredients for a recipe post
 	 *
+	 * Each Row returned includes key values for: food_id, quantity, unit, ingrd, comment, NDB_No, measure, gpcup
+	 *
 	 * @uses $wpdb
 	 * @param $post_id Retrieve ingredients for post_id
 	 * @param $ingrd_list_id Which ingredient list in post to get
@@ -312,7 +314,9 @@ class hrecipe_ingrd_db {
 	{
 		global $wpdb;
 
-		$result = $wpdb->get_results($wpdb->prepare("SELECT food_id,quantity,unit,ingrd,comment FROM " . $this->recipe_ingrds_table . " WHERE post_id LIKE %d AND ingrd_list_id LIKE %d ORDER BY list_order ASC", $post_id, $ingrd_list_id), ARRAY_A);
+		$result = $wpdb->get_results($wpdb->prepare("SELECT " .
+			 "food_id,t1.quantity,t1.unit,t1.ingrd,t1.comment,t2.NDB_No,t2.measure,t2.gpcup FROM " . 
+			$this->recipe_ingrds_table . " t1 LEFT JOIN ". $this->foods_table . " t2 USING (food_id) WHERE post_id LIKE %d AND ingrd_list_id LIKE %d ORDER BY list_order ASC", $post_id, $ingrd_list_id), ARRAY_A);
 		return $result;
 	}
 	
@@ -330,7 +334,7 @@ class hrecipe_ingrd_db {
 	}
 	
 	/**
-	 * Delete all ingredient items associated with a post
+	 * Delete all ingredients associated with a post
 	 *
 	 * @uses $wpdb
 	 * @param $post_id Delete all ingredients for indicated post
