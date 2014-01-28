@@ -1278,7 +1278,7 @@ class hrecipe_microformat {
 			return $value;
 		}
 		
-		// FIXME Need to do this based on (\d*).(\d*) within the value string?
+		// $value is known to be a number so safe to assume decimal format
 		$parts = explode('.', $value);
 		
 		// Need integral and fractional parts to make fraction
@@ -1385,11 +1385,13 @@ class hrecipe_microformat {
 	/**
 	 * Handle AJAX request for auto-completion information for an ingredient name
 	 *
+	 * @uses $_REQUEST['name_contains'] string, substring for lookup
+	 * @uses $_REQUEST['maxRows'] int, maximum rows to return
 	 * @return calls exit
 	 **/
 	function ajax_ingrd_auto_complete()
 	{
-		// FIXME Respond with an error on mal-formed request
+		// TODO Respond with an error on mal-formed request
 
 		// Escape incoming name to prevent SQL attack
 		$name_contains = esc_attr($_REQUEST['name_contains']);
@@ -1415,11 +1417,14 @@ class hrecipe_microformat {
 	/**
 	 * Handle AJAX request for food definitions in USDA Nutrition DB
 	 *
+	 * @uses $_REQUEST['name_contains'] string, substring for lookup
+	 * @uses $_REQUEST['maxRows'] int, maximum rows to return
+	 * @uses $_REQUEST['pageNum'] int, page number for request - determines starting row for lookup
 	 * @return calls exit
 	 **/
 	function ajax_NDB_search()
 	{
-		// FIXME Respond with an error on mal-formed request
+		// TODO Respond with an error on mal-formed request
 		
 		// Escape incoming name to prevent SQL attack
 		$name = esc_attr($_REQUEST['name_contains']);
@@ -1446,11 +1451,12 @@ class hrecipe_microformat {
 	/**
 	 * Handle AJAX request to retrieve measures for a food from USDA Nutrition DB
 	 *
+	 * @uses $_REQUEST['NDB_No'] string, Unique food ID from the Nutrition DB
 	 * @return calls exit
 	 **/
 	function ajax_NDB_measures()
 	{
-		// FIXME Respond with an error on mal-formed request
+		// TODO Respond with an error on mal-formed request
 		
 		// Escape incoming name to prevent SQL attack
 		$NDB_No = esc_attr($_REQUEST['NDB_No']);
