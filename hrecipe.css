@@ -228,6 +228,7 @@ li.ingredient {
 	display: inline-block;
 }
 
+/* Format an ingredient in an ingredient list */
 .ingredient .quantity {
 	padding-right: .5em;
 }
