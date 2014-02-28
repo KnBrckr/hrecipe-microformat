@@ -157,7 +157,7 @@
 	background: rgb(255,255,255);
 }
 
-.ingredients th {
+.ingredients header {
 	border-bottom: rgb(255, 19, 0) solid 2px;
 	background: inherit;
 	height: 2em;
@@ -165,6 +165,7 @@
 
 .ingredients-title {
 	float: left;
+	font-size: 1.25em;
 }
 
 /* 
@@ -192,11 +193,25 @@
 	font-size: .6em;
 }
 
+/* Put list of ingredients below the header */
+ul.ingredients-list {
+	list-style-type: none;
+	list-style-image: none;
+	clear: both;
+	padding: 0;
+	margin: 0 0 25px 0;
+}
 
-tr.ingredient td, 
-tr.ingredient:nth-child(2n) td {
+li.ingredient {
 	background: inherit;
 	border-bottom: rgb(99, 195, 251) solid 1px;
+	list-style-type: none;
+	list-style-image: none;
+	padding-left: 20px;
+}
+
+.measure {
+	display: inline-block;
 }
 
 .measure ul {
@@ -206,26 +221,24 @@ tr.ingredient:nth-child(2n) td {
 }
 
 /* Only the selected measures (quantity + unit) are displayed */
-.measure li {
+.measure-equivalent {
 	display: none;
-	float: left;
 }
-li.selected-measure {
+.measure-equivalent.selected-measure {
 	display: inline-block;
 }
 
 .ingredient .quantity {
 	padding-right: .5em;
 }
-.ingredient .measure-us-alt {
-	padding-left: .5em;
-}
 .ingredient .unit {
+	padding-right: .5em;
 }
 .ingredient .ingrd {
+	padding-right: .5em;
 }
 .ingredient .comment:before {
-	content: " – ";
+	content: "–";
 }
 .ingredient .comment {
 	font-style: italic;

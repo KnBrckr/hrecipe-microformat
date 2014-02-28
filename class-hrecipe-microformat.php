@@ -324,8 +324,8 @@ class hrecipe_microformat {
 		// Update classes applied to <body> element
 		add_filter('body_class', array ($this, 'body_class'),10,2);
 		
-		// Hook template redirect to provide default page templates within the plugin
-		add_action('template_redirect', array($this, 'template_redirect'));
+		// provide default page templates from within the plugin
+		add_filter('template_include', array($this, 'template_include'),50);
 
 		// Hook into the post processing to localize elements needing access to $post
 		add_action( 'the_post', array($this, 'plugin_the_post') );
@@ -404,11 +404,18 @@ class hrecipe_microformat {
 	}
 	
 	/**
-	 * Use plugin provided page templates as defaults
+	 * Use plugin provided page templates as defaults for certain page types
 	 *
-	 * @return void
+	 * Plugin provides templates for:
+	 *    Recipe Page (single-hrecipe)
+	 *    Archive Recipe Page (archive-hrecipe)
+	 *    Taxonomy List for recipe category (taxonomy-hrecipe_category)
+	 *
+	 * FIXME Whole site Search returns an index page of articles, searching only recipes works - Theme issue?
+	 *
+	 * @return string, template path
 	 **/
-	function template_redirect()
+	function template_include($template)
 	{
 		global $post;
 		
@@ -419,17 +426,19 @@ class hrecipe_microformat {
 		} elseif ( is_tax($this->recipe_category_taxonomy) ) {
 			$template_name = 'taxonomy-' . $this->recipe_category_taxonomy;
 		} else {
-			return;
+			return $template;
 		}
 		
 		$template_name .= '.php';
 		
-		// Look for available templates
-		$template = locate_template(array($template_name), true);
-		if (empty($template)) {
-			include(self::$dir . 'lib/template/' . $template_name);
+		// Look for version of template in the theme
+		$new_template = locate_template(array($template_name), true);
+		if (! empty($new_template)) {
+			return $new_template;
 		}
-		exit();
+		
+		// Return the plugin version of the template
+		return self::$dir . 'lib/template/' . $template_name;
 	}
 	
 	/**
@@ -939,6 +948,17 @@ class hrecipe_microformat {
 	 * Example usage:
 	 *  [ingrd-list id=1] <-- Displays ingredient list 1 for recipe
 	 *
+	 * Ingredient list structure
+	 * <section>
+	 *  <header>
+	 *   <h1>title</h1>
+	 *  </header>
+	 *  <ul>
+	 *   <li>ingredient</li>
+	 *   ...
+	 *  </ul>
+	 * </section>
+	 *
 	 * @param array $atts shortcode attributes
 	 * @param string $content shortcode contents
 	 * @uses $post
@@ -984,18 +1004,18 @@ class hrecipe_microformat {
 		/**
 		 * Generate HTML table for the ingredient list
 		 */
-		$text .= '<table class="ingredients" id="ingredients-' . $list_id . '">';
-		$text .= '<thead><tr><th colspan="2">'; // Table Header Start
-		$text .= '<span class="ingredients-title">' . $ingrd_list_title[$list_id] . '</span>'; // List Title
+		$text .= '<section class="ingredients" id="ingredients-' . $list_id . '">';
+		$text .= '<header>';
+		$text .= '<h1 class="ingredients-title">' . $ingrd_list_title[$list_id] . '</h1>'; // List Title
 		$text .= '<ul class="ingredients-display-as">';
 		$text .=  '<li><button class="measure-button" value="original">default</button></li>';
 		$text .=  '<li><button class="measure-button" value="us">US</button></li>';
 		$text .=  '<li><button class="measure-button" value="metric">metric</button></li>';
 		$text .= '</ul>';
-		$text .= '</th></tr></thead>'; // Table Header End
+		$text .= '</header>';
 
 		/**
-		 * Add row to table for each ingredient in list
+		 * Add element for each ingredient
 		 *
 		 * Input: $d['food_id], $d['quantity'], $d['unit'], $d['ingrd'], $d['comment']
 		 *
@@ -1004,16 +1024,17 @@ class hrecipe_microformat {
 		 * value and type. optional. child of ingredient. [experimental]
 		 * comment. optional. text. child of ingredient. [ziplist extension]
 		 */
+		$text .= '<ul class="ingredients-list">';
 		foreach ($ingrds as $d) {
-			$text .= '<tr class="ingredient"><td class="measure">';
-			$text .= $this->quantity_html($d);
-			$text .= '</td><td>';
+			$text .= '<li class="ingredient">';
+			$measure_text = $this->quantity_html($d);
+			if ($measure_text) $text .= '<span class="measure">' . $measure_text . '</span>';
 			if ('' != $d['ingrd']) $text .= '<span class="ingrd">' . esc_attr($d['ingrd']) . '</span>';
 			if ('' != $d['comment']) $text .= '<span class="comment">' . esc_attr($d['comment']) . '</span>';
-			$text .= '</td></tr>';
+			$text .= '</li>';
 		}
 		
-		$text .= '</table>';
+		$text .= '</ul></section>';
 		
 		return $text;
 	}
@@ -1052,6 +1073,8 @@ class hrecipe_microformat {
 	 *        $ingrd['measure']
 	 *        $ingrd['gpcup']
 	 * @return string HTML text for units
+	 *
+	 * FIXME When displaying in US units, scale units to use teaspoons, tablespoons for amounts < 1/8 cup
 	**/
 	function quantity_html($ingrd)
 	{
@@ -1086,7 +1109,7 @@ class hrecipe_microformat {
 			'gallon' => array('per' => 3785.41, 'metric' => 'ml'),
 			'pint' => array('per' => 473.18, 'metric' => 'ml'),
 			'quart' => array('per' => 946.35, 'metric' => 'ml'),
-			'stick' => array('per' => 118.29, 'metric' => 'ml'),// FIXME Maybe want to convert butter to weight?
+			'stick' => array('per' => 118.29, 'metric' => 'ml'),// TODO Maybe want to convert butter to weight?
 			'oz' => array('per' => 28.3495, 'metric' => 'g'),
 			'ounce' => array('per' => 28.3495, 'metric' => 'g'),
 			'lb' => array('per' => 453.592, 'metric' => 'g'),
@@ -1095,7 +1118,7 @@ class hrecipe_microformat {
 		
 		/*
 		 * Conversion table to cups
-		 * FIXME Should tbs, tsp be converted to grams?
+		 * TODO Should tbs, tsp be converted to ml?
 		 */
 		static $per_cup = array(
 			'cup' => 1,
@@ -1124,73 +1147,87 @@ class hrecipe_microformat {
 		$text = '';      // Starting HTML content
 		extract($ingrd); // Pull associative array into symbol table ($quantity = $ingrd['quantity'], ...)
 
+		// If both quantity and unit are blank, bail out now
+		if ('' == $quantity && '' == $unit) return '';
+
 		/*
 		 * Do unit conversions.
 		 */
+		$q['original'] = $quantity;
+		$u['original'] = $unit;
 		
 		// FIXME mark converted values as approximate quantity in recipe, especially when going from metric to US
 		
 		if ( !is_numeric($quantity) || '' == $unit ) {
-			$metric_qty = $us_qty = $quantity;
-			$metric_unit = $us_unit = $unit;
+			$q['metric'] = $q['us'] = $quantity;
+			$u['metric'] = $u['us'] = $unit;
 		} elseif (array_key_exists($unit, $metric_measures)) {
 			// Found Metric units
-			$metric_qty = $quantity;
-			$metric_unit = $unit;
+			$q['metric'] = $quantity;
+			$u['metric'] = $unit;
 			
 			// Convert to US measure
+			// TODO Display volume measurements for US in addition to the weight when possible
 			if (array_key_exists($unit, $grams) && $gpcup) {
 				$us_qty_volume = $quantity * $grams[$unit] / $gpcup;
 				$us_unit_volume = 'cup';
 			}
 
-			$us_qty = $quantity * $metric_measures[$unit]['per'];
-			$us_unit = $metric_measures[$unit]['us'];
+			$q['us'] = $quantity * $metric_measures[$unit]['per'];
+			$u['us'] = $metric_measures[$unit]['us'];
 		} else {
 			// Assume US measure
-			$us_qty = $quantity;
-			$us_unit = $unit;
+			$q['us'] = $quantity;
+			$u['us'] = $unit;
 			
 			// For weight conversions, need to be able to convert quantity to cups
 			if ('weight' == $measure && array_key_exists($unit, $per_cup)) {
 				// metric weight = quantity in cups * grams per cup
 				$cups = $quantity / $per_cup[$unit];
-				$metric_qty = round($cups * $gpcup);
-				$metric_unit = 'g';
+				$q['metric'] = round($cups * $gpcup);
+				$u['metric'] = 'g';
 			} elseif (array_key_exists($unit, $us_measures)) {
 				/*
 				 * Direct conversion to metric if starting unit is known 
 				 * (us weight->metric weight, us volume=>metric volume)
 				 */
-				$metric_qty = round($quantity * $us_measures[$unit]['per']);
-				$metric_unit = $us_measures[$unit]['metric'];
+				$q['metric'] = round($quantity * $us_measures[$unit]['per']);
+				$u['metric'] = $us_measures[$unit]['metric'];
 			} else {
 				// Unknown unit
-				$metric_qty = $quantity;
-				$metric_unit = $unit;
+				$q['metric'] = $quantity;
+				$u['metric'] = $unit;
 			}
 		}
 		
-		// Original measure
-		$text = '<ul><li class="measure-original selected-measure"><span class="value quantity">'. $this->decimal_to_fraction($quantity, $unit) . '</span>';
-		$text .= '<span class="type unit">' . esc_attr($unit) . '</span></li>';
+		/*
+			Create list of measures: original, US and Metric formats
 		
-		// Metric measure
-		$text .= '<li class="measure-metric"><span class="metric-value quantity">'. $this->decimal_to_fraction($metric_qty, $metric_unit) . '</span>';
-		$text .= '<span class="metric-type unit">' . esc_attr($metric_unit) . '</span></li>';
+			The original value is marked as the "selected" value for default display
+			Javascript code will be using the measure-* and selected-measure classes to identify and select
+			the available measures.
+		*/
 		
-		// US measure
-		$text .= '<li class="measure-us">';
-		// If US volume measurement use it for primary value; eg. "1 cup (7 ounces)"
-		if (isset($us_qty_volume)) {
-			$text .= '<span class="us-value quantity">' . $this->decimal_to_fraction($us_qty_volume, $us_unit_volume) . '</span>';
-			$text .= '<span class="us-type unit">' . esc_attr($us_unit_volume) . '</span>';
-			$text .= '<span class="measure-us-alt">('; // Put weight measurement in parens
+		$text = '<div class="measure-equivalents">';
+		foreach (array('original', 'us', 'metric') as $type) {
+			$m_class = "measure-equivalent measure-$type";
+			$q_class = "quantity $type-value";
+			$u_class = "unit $type-type";
+			
+			if ('original' == $type) {
+				$m_class .= ' selected-measure';
+				$q_class  .= ' value'; // Tag the original value using hrecipe microformat
+				$u_class  .= ' type';  //   ... same here
+			}
+			
+			$text .= "<div class='$m_class'>";
+			if ($q[$type]) 
+				$text .= "<span class='$q_class'>" . $this->decimal_to_fraction($q[$type], $u[$type]) . "</span>";
+			if ($u[$type])
+				$text .= "<span class='$u_class'>" . esc_attr($u[$type]) . "</span>";
+			$text .= "</div>";
 		}
-		$text .= '<span class="us-value quantity">'. $this->decimal_to_fraction($us_qty, $us_unit) . '</span>';
-		$text .= '<span class="us-type unit">' . esc_attr($us_unit) . '</span>';
-		if (isset($us_qty_volume)) $text .= ')</span>'; // Close weight paren
-		$text .= '</li></ul>';
+		$text .= '</div>';
 		
 		return $text;
 	}

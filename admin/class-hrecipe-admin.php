@@ -446,22 +446,24 @@ class hrecipe_admin extends hrecipe_microformat
 							<th>Ingredient</th>
 							<th></th>
 							<th>Comment</th>
+							<th>g/cup</th>
+							<th>preferred measure</th>
 						</tr>
 					</thead>
 					<tbody>
 						<?php
 						// Setup prototype ingredient row
-						$this->recipe_edit_ingrd_row($list_id, '', '', '', '', '', true);
+						$this->recipe_edit_ingrd_row($list_id, 'prototype', array());
 						
 						// Add rows for recipe ingredients
 						if (count($ingrds) == 0) {
 							// Setup a few empty rows in the edit screen for new posts
 							for ($i=0; $i < 4; $i++) { 
-								$this->recipe_edit_ingrd_row($list_id, '', '', '', '', '', false);
+								$this->recipe_edit_ingrd_row($list_id, '', array());
 							}
 						} else {
 							foreach ($ingrds as $d) {
-								$this->recipe_edit_ingrd_row($list_id, $d['quantity'], $d['unit'], $d['ingrd'], $d['comment'], $d['food_id'], false);
+								$this->recipe_edit_ingrd_row($list_id, '', $d);
 							} // foreach $ingrds						
 						}
 						?>
@@ -476,31 +478,31 @@ class hrecipe_admin extends hrecipe_microformat
 	 * Emit HTML for a row in the ingredients table on admin recipe edit screen
 	 *
 	 * @param $list_id, int, Containing recipe list ID for this ingredient
-	 * @param $qty, string, Quantity of recipe ingredient
-	 * @param $unit, string, unit of measure for recipe ingredient
-	 * @param $ingrd, string, ingredient name
-	 * @param $comment, string, comments for this ingredient row
-	 * @param $food_id, int, ID of linked ingredient in the ingredient database
-	 * @param $proto, boolean, true if creating a prototype row
+	 * @param $prototype, boolean, true if creating a prototype row
+	 * @param $data, associative array, ingredient information
 	 * @return void
 	 **/
-	function recipe_edit_ingrd_row($list_id, $qty, $unit, $ingrd, $comment, $food_id, $proto)
+	function recipe_edit_ingrd_row($list_id, $class, $data)
 	{
-		// Escape special characters in the output
-		$qty = esc_attr($qty);
-		$unit = esc_attr($unit);
-		$ingrd = esc_attr($ingrd);
-		$comment = esc_attr($comment);
-		$food_id = esc_attr($food_id);
+		/*
+			Pull associative array into symbol table:
 		
-		$prototype = $proto ? 'prototype' : '';
+		 	$quantity, string, Quantity of recipe ingredient
+	 		$unit, string, unit of measure for recipe ingredient
+	 		$ingrd, string, ingredient name
+	 		$comment, string, comments for this ingredient row
+	 		$food_id, int, ID of linked ingredient in the ingredient database	
+			$gpcup, int, grams per cup for linked ingredient
+			$measure, string, requested measurement style for linked ingredient 
+		*/
+		extract ($data);
 		
 		// If $food_id is specified, show this row as linked and make ingredient input field readonly
-		$linked_state = $food_id ? "food-linked" : "";
-		$readonly = $food_id ? "readonly" : "";
+		$linked_state = isset($food_id) && $food_id ? "food-linked" : "";
+		$readonly = isset($food_id) && $food_id ? "readonly" : "";
 		
 		?>
-		<tr class="recipe-ingrd-row <?php echo $prototype; ?> <?php echo $linked_state; ?>">
+		<tr class="recipe-ingrd-row <?php echo $class; ?> <?php echo $linked_state; ?>">
 			<td class="row_interaction">
 				<ul>
 				<li class="ui-state-default ui-corner-all">
@@ -514,11 +516,11 @@ class hrecipe_admin extends hrecipe_microformat
 				</li>
 				</ul>
 			</td>
-			<td><input type="text" name="<?php echo self::prefix; ?>quantity[<?php echo $list_id; ?>][]" class="value" value="<?php echo $qty ?>" /></td>
-			<td><input type="text" name="<?php echo self::prefix; ?>unit[<?php echo $list_id; ?>][]" class="type ui-widget" value="<?php echo $unit ?>"/></td>
+			<td><input type="text" name="<?php echo self::prefix; ?>quantity[<?php echo $list_id; ?>][]" class="value" value="<?php if (isset($quantity)) echo esc_attr($quantity) ?>" /></td>
+			<td><input type="text" name="<?php echo self::prefix; ?>unit[<?php echo $list_id; ?>][]" class="type ui-widget" value="<?php if (isset($unit)) echo esc_attr($unit) ?>"/></td>
 			<td>
-				<input type="text" name="<?php echo self::prefix; ?>ingrd[<?php echo $list_id; ?>][]" class="ingrd" value ="<?php echo $ingrd ?>" <?php echo $readonly ?>/>
-				<input type="hidden" name="<?php echo self::prefix ?>food_id[<?php echo $list_id; ?>][]" value="<?php echo $food_id; ?>" class="food_id">
+				<input type="text" name="<?php echo self::prefix; ?>ingrd[<?php echo $list_id; ?>][]" class="ingrd" value ="<?php if (isset($ingrd)) echo esc_attr($ingrd) ?>" <?php echo $readonly ?>/>
+				<input type="hidden" name="<?php echo self::prefix ?>food_id[<?php echo $list_id; ?>][]" value="<?php if (isset($food_id)) echo esc_attr($food_id) ?>" class="food_id">
 			</td>
 			<td>
 				<p class="food-linked-status ui-state-highlight">
@@ -529,7 +531,13 @@ class hrecipe_admin extends hrecipe_microformat
 				</p>
 			</td>
 			<td>
-				<input type="text" name="<?php echo self::prefix; ?>comment[<?php echo $list_id; ?>][]" class="comment" value="<?php echo $comment ?>"/>
+				<input type="text" name="<?php echo self::prefix; ?>comment[<?php echo $list_id; ?>][]" class="comment" value="<?php if (isset($comment)) echo esc_attr($comment) ?>"/>
+			</td>
+			<td>
+				<?php if (isset($gpcup)) echo esc_attr($gpcup) ?>
+			</td>
+			<td>
+				<?php if (isset($measure)) echo esc_attr($measure) ?>
 			</td>
 		</tr>
 		<?php
