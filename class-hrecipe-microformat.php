@@ -1008,7 +1008,7 @@ class hrecipe_microformat {
 		$text .= '<header>';
 		$text .= '<h1 class="ingredients-title">' . $ingrd_list_title[$list_id] . '</h1>'; // List Title
 		$text .= '<ul class="ingredients-display-as">';
-		$text .=  '<li><button class="measure-button" value="original">default</button></li>';
+		$text .=  '<li><button class="measure-button" value="original">original</button></li>';
 		$text .=  '<li><button class="measure-button" value="us">US</button></li>';
 		$text .=  '<li><button class="measure-button" value="metric">metric</button></li>';
 		$text .= '</ul>';
@@ -1028,9 +1028,9 @@ class hrecipe_microformat {
 		foreach ($ingrds as $d) {
 			$text .= '<li class="ingredient">';
 			$measure_text = $this->quantity_html($d);
-			if ($measure_text) $text .= '<span class="measure">' . $measure_text . '</span>';
+			if ($measure_text) $text .= '<span class="measure">' . $measure_text . '</span> ';
 			if ('' != $d['ingrd']) $text .= '<span class="ingrd">' . esc_attr($d['ingrd']) . '</span>';
-			if ('' != $d['comment']) $text .= '<span class="comment">' . esc_attr($d['comment']) . '</span>';
+			if ('' != $d['comment']) $text .= ' – <span class="comment">' . esc_attr($d['comment']) . '</span>';
 			$text .= '</li>';
 		}
 		
@@ -1151,14 +1151,34 @@ class hrecipe_microformat {
 		if ('' == $quantity && '' == $unit) return '';
 
 		/*
-		 * Do unit conversions.
+		 * Do unit conversions between metric and US formats
+		 *
+		 * $q - array of quantities for each measurement format
+		 * $u - array of units for each measurement format
+		 * $m_class - array of measure classes to include for each format
+		 * $q_class - classes to include on quantity <span>
+		 * $u_class - classes to include on unit <span>
 		 */
 		$q['original'] = $quantity;
 		$u['original'] = $unit;
-		
-		// FIXME mark converted values as approximate quantity in recipe, especially when going from metric to US
+		$m_class = array (
+			'original' => array('selected-measure'),
+			'metric' => array(),
+			'us' => array()
+		);
+		$q_class = array(
+			'original' => array('value'),
+			'metric' => array(),
+			'us' => array(),
+		);
+		$u_class = array(
+			'original' => array('type'),
+			'metric' => array(),
+			'us' => array()
+		);
 		
 		if ( !is_numeric($quantity) || '' == $unit ) {
+			// No conversion possible
 			$q['metric'] = $q['us'] = $quantity;
 			$u['metric'] = $u['us'] = $unit;
 		} elseif (array_key_exists($unit, $metric_measures)) {
@@ -1173,6 +1193,7 @@ class hrecipe_microformat {
 				$us_unit_volume = 'cup';
 			}
 
+			$m_class['us'][] = 'converted-measure';
 			$q['us'] = $quantity * $metric_measures[$unit]['per'];
 			$u['us'] = $metric_measures[$unit]['us'];
 		} else {
@@ -1186,6 +1207,7 @@ class hrecipe_microformat {
 				$cups = $quantity / $per_cup[$unit];
 				$q['metric'] = round($cups * $gpcup);
 				$u['metric'] = 'g';
+				$m_class['metric'][] = 'converted-measure';
 			} elseif (array_key_exists($unit, $us_measures)) {
 				/*
 				 * Direct conversion to metric if starting unit is known 
@@ -1193,6 +1215,7 @@ class hrecipe_microformat {
 				 */
 				$q['metric'] = round($quantity * $us_measures[$unit]['per']);
 				$u['metric'] = $us_measures[$unit]['metric'];
+				$m_class['metric'][] = 'converted-measure';
 			} else {
 				// Unknown unit
 				$q['metric'] = $quantity;
@@ -1210,22 +1233,19 @@ class hrecipe_microformat {
 		
 		$text = '<div class="measure-equivalents">';
 		foreach (array('original', 'us', 'metric') as $type) {
-			$m_class = "measure-equivalent measure-$type";
-			$q_class = "quantity $type-value";
-			$u_class = "unit $type-type";
+			array_push($m_class[$type], "measure-equivalent", "measure-$type");
+			array_push($q_class[$type], "quantity", "$type-value");
+			array_push($u_class[$type], "unit", "$type-type");
 			
-			if ('original' == $type) {
-				$m_class .= ' selected-measure';
-				$q_class  .= ' value'; // Tag the original value using hrecipe microformat
-				$u_class  .= ' type';  //   ... same here
-			}
-			
-			$text .= "<div class='$m_class'>";
+			$text .= '<div class="' . implode(' ' , $m_class[$type]) . '">';
 			if ($q[$type]) 
-				$text .= "<span class='$q_class'>" . $this->decimal_to_fraction($q[$type], $u[$type]) . "</span>";
+				$text .= '<span class="' .  implode(' ', $q_class[$type]) . '">' .
+					$this->decimal_to_fraction($q[$type], $u[$type]) . '</span> ';
 			if ($u[$type])
-				$text .= "<span class='$u_class'>" . esc_attr($u[$type]) . "</span>";
-			$text .= "</div>";
+				$text .= '<span class="' . implode(' ',$u_class[$type]) . '">' . esc_attr($u[$type]) . '</span>';
+			if (in_array('converted-measure', $m_class[$type]))
+				$text .= '<sup>*</sup>';
+			$text .= '</div>';
 		}
 		$text .= '</div>';
 		

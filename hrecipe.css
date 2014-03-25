@@ -228,19 +228,12 @@ li.ingredient {
 	display: inline-block;
 }
 
+/* Flag measurements that have been converted from original units */
+.converted-measure {
+	/* TODO Highlight converted measurements in display? */
+}
+
 /* Format an ingredient in an ingredient list */
-.ingredient .quantity {
-	padding-right: .5em;
-}
-.ingredient .unit {
-	padding-right: .5em;
-}
-.ingredient .ingrd {
-	padding-right: .5em;
-}
-.ingredient .comment:before {
-	content: "–";
-}
 .ingredient .comment {
 	font-style: italic;
 }
