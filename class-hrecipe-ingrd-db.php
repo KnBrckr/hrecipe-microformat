@@ -167,8 +167,15 @@ class hrecipe_ingrd_db {
 	function delete_ingrd($food_id)
 	{
 		global $wpdb;
+				
+		// When deleting a food, update all recipes where it was used to remove the association.
+		$update_result = $wpdb->update(
+			$this->recipe_ingrds_table, 
+			array('food_id' => 0), 			// Set food_id to 0
+			array('food_id' => $food_id),	//  .. for the deleted food_id
+			"%d", "%d" );
 		
-		$result = $wpdb->query($wpdb->prepare("DELETE FROM " . $this->foods_table . " WHERE food_id = %d", $food_id));
+		$result = $wpdb->delete($this->foods_table, array('food_id' => $food_id), "%d");
 		return $result;
 	}
 	
@@ -179,22 +186,31 @@ class hrecipe_ingrd_db {
 	 * @param $order, string ASC or DESC
 	 * @param $perpage, int, Number of rows per page
 	 * @param $paged, int, page number (1-n)
+	 * @param $search, string, search string for query
 	 * @return hash array: ['totalitems']=count of all matches, ['ingrds'] = object database query with food items
 	 **/
-	function get_ingrds($orderby, $order, $perpage, $paged)
+	function get_ingrds($orderby, $order, $perpage, $paged, $search)
 	{
+		// TODO mysql_real_escape_string is deprecated in PHP 5.5.
 		global $wpdb;
 		
 		/**
 		 * Prepare Query
 		 */ 
 		$query = "SELECT * FROM " . $this->foods_table;
+		
+		/**
+		 * Add where clause if search string provided
+		 */
+		if (!empty($search)) {
+			$query .= ' WHERE ingrd LIKE "%' . mysql_real_escape_string($search) . '%"';
+		}
 
 		/**
 		 * Add ordering parameters
-		 */
-	    $orderby = !empty($orderby) ? $orderby : 'ingrd';
-	    $order = !empty($order) ? $order : 'ASC';
+		 */		
+	    $orderby = !empty($orderby) ? mysql_real_escape_string($orderby) : 'ingrd';
+	    $order = !empty($order) ? mysql_real_escape_string($order) : 'ASC';
 	    if(!empty($orderby) & !empty($order)) { $query.=' ORDER BY '.$orderby.' '.$order; }
 		
 		/**
@@ -203,7 +219,7 @@ class hrecipe_ingrd_db {
         // Number of elements in table?
         $totalitems = $wpdb->query($query); //return the total number of affected rows
         //Which page is this?
-        $paged = !empty($paged) ? $paged : '';
+        $paged = !empty($paged) ? mysql_real_escape_string($paged) : '';
         //Page Number
         if(empty($paged) || !is_numeric($paged) || $paged<=0 ){ $paged=1; }
         //adjust the query to take pagination into account
@@ -211,7 +227,6 @@ class hrecipe_ingrd_db {
 		    $offset=($paged-1)*$perpage;
     		$query.=' LIMIT '.(int)$offset.','.(int)$perpage;
 	    }
-		
 		/**
 		 * Get the table items
 		 */
@@ -291,12 +306,29 @@ class hrecipe_ingrd_db {
 		/**
 		 * Save new ingredient list contents
 		 */
-		$list_order = 0;  // Init the sort order counter; rows are added in the order received
+		$insert_ingrd = array(
+			'post_id' => $post_id,
+			'ingrd_list_id' => $ingrd_list_id,
+			'list_order' => 0 // Init the sort order counter; rows are added in the order received
+		);
 		foreach ($ingrd_list as $row) {
-			$row['post_id'] = $post_id;
-			$row['ingrd_list_id'] = $ingrd_list_id;
-			$row['list_order'] = $list_order++;
-			$wpdb->insert($this->recipe_ingrds_table, $row);
+			if ( ! isset($row['food_id'])|| '' == $row['food_id']) {
+				// Row is not associated with a food in DB - create an entry
+				// TODO Look for a match since ingredient could have been added already during recipe processing
+				$insert_food['ingrd'] = $row['ingrd'];
+				if (isset($row['gpcup'])) $insert_food['gpcup'] = $row['gpcup'];
+				if (isset($row['measure'])) $insert_food['measure'] = $row['measure'];
+				$wpdb->insert($this->foods_table, $insert_food);
+				$row['food_id'] = $wpdb->insert_id;
+			}
+			$insert_ingrd['list_order']++;
+			// Copy over the ingredient data to add to recipe ingredients
+			$insert_ingrd['food_id'] = $row['food_id'];
+			$insert_ingrd['quantity'] = $row['quantity'];
+			$insert_ingrd['unit'] = $row['unit'];
+			$insert_ingrd['ingrd'] = $row['ingrd'];
+			$insert_ingrd['comment'] = $row['comment'];
+			$wpdb->insert($this->recipe_ingrds_table, $insert_ingrd);
 		}
 	}
 	
@@ -328,8 +360,8 @@ class hrecipe_ingrd_db {
 	function delete_ingrds_for_recipe($post_id, $ingrd_list_id)
 	{
 		global $wpdb;
-
-		$result = $wpdb->query($wpdb->prepare("DELETE FROM " . $this->recipe_ingrds_table . " WHERE post_id LIKE %d AND ingrd_list_id LIKE %d", $post_id, $ingrd_list_id));
+		
+		$result = $wpdb->delete($this->recipe_ingrds_table, array('post_id' => $post_id, 'ingrd_list_id' => $ingrd_list_id), '%d');
 		return $result;
 	}
 	
@@ -344,7 +376,7 @@ class hrecipe_ingrd_db {
 	{
 		global $wpdb;
 
-		$result = $wpdb->query($wpdb->prepare("DELETE FROM " . $this->recipe_ingrds_table . " WHERE post_id LIKE %d", $post_id));
+		$result = $wpdb->delete($this->recipe_ingrds_table, array('post_id' => $post_id), "%d");
 		return $result;
 	}
 }

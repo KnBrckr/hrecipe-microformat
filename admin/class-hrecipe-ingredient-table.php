@@ -26,6 +26,11 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  **/
 
+// TODO Provide a rename method for ingredients - also fixes all associated recipes
+// TODO Provide method to update ingredients in recipes to a different ingredient and delete the old ingredient
+// TODO Add ingredientes Filter to find ingredients that aren't referenced
+// TODO Delete ingredient and prevent from being re-entered to DB when recipe is saved.  Have an add to DB field in recipe?  Only add new/modified ingredients?
+
 // Protect from direct execution
 if (!defined('WP_PLUGIN_DIR')) {
 	header('Status: 403 Forbidden');
@@ -91,10 +96,13 @@ class hrecipe_ingredients_Table extends WP_List_Table {
 	 *
 	 * Array in form 'column_name' => 'column_title'
 	 *
+	 * The values's provided for bulk actions are defined in $this->column_cb()
+	 *
 	 * @return array $columns, array of columns
 	 **/
 	function get_columns()
 	{
+		// TODO Hide the NDB_No column by default
 		$columns = array(
             'cb'      => '<input type="checkbox" />', //Render a checkbox instead of text
 			'food_id' => 'ID',
@@ -102,8 +110,7 @@ class hrecipe_ingredients_Table extends WP_List_Table {
 			'measure' => 'Measure By',
 			'gpcup'   => 'Grams/Cup',
 			'NDB_No'  => 'NDB_No'
-	
-	);
+		);
 		
 		return $columns;
 	}
@@ -128,6 +135,8 @@ class hrecipe_ingredients_Table extends WP_List_Table {
 	/**
 	 * Define bulk actions that will work on table
 	 *
+	 * The actions are dealt with where this class is instantiated.  $this->current_action defines the action requested
+	 *
 	 * @return array Associative array of bulk actions in form 'slug' => 'visible title'
 	 **/
 	function get_bulk_actions()
@@ -144,30 +153,32 @@ class hrecipe_ingredients_Table extends WP_List_Table {
 	function prepare_items()
 	{
 		$screen = get_current_screen();
-	
-	    $orderby = !empty($_GET["orderby"]) ? mysql_real_escape_string($_GET["orderby"]) : '';
-	    $order = !empty($_GET["order"]) ? mysql_real_escape_string($_GET["order"]) : '';
+			
+	    $orderby = !empty($_REQUEST["orderby"]) ? $_REQUEST["orderby"] : '';
+	    $order = !empty($_REQUEST["order"]) ? $_REQUEST["order"] : '';
+		
+		/**
+		 * Search string, if specified
+		 */
+		$search = !empty($_REQUEST["s"]) ? $_REQUEST["s"] : '';
 
 		/**
 		 * Pagination of table elements
 		 */
         //How many to display per page?
-        $perpage = 10; // TODO Make ingredients per page configurable
+        $perpage = $this->get_items_per_page('hrecipe_ingrds_per_page', 20); // Default 20, but allow admin screen to set
         //Which page is this?
-        $paged = !empty($_GET["paged"]) ? mysql_real_escape_string($_GET["paged"]) : '';
+        $paged = !empty($_REQUEST["paged"]) ? $_REQUEST["paged"] : '';
 		
 		/**
 		 * Setup columns to display
 		 */
-		$columns = $this->get_columns();
-		$hidden = array();
-		$sortable = $this->get_sortable_columns();
-		$this->_column_headers = array($columns, $hidden, $sortable);
+		$this->_column_headers = $this->get_column_info(); // Allow user to select viewed columns
 
 		/**
 		 * Get the table items
 		 */
-		$result = $this->ingrd_db->get_ingrds($orderby, $order, $perpage, $paged);
+		$result = $this->ingrd_db->get_ingrds($orderby, $order, $perpage, $paged, $search);
 		$this->items = $result['ingrds'];
 		$totalitems = $result['totalitems'];
         //How many pages do we have in total?
@@ -186,6 +197,8 @@ class hrecipe_ingredients_Table extends WP_List_Table {
 	/**
 	 * Method to provide checkbox column in table
 	 *
+	 * Provides the REQUEST variable that will contain the selected values
+	 *
      * @see WP_List_Table::::single_row_columns()
 	 * @param $item array of row data for presentation
 	 * @return string Text or HTML to be placed in table cell
@@ -194,8 +207,8 @@ class hrecipe_ingredients_Table extends WP_List_Table {
 	{
         return sprintf(
             '<input type="checkbox" name="%1$s[]" value="%2$s" />',
-            /*$1%s*/ $this->_args['singular'],  //Let's simply repurpose the table's singular label
-            /*$2%s*/ $item->food_id             //The value of the checkbox should be the record's id
+            /*$1%s*/ $this->_args['singular'],  // Let's simply repurpose the table's singular label
+            /*$2%s*/ $item->food_id             // The value of the checkbox should be the record's id
         );
 	}
 		
@@ -216,7 +229,7 @@ class hrecipe_ingredients_Table extends WP_List_Table {
 	 *
      * @see WP_List_Table::::single_row_columns()
 	 * @param $item array of row data for presentation
-	 * @return string Text or HTML for food_id column
+	 * @return string Text or HTML for NDB_No column
 	 **/
 	function column_NDB_No($item)
 	{
@@ -228,7 +241,7 @@ class hrecipe_ingredients_Table extends WP_List_Table {
 	 *
      * @see WP_List_Table::::single_row_columns()
 	 * @param $item array of row data for presentation
-	 * @return string Text or HTML for food_id column
+	 * @return string Text or HTML for ingrd column
 	 **/
 	function column_ingrd($item)
 	{
@@ -242,7 +255,7 @@ class hrecipe_ingredients_Table extends WP_List_Table {
 	 *
      * @see WP_List_Table::::single_row_columns()
 	 * @param $item array of row data for presentation
-	 * @return string Text or HTML for food_id column
+	 * @return string Text or HTML for measure column
 	 **/
 	function column_measure($item)
 	{
@@ -254,11 +267,21 @@ class hrecipe_ingredients_Table extends WP_List_Table {
 	 *
      * @see WP_List_Table::::single_row_columns()
 	 * @param $item array of row data for presentation
-	 * @return string Text or HTML for food_id column
+	 * @return string Text or HTML for gpcup column
 	 **/
 	function column_gpcup($item)
 	{
 		return esc_attr($item->gpcup);
+	}
+	
+	/**
+	 * Echo text when no items are found in the table
+	 *
+	 * @return void
+	 **/
+	function no_items()
+	{
+		_e('No ingredients found.');
 	}
 }		
 

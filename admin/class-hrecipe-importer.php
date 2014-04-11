@@ -27,6 +27,7 @@
 // TODO Import MasterCook format
 // TODO Import Text File format
 // TODO Import hrecipe format
+// TODO Import PDF?
 
 // Only start including WP files when WP environment is setup.
 if (defined('WP_PLUGIN_DIR')) {

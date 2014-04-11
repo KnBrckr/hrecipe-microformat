@@ -1202,7 +1202,7 @@ class hrecipe_microformat {
 			$u['us'] = $unit;
 			
 			// For weight conversions, need to be able to convert quantity to cups
-			if ('weight' == $measure && array_key_exists($unit, $per_cup)) {
+			if ('weight' == $measure && array_key_exists($unit, $per_cup) && $gpcup > 0) {
 				// metric weight = quantity in cups * grams per cup
 				$cups = $quantity / $per_cup[$unit];
 				$q['metric'] = round($cups * $gpcup);

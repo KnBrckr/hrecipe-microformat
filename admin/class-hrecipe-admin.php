@@ -85,6 +85,25 @@ class hrecipe_admin extends hrecipe_microformat
 	private $hrecipe_importer;
 	
 	/**
+	 * Array of admin screen options defined by plugin
+	 *
+	 * @var array
+	 **/
+	private $screen_options;
+	
+	/**
+	 * Slug for the admin screen ingredients table page
+	 *
+	 * @var string
+	 **/
+	private $ingredients_table_page;
+	
+	/**
+	 * Default number of ingredients to display per page
+	 */
+	const ingredients_per_page = 20;
+	
+	/**
 	 * Setup plugin defaults and register with WordPress for use in Admin screens
 	 **/
 	function __construct()
@@ -94,6 +113,9 @@ class hrecipe_admin extends hrecipe_microformat
 		
 		$this->admin_notices = array();
 		$this->admin_notice_errors = array();
+		
+		// Define array of admin screen options used
+		$this->screen_options = array('hrecipe_ingrds_per_page');
 
 		$this->message = array(
 			self::msg_added_new_ingredient => 'Added new ingredient.',
@@ -118,6 +140,9 @@ class hrecipe_admin extends hrecipe_microformat
 	{
 		// Do parent class work
 		parent::register_wp_callbacks();
+		
+		// Filter needed for admin screen options on custom screens to save - filter is executed early in processing.
+		add_filter('set-screen-option', array($this, 'filter_set_screen_option'), 10, 3 );
 		
 		// Add menu item for plugin options page
 		add_action('admin_menu', array(&$this, 'admin_menu'));
@@ -212,11 +237,16 @@ class hrecipe_admin extends hrecipe_microformat
 			'Ingredients', 
 			'edit_posts', // If user can edit_posts, show this menu
 			self::prefix . 'ingredients-table',  // Slug for this menu
-			array($this, 'ingredients_table_page')
+			array($this, 'ingredients_table_page') // Method to create page for list of defined ingredients
 		);
+		// Do actions for ingredients table
+		add_action('load-' . $slug, array($this, 'action_ingredients_table_page'));
+		// Add help & options to sub-menu page
+		add_action('load-' . $slug, array($this, 'ingredients_table_page_options'));
 		// Add style sheet and scripts needed in the options page
-		add_action('admin_print_scripts-' . $slug, array(&$this, 'enqueue_admin_scripts'));
-		add_action('admin_print_styles-' . $slug, array(&$this, 'enqueue_admin_styles'));
+		add_action('admin_print_scripts-' . $slug, array($this, 'enqueue_admin_scripts'));
+		add_action('admin_print_styles-' . $slug, array($this, 'enqueue_admin_styles'));
+		$this->ingredients_table_page = $slug; // Save identifier for later
 			
 		/**
 		 * Create sub-menu to add new ingredients
@@ -229,9 +259,11 @@ class hrecipe_admin extends hrecipe_microformat
 			self::prefix . 'add-ingredient',  // Slug for this menu
 			array($this, 'add_ingredient_page')
 		);
+		// Save ingredients provided by admin
+		add_action('load-' . $slug, array( $this, 'save_ingredient'));
 		// Add style sheet and scripts needed in the options page
-		add_action('admin_print_scripts-' . $slug, array(&$this, 'enqueue_admin_scripts'));
-		add_action('admin_print_styles-' . $slug, array(&$this, 'enqueue_admin_styles'));
+		add_action('admin_print_scripts-' . $slug, array($this, 'enqueue_admin_scripts'));
+		add_action('admin_print_styles-' . $slug, array($this, 'enqueue_admin_styles'));
 		
 		/**
 		 * Create Plugin Options Page as a sub-menu in Settings Section
@@ -321,24 +353,14 @@ class hrecipe_admin extends hrecipe_microformat
 	/**
 	 * Setup the admin screens
 	 *
+	 * To add Page hooks - format: load-PostType_page_PageName 
+	 *
 	 **/
 	function admin_init ()
 	{
 		// Add section for reporting configuration errors and notices
 		add_action('admin_notices', array( $this, 'display_admin_notices'));
 		
-		// Page hooks - format: load-PostType_page_PageName 
-		// Do actions for ingredients table
-		add_action(	
-			'load-' . self::post_type . '_page_' . self::prefix . 'ingredients-table', 
-			array($this, 'ingredients_table_page_action')
-		);
-		// Save ingredients provided by admin
-		add_action(
-			'load-' . self::post_type . '_page_' . self::prefix . 'add-ingredient', 
-			array( $this, 'save_ingredient')
-		);
-
 		// Add plugin admin style
 		add_action( 'admin_print_styles-post.php', array(&$this, 'enqueue_admin_styles'), 1000 );
 		add_action( 'admin_print_styles-post-new.php', array(&$this, 'enqueue_admin_styles'), 1000 );
@@ -440,14 +462,14 @@ class hrecipe_admin extends hrecipe_microformat
 				<table class="ingredients">
 					<thead>
 						<tr>
-							<th></th>
-							<th>Amount</th>
-							<th>Unit</th>
-							<th>Ingredient</th>
-							<th></th>
-							<th>Comment</th>
-							<th>g/cup</th>
-							<th>preferred measure</th>
+							<th class="col-interaction"></th>
+							<th class="col-quantity">Amount</th>
+							<th class="col-unit">Unit</th>
+							<th class="col-ingrd">Ingredient</th>
+							<th class="col-comment">Comment</th>
+							<th class="col-status"></th>
+							<th class="col-gpcup">g/cup</th>
+							<th class="col-measure">preferred measure</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -496,14 +518,14 @@ class hrecipe_admin extends hrecipe_microformat
 			$measure, string, requested measurement style for linked ingredient 
 		*/
 		extract ($data);
-		
+				
 		// If $food_id is specified, show this row as linked and make ingredient input field readonly
 		$linked_state = isset($food_id) && $food_id ? "food-linked" : "";
 		$readonly = isset($food_id) && $food_id ? "readonly" : "";
 		
 		?>
 		<tr class="recipe-ingrd-row <?php echo $class; ?> <?php echo $linked_state; ?>">
-			<td class="row_interaction">
+			<td class="col-interaction">
 				<ul>
 				<li class="ui-state-default ui-corner-all">
 					<span class="sort-handle ui-icon ui-icon-arrow-2-n-s" title="Drag to Sort ingredients"></span>
@@ -516,13 +538,20 @@ class hrecipe_admin extends hrecipe_microformat
 				</li>
 				</ul>
 			</td>
-			<td><input type="text" name="<?php echo self::prefix; ?>quantity[<?php echo $list_id; ?>][]" class="value" value="<?php if (isset($quantity)) echo esc_attr($quantity) ?>" /></td>
-			<td><input type="text" name="<?php echo self::prefix; ?>unit[<?php echo $list_id; ?>][]" class="type ui-widget" value="<?php if (isset($unit)) echo esc_attr($unit) ?>"/></td>
-			<td>
+			<td class="col-quantity">
+				<input type="text" name="<?php echo self::prefix; ?>quantity[<?php echo $list_id; ?>][]" class="quantity value" value="<?php if (isset($quantity)) echo esc_attr($quantity) ?>" />
+			</td>
+			<td class="col-unit">
+				<input type="text" name="<?php echo self::prefix; ?>unit[<?php echo $list_id; ?>][]" class="unit type ui-widget" value="<?php if (isset($unit)) echo esc_attr($unit) ?>"/>
+			</td>
+			<td class="col-ingrd">
 				<input type="text" name="<?php echo self::prefix; ?>ingrd[<?php echo $list_id; ?>][]" class="ingrd" value ="<?php if (isset($ingrd)) echo esc_attr($ingrd) ?>" <?php echo $readonly ?>/>
 				<input type="hidden" name="<?php echo self::prefix ?>food_id[<?php echo $list_id; ?>][]" value="<?php if (isset($food_id)) echo esc_attr($food_id) ?>" class="food_id">
 			</td>
-			<td>
+			<td class="col-comment">
+				<input type="text" name="<?php echo self::prefix; ?>comment[<?php echo $list_id; ?>][]" class="comment" value="<?php if (isset($comment)) echo esc_attr($comment) ?>"/>
+			</td>
+			<td class="col-status">
 				<p class="food-linked-status ui-state-highlight">
 					<span class="ui-icon ui-icon-alert" title="Ingredient is not associated with ingredient from database."></span>
 				</p>
@@ -530,14 +559,16 @@ class hrecipe_admin extends hrecipe_microformat
 					<span class="ui-icon ui-icon-unlocked" title="Unlink ingredient from database for edit"></span>
 				</p>
 			</td>
-			<td>
-				<input type="text" name="<?php echo self::prefix; ?>comment[<?php echo $list_id; ?>][]" class="comment" value="<?php if (isset($comment)) echo esc_attr($comment) ?>"/>
+			<td class="col-gpcup">
+				<!-- FIXME Javascript needs to fill in gpcup and measure when it matches a food id -->
+				<?php $gpcup = isset($gpcup) ? $gpcup : ''; ?>
+				<span class="gpcup linked"><?php echo esc_attr($gpcup); ?></span>
+				<input type="number" step="any" min="0" name="<?php echo self::prefix; ?>gpcup[<?php echo $list_id; ?>][]" class="gpcup unlinked" value="<?php echo esc_attr($gpcup); ?>" >
 			</td>
-			<td>
-				<?php if (isset($gpcup)) echo esc_attr($gpcup) ?>
-			</td>
-			<td>
-				<?php if (isset($measure)) echo esc_attr($measure) ?>
+			<td class="col-measure">
+				<?php $measure = isset($measure) ? $measure : ''; ?>
+				<span class="measure linked"><?php echo esc_attr($measure); ?></span>
+				<?php self::select_html(self::prefix . "measure[$list_id][]", "measure unlinked", array('weight'=>'Weight', 'volume'=>'Volume'), esc_attr($measure)); ?>
 			</td>
 		</tr>
 		<?php
@@ -792,6 +823,7 @@ class hrecipe_admin extends hrecipe_microformat
 			$_POST[self::prefix . 'food_id'] = stripslashes_deep($_POST[self::prefix . 'food_id']);
 			
 			$ingrds = array();
+			$measures = array();
 			// Ingredient lists stored in Ingredient Database
 			for ($ingrd_row = 0 ; isset($_POST[self::prefix . 'quantity'][$list_id][$ingrd_row]) ; $ingrd_row++) {
 				// Only add row to list if it has content
@@ -804,7 +836,9 @@ class hrecipe_admin extends hrecipe_microformat
 						'unit' => $_POST[self::prefix . 'unit'][$list_id][$ingrd_row],
 						'ingrd' => $_POST[self::prefix . 'ingrd'][$list_id][$ingrd_row],
 						'comment' => $_POST[self::prefix . 'comment'][$list_id][$ingrd_row],
-						'food_id' => $_POST[self::prefix . 'food_id'][$list_id][$ingrd_row]
+						'food_id' => $_POST[self::prefix . 'food_id'][$list_id][$ingrd_row],
+						'gpcup' => $_POST[self::prefix . 'gpcup'][$list_id][$ingrd_row],
+						'measure' => $_POST[self::prefix . 'measure'][$list_id][$ingrd_row]	
 						);
 					}
 			}
@@ -813,7 +847,8 @@ class hrecipe_admin extends hrecipe_microformat
 		}
 		
 		/*
-			Use update_metadata vs. update_post_meta below because the later will convert to use parent ID
+			Use update_metadata vs. update_post_meta below because the later will internally 
+			convert to parent post ID.  $post_id could be a child post (save for a preview)
 		*/
 		
 		// Record format used to store this recipe
@@ -1023,6 +1058,41 @@ class hrecipe_admin extends hrecipe_microformat
 	}
 	
 	/**
+	 * Setup page options and help content for the ingredients table page
+	 *
+	 * @return void
+	 **/
+	function ingredients_table_page_options()
+	{
+		$screen = WP_Screen::get($this->ingredients_table_page);
+		
+		$screen->add_option(
+			'per_page',
+			array(
+				'label' => 'Entries per page',
+				'default' => self::ingredients_per_page,
+				'option' => 'hrecipe_ingrds_per_page' // Must list in $this->screen_options for screen option filter
+			)
+		);
+	}
+	
+	/**
+	 * Filter used to save option values for admin screens
+	 *
+	 * If the option is one that has been defined by plugin, return the value
+	 *
+	 * @return value
+	 **/
+	function filter_set_screen_option($status, $option, $value)
+	{
+		if (in_array($option, $this->screen_options)) {
+			$status = $value;
+		}
+		
+		return $status;
+	}
+	
+	/**
 	 * Perform actions associated with the ingredients table page
 	 *
 	 * Actions are separated out so that they can be done before admin notices are displayed
@@ -1030,7 +1100,7 @@ class hrecipe_admin extends hrecipe_microformat
 	 * @uses $plugin_page, WP global defines plugin page name
 	 * @return void
 	 **/
-	function ingredients_table_page_action()
+	function action_ingredients_table_page()
 	{
 		global $plugin_page;
 		
@@ -1046,7 +1116,7 @@ class hrecipe_admin extends hrecipe_microformat
 		if ($doaction && !empty($_REQUEST) && check_admin_referer('bulk-wp_list_ingredients', '_wpnonce')) {
 			// Does user have the needed credentials?
 			if (! current_user_can('manage_categories')) {
-				wp_die('You are not allowed to add ingredients');
+				wp_die('You are not allowed to manage ingredients');
 			}
 
 			$sendback = remove_query_arg(array('action', 'action2', '_wpnonce', '_wp_http_referer'), wp_get_referer());
@@ -1103,6 +1173,8 @@ class hrecipe_admin extends hrecipe_microformat
 				<input type="hidden" name="page" value="<?php echo $plugin_page ?>">
 				<?php
 				$this->ingredients_table->prepare_items();
+
+				$this->ingredients_table->search_box('search', 'search_id'); // Must follow prepare_items() call
 				$this->ingredients_table->display();				
 				?>
 			</form>
@@ -1627,6 +1699,25 @@ class hrecipe_admin extends hrecipe_microformat
 			$descr = isset($option_descr[$key]) ? $option_descr[$key] : '';
 			echo '<span class="radio-button" title="'. $descr . '"><input type="radio" name="'. $field . '" value="'. $key . '"' . $checked . ' />' . $option . '</span>';	
 		}
+	}
+	
+	/**
+	 * Emit HTML for a select field
+	 *
+	 * @param string $field Name of field
+	 * @param string $class Class(es) to apply to select field
+	 * @param array $options array of value->label pairs for select options
+	 * @param array $value Default value for select
+	 * @return void
+	 **/
+	function select_html($field, $class, $options, $value)
+	{
+		echo '<select name="'. $field . '" size="1" class="' . $class . '">';
+		foreach ($options as $key => $option) {
+			$selected = ($value == $key) ? ' selected' : '';
+			echo '<option value="' . $key . '"' . $selected . '>' . $option . '</option>';
+		}
+		echo '</select>';
 	}
 	
 	/**

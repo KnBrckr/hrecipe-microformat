@@ -63,22 +63,55 @@
 .ingrd-list {
 	margin: 1em 0;
 }
-/* TODO Adjust widths of ingredient input fields - how to make dynamic to fit browser width? */
 .ingrd-list-title input {
 	width: 400px;
 	font-size: 130%;
 }
-.ingrd-list .value {
-	width: 50px;
+
+.ingrd-list .col-interaction {
+	width: 8%;
 }
-.ingrd-list .type {
-	width: 80px;
+.ingrd-list .col-quantity {
+	width: 8%;
+}
+.ingrd-list .col-unit {
+	width: 8%;
+}
+.ingrd-list .col-ingrd {
+	width: 30%;
+}
+.ingrd-list .col-status {
+	width: 3%;
+}
+.ingrd-list .col-comment {
+	width: 25%;
+}
+.ingrd-list .col-gpcup {
+	width: 8%;
+}
+.ingrd-list .col-measure {
+	width: 10%;
+}
+
+
+/* TODO Adjust widths of ingredient input fields - how to make dynamic to fit browser width? */
+.ingrd-list .quantity {
+	width: 100%;
+}
+.ingrd-list .unit {
+	width: 100%;
 }
 .ingrd-list .ingrd {
-	width: 200px;
+	width: 100%;
 }
 .ingrd-list .comment {
-	width: 200px;
+	width: 100%;
+}
+.ingrd-list .gpcup {
+	width: 100%;
+}
+.ingrd-list .measure {
+	width: 100%;
 }
 
 .ingrd-list, #hrecipe_info p {
@@ -105,6 +138,22 @@
 	display: none;
 }
 
+/* Allow data entry for unlinked recipe rows */
+.recipe-ingrd-row .linked {
+	display: none;
+}
+.recipe-ingrd-row.food-linked .unlinked {
+	display: inline-block;
+}
+
+/* Disable conversion related fields on linked rows */
+.recipe-ingrd-row.food-linked .linked {
+	display: inline-block;
+}
+.recipe-ingrd-row.food-linked .unlinked {
+	display: none;
+}
+
 #hrecipe_info .field-label, .ingrd-list .field-label {
 	width: 125px;
 	font-size: 130%;
@@ -121,6 +170,30 @@
 }
 #hrecipe_info .radio-button input {
 	margin-right: 5px;
+}
+
+/* ==================================== */
+/* = Ingredients List Page Formatting = */
+/* ==================================== */
+
+.wp_list_ingredients tr:nth-child(even) {
+    background-color: #f0f0f0;
+}
+
+.wp_list_ingredients .column-food_id {
+	width: 5%;
+}
+.wp_list_ingredients .column-ingrd {
+	width: 55%;
+}
+.wp_list_ingredients .column-measure {
+	width: 15%;
+}
+.wp_list_ingredients .column-gpcup {
+	width: 15%;
+}
+.wp_list_ingredients .column-NDB_No {
+	width: 10%;
 }
 
 /* ==================================== */
