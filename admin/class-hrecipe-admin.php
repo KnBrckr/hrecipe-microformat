@@ -1416,6 +1416,7 @@ class hrecipe_admin extends hrecipe_microformat
 		add_filter( 'mce_css', array( &$this, 'add_tinymce_css' ) );
 		
 		// Add custom styles
+		// FIXME tiny_mce_before_init changed in WP 4.0
 		add_filter( 'tiny_mce_before_init', array(&$this, 'tinymce_init_array'));
 	}
 	

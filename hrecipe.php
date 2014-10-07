@@ -2,7 +2,7 @@
 /*
 Plugin Name: hRecipe Microformat
 Plugin URI: http://action-a-day.com/hrecipe-microformat
-Description: TinyMCE add-in to supply hRecipe Microformat editing
+Description: Add Post type Recipe for hRecipe Microformat
 Version: 0.2
 Author: Kenneth J. Brucker
 Author URI: http://action-a-day.com
