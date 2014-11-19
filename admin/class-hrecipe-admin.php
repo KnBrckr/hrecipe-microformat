@@ -153,7 +153,7 @@ class hrecipe_admin extends hrecipe_microformat
 		// If logging is enabled, setup save in the footer.
 		if ($this->options['debug_log_enabled']) {
 			// If logging is enabled, warn admin as it affects DB performance
-			$this->log_admin_error(sprintf(__('%s logging is enabled.  If left enabled, this can affect database performance.', self::p),'<a href="options.php?page=' . self::settings_page . '">' . self::p . '</a>'));
+			$this->log_admin_notice("red", sprintf(__('%s logging is enabled.  If left enabled, this can affect database performance.', self::p),'<a href="options.php?page=' . self::settings_page . '">' . self::p . '</a>'));
 
 			add_action('admin_footer', array( &$this, 'save_debug_log'));
 		}
@@ -613,7 +613,10 @@ class hrecipe_admin extends hrecipe_microformat
 		$content->preserveWhiteSpace = false;
 		
 		// Use loadHTML for loose interpretation of DOM, text will be in DOM <body>
+		// XXX Until loadHTML supports HTML5, must mask errors
+		libxml_use_internal_errors(true);
 		$content->loadHTML($post_content);
+		libxml_clear_errors();
 		$xpath = new DOMXPath($content);
 		
 		/*
@@ -701,7 +704,7 @@ class hrecipe_admin extends hrecipe_microformat
 			$post_content = str_replace("<br/>", "<br />", $innerHTML);
 			
 			// Add a notification that the post content has been updated and should be saved.
-			$this->log_admin_notice("Recipe content format upgraded to new ingredient format!  Please Save the updated recipe after review.");
+			$this->log_admin_notice("yellow", "Recipe content format upgraded to new ingredient format!  Please Save the updated recipe after review.");
 		} else {
 			/*
 				Content was not updated, but recipe versions don't match.
@@ -1147,7 +1150,7 @@ class hrecipe_admin extends hrecipe_microformat
 		
 		// Display message from save operation
 		if (isset($_REQUEST['message'])) {
-			$this->log_admin_notice($this->message[$_REQUEST['message']]);
+			$this->log_admin_notice("green", $this->message[$_REQUEST['message']]);
 		}
 	}
 	
@@ -1244,7 +1247,7 @@ class hrecipe_admin extends hrecipe_microformat
 		
 		// Display message from save operation
 		if (isset($_REQUEST['message'])) {
-			$this->log_admin_notice($this->message[$_REQUEST['message']]);
+			$this->log_admin_notice("green", $this->message[$_REQUEST['message']]);
 		}
 	}
 
@@ -1450,24 +1453,14 @@ class hrecipe_admin extends hrecipe_microformat
 	/**
 	 * Add a message to notice messages
 	 * 
+	 * @param $class, string "red", "yellow", "green".  Selects log message type
 	 * @param $msg, string or HTML content to display.  User input should be scrubbed by caller
 	 * @return void
 	 **/
-	function log_admin_notice($msg)
+	function log_admin_notice($class, $msg)
 	{
-		$this->admin_notices[] = $msg;
+		$this->admin_notices[] = array($class, $msg);
 	}
-	
-	/**
-	 * Add a message to error messages
-	 * 
-	 * @param $msg, string or HTML content to display.  User input should be scrubbed by caller
-	 * @return void
-	 **/
-	function log_admin_error($msg)
-	{
-		$this->admin_notice_errors[] = $msg;
-	}	
 	
 	/**
 	 * Display Notice messages at head of admin screen
@@ -1476,20 +1469,26 @@ class hrecipe_admin extends hrecipe_microformat
 	 **/
 	function display_admin_notices()
 	{
-		if (count($this->admin_notice_errors)) {
-			echo '<div class="error">';
-			foreach ($this->admin_notice_errors as $notice) {
-				echo '<p>' . $notice . '</p>';
-			}
-			echo '</div>';						
-		}
-				
+		/*
+			WP defines the following classes for display:
+				- error  (Red)
+				- updated  (Green)
+				- update-nag  (Yellow)
+		*/
+
+		static $notice_class = array(
+			'red' => 'error',
+			'yellow' => 'update-nag',
+			'green' => 'updated'
+		);
+		
 		if (count($this->admin_notices)) {
-			echo '<div class="updated fade">';
 			foreach ($this->admin_notices as $notice) {
-				echo '<p>' . $notice . '</p>';
+				// TODO Handle undefined notice class
+				echo '<div class="'. $notice_class[$notice[0]] . '">';
+				echo '<p>' . $notice[1] . '</p>';
+				echo '</div>';			
 			}
-			echo '</div>';			
 		}
 	}
 	

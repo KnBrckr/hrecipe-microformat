@@ -210,6 +210,16 @@ li.ingredient {
 	padding-left: 20px;
 }
 
+/* Old Recipe Format did not have embedded separation between value and unit in the measures */
+.ingredient td .value {
+	padding-right: .5em ;
+}
+.ingredient td .comment:before {
+	content: ' \2014  ';
+}
+
+/* New Recipe Measure format */
+
 .measure {
 	display: inline-block;
 }
