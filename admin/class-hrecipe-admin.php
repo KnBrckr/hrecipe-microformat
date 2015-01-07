@@ -22,7 +22,6 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  **/
 
-// TODO Display Admin notice when settings have been saved
 // TODO Add cuisine types - mexican, spanish, indian, etc.
 // TODO Create admin widget for Recipe Categories - only allow one category to be selected
 // TODO Phone-home with error log
@@ -51,7 +50,6 @@ class hrecipe_admin extends hrecipe_microformat
 	 * Define some shorthand
 	 */
 	const settings_page = 'hrecipe_microformat_settings_page';
-	
 	/**
 	 * Messsage constants
 	 */
@@ -96,12 +94,17 @@ class hrecipe_admin extends hrecipe_microformat
 	 *
 	 * @var string
 	 **/
-	private $ingredients_table_page;
+	private $slug_ingredients_table_page;
 	
 	/**
 	 * Default number of ingredients to display per page
 	 */
 	const ingredients_per_page = 20;
+	
+	/**
+	 * Path to nutrient DB files
+	 */
+	private $nutrient_db_path;
 	
 	/**
 	 * Setup plugin defaults and register with WordPress for use in Admin screens
@@ -127,6 +130,9 @@ class hrecipe_admin extends hrecipe_microformat
 		
 		// Setup Importer Class
 		$this->hrecipe_importer = new hrecipe_importer(self::p, $this->recipe_category_taxonomy, $this->ingrd_db);
+		
+		// Setup path to the nutrient database files
+		$nutrient_db_path = WP_PLUGIN_DIR . '/' . self::p . '/db/';
 	}
 	
 	/**
@@ -153,9 +159,18 @@ class hrecipe_admin extends hrecipe_microformat
 		// If logging is enabled, setup save in the footer.
 		if ($this->options['debug_log_enabled']) {
 			// If logging is enabled, warn admin as it affects DB performance
-			$this->log_admin_notice("red", sprintf(__('%s logging is enabled.  If left enabled, this can affect database performance.', self::p),'<a href="options.php?page=' . self::settings_page . '">' . self::p . '</a>'));
+			$this->log_admin_notice("red", sprintf(__('%s logging is enabled.  If left enabled, this can affect database performance.', self::p),'<a href="options-general.php?page=' . self::settings_page . '">' . self::p . '</a>'));
 
 			add_action('admin_footer', array( &$this, 'save_debug_log'));
+		}
+		
+		// Check DB versions that are loaded and report error on mismatch
+		if ($this->nutrient_db->update_needed()) {
+			$this->log_admin_notice("red", self::p . ': A newer nutrient DB is available and may be loaded from the <a href="options-general.php?page=' . self::settings_page . '">settings page</a>.');
+		}
+			
+		if ($this->ingrd_db->update_needed()) {
+			$this->log_admin_notice("red", self::p . ': For correct function, please update the ingredient database from the <a href="options-general.php?page=' . self::settings_page . '">settings page</a>.');			
 		}
 	}
 	
@@ -171,8 +186,7 @@ class hrecipe_admin extends hrecipe_microformat
 		 * Setup the USDA Standard Reference Nutrition Database
 		 * TODO Run database load out of band from activation!  Makes activation take too long
 		 */
-   	 	// TODO During page loads detect DB version loaded and on mismatch put notice in admin screen.  Add button in Options to load new DB version on demand.
-		if (! $this->nutrient_db->setup_nutrient_db(WP_PLUGIN_DIR . '/' . self::p . '/db/')) {
+		if (! $this->nutrient_db->setup_nutrient_db($this->nutrient_db_path)) {
 			// There was a problem creating DB
 			$this->log_err("Unable to setup Nutrient DB, aborting activation");
 			return false;
@@ -237,7 +251,7 @@ class hrecipe_admin extends hrecipe_microformat
 			'Ingredients', 
 			'edit_posts', // If user can edit_posts, show this menu
 			self::prefix . 'ingredients-table',  // Slug for this menu
-			array($this, 'ingredients_table_page') // Method to create page for list of defined ingredients
+			array($this, 'render_ingredients_table_page') // Method to create page for list of defined ingredients
 		);
 		// Do actions for ingredients table
 		add_action('load-' . $slug, array($this, 'action_ingredients_table_page'));
@@ -246,7 +260,7 @@ class hrecipe_admin extends hrecipe_microformat
 		// Add style sheet and scripts needed in the options page
 		add_action('admin_print_scripts-' . $slug, array($this, 'enqueue_admin_scripts'));
 		add_action('admin_print_styles-' . $slug, array($this, 'enqueue_admin_styles'));
-		$this->ingredients_table_page = $slug; // Save identifier for later
+		$this->slug_ingredients_table_page = $slug; // Save identifier for later
 			
 		/**
 		 * Create sub-menu to add new ingredients
@@ -257,7 +271,7 @@ class hrecipe_admin extends hrecipe_microformat
 			'Add Ingredient', 
 			'edit_posts', // If user can edit_posts, show this menu
 			self::prefix . 'add-ingredient',  // Slug for this menu
-			array($this, 'add_ingredient_page')
+			array($this, 'render_add_ingredient_page')
 		);
 		// Save ingredients provided by admin
 		add_action('load-' . $slug, array( $this, 'save_ingredient'));
@@ -268,18 +282,20 @@ class hrecipe_admin extends hrecipe_microformat
 		/**
 		 * Create Plugin Options Page as a sub-menu in Settings Section
 		 */
+		
+		// Create page
 		$settings_page = add_options_page(
 			__('hRecipe Microformat Plugin Settings', self::p), 
 			__('hRecipe Microformat', self::p), 
 			'manage_options', 
 			self::settings_page, 
-			array(&$this, 'options_page_html')
+			array(&$this, 'render_options_page')
 		);
-		
+
 		// Add style sheet and scripts needed in the options page
-		add_action('admin_print_scripts-' . $settings_page, array(&$this, 'enqueue_admin_scripts'));
-		add_action('admin_print_styles-' . $settings_page, array(&$this, 'enqueue_admin_styles'));
-			
+		add_action('admin_print_scripts-' . $settings_page, array($this, 'enqueue_admin_scripts'));
+		add_action('admin_print_styles-' . $settings_page, array($this, 'enqueue_admin_styles'));
+				
 		/**
 		 * Add section controlling how recipes are displayed
 		 **/
@@ -287,7 +303,7 @@ class hrecipe_admin extends hrecipe_microformat
 		add_settings_section( 
 			$settings_section, 
 			__('Recipe Display Settings', self::p), 
-			array( &$this, 'display_section_html'), 
+			array( &$this, 'render_settings_section_display'), 
 			self::settings_page 
 		);
 
@@ -295,7 +311,7 @@ class hrecipe_admin extends hrecipe_microformat
 		add_settings_field( 
 			self::settings . '[display_in_home]', 
 			__('Display In Home', self::p), 
-			array( &$this, 'display_in_home_html' ), 
+			array( &$this, 'render_display_in_home' ), 
 			self::settings_page, 
 			$settings_section 
 		);
@@ -304,7 +320,7 @@ class hrecipe_admin extends hrecipe_microformat
 		add_settings_field( 
 			self::settings . '[display_in_feed]', 
 			__('Display In Feed', self::p), 
-			array( &$this, 'display_in_feed_html' ), 
+			array( &$this, 'render_display_in_feed' ), 
 			self::settings_page, 
 			$settings_section 
 		);
@@ -313,7 +329,7 @@ class hrecipe_admin extends hrecipe_microformat
 		add_settings_field(
 			self::settings . '[posts_per_page]',
 			__('Recipes per page', self::p),
-			array($this, 'posts_per_page_html'),
+			array($this, 'render_posts_per_page'),
 			self::settings_page,
 			$settings_section
 		);
@@ -325,7 +341,7 @@ class hrecipe_admin extends hrecipe_microformat
 		add_settings_section(
 			$settings_section,
 			__('Recipe Header and Footer Contents', self::p),
-			array(&$this, 'head_foot_section_html'),
+			array(&$this, 'render_settings_section_head_foot'),
 			self::settings_page
 		);
 
@@ -336,7 +352,7 @@ class hrecipe_admin extends hrecipe_microformat
 		add_settings_section(
 			$settings_section,
 			__('Debug Logging', self::p),
-			array(&$this, 'debug_section_html'),
+			array(&$this, 'render_settings_section_debug'),
 			self::settings_page
 		);
 		
@@ -344,7 +360,7 @@ class hrecipe_admin extends hrecipe_microformat
 		add_settings_field( 
 			self::settings . '[debug_log_enabled]', 
 			__('Enable Debug Log', self::p), 
-			array( &$this, 'debug_log_enabled_html'), 
+			array( &$this, 'render_debug_log_enabled'), 
 			self::settings_page, 
 			$settings_section 
 		);
@@ -359,7 +375,7 @@ class hrecipe_admin extends hrecipe_microformat
 	function admin_init ()
 	{
 		// Add section for reporting configuration errors and notices
-		add_action('admin_notices', array( $this, 'display_admin_notices'));
+		add_action('admin_notices', array( $this, 'render_admin_notices'));
 		
 		// Add plugin admin style
 		add_action( 'admin_print_styles-post.php', array(&$this, 'enqueue_admin_styles'), 1000 );
@@ -373,7 +389,7 @@ class hrecipe_admin extends hrecipe_microformat
 		add_action('restrict_manage_posts', array(&$this, 'restrict_recipes_by_category'));
 		add_action('parse_query', array(&$this, 'parse_recipe_category_query'));
 		add_action('manage_' . self::post_type . '_posts_columns', array(&$this, 'add_recipe_category_to_recipe_list'));
-		add_action('manage_posts_custom_column', array(&$this, 'show_column_for_recipe_list'),10,2);
+		add_action('manage_posts_custom_column', array(&$this, 'render_show_column_for_recipe_list'),10,2);
 		
 		// Register the settings name
 		register_setting( self::settings_page, self::settings, array (&$this, 'sanitize_settings') );
@@ -401,6 +417,9 @@ class hrecipe_admin extends hrecipe_microformat
 		// When post loads for edit upgrade the recipe contents from table in recipe to ingredients database
 		//   (Priority 10, 2 parameters expected)
 		add_filter('edit_post_content', array($this, 'upgrade_recipe_ingrds_table'), 10, 2);
+		
+		// Add handler for database update requests
+        add_action( "admin_post_hrecipe-db-update", array ($this, 'action_database_update'));
 	}
 	
 	/**
@@ -414,12 +433,14 @@ class hrecipe_admin extends hrecipe_microformat
 		/**
 		 * Add Recipe Ingredients metabox
 		 */
-		add_meta_box(self::prefix . 'ingredients', __('Recipe Ingredients', self::p), array(&$this, 'metabox_ingrd'), self::post_type, 'normal', 'high', null);	
+		add_meta_box(self::prefix . 'ingredients', __('Recipe Ingredients', self::p), 
+			array(&$this, 'render_metabox_ingrd'), self::post_type, 'normal', 'high', null);	
 
 		/**
 		 * Add metabox for the Recipe Metadata
 		 */ 
-		add_meta_box(self::prefix . 'info', __('Additional Recipe Information', self::p), array(&$this, 'info_metabox'), self::post_type, 'normal', 'high', null);	
+		add_meta_box(self::prefix . 'info', __('Additional Recipe Information', self::p), 
+			array(&$this, 'render_info_metabox'), self::post_type, 'normal', 'high', null);	
 	}
 	
 	/**
@@ -428,7 +449,7 @@ class hrecipe_admin extends hrecipe_microformat
 	 * @uses $post
 	 * @return void
 	 **/
-	function metabox_ingrd()
+	function render_metabox_ingrd()
 	{
 		global $post;
 		
@@ -475,17 +496,17 @@ class hrecipe_admin extends hrecipe_microformat
 					<tbody>
 						<?php
 						// Setup prototype ingredient row
-						$this->recipe_edit_ingrd_row($list_id, 'prototype', array());
+						$this->render_recipe_edit_ingrd_row($list_id, 'prototype', array());
 						
 						// Add rows for recipe ingredients
 						if (count($ingrds) == 0) {
 							// Setup a few empty rows in the edit screen for new posts
 							for ($i=0; $i < 4; $i++) { 
-								$this->recipe_edit_ingrd_row($list_id, '', array());
+								$this->render_recipe_edit_ingrd_row($list_id, '', array());
 							}
 						} else {
 							foreach ($ingrds as $d) {
-								$this->recipe_edit_ingrd_row($list_id, '', $d);
+								$this->render_recipe_edit_ingrd_row($list_id, '', $d);
 							} // foreach $ingrds						
 						}
 						?>
@@ -504,7 +525,7 @@ class hrecipe_admin extends hrecipe_microformat
 	 * @param $data, associative array, ingredient information
 	 * @return void
 	 **/
-	function recipe_edit_ingrd_row($list_id, $class, $data)
+	function render_recipe_edit_ingrd_row($list_id, $class, $data)
 	{
 		/*
 			Pull associative array into symbol table:
@@ -568,7 +589,7 @@ class hrecipe_admin extends hrecipe_microformat
 			<td class="col-measure">
 				<?php $measure = isset($measure) ? $measure : ''; ?>
 				<span class="measure linked"><?php echo esc_attr($measure); ?></span>
-				<?php self::select_html(self::prefix . "measure[$list_id][]", "measure unlinked", array('weight'=>'Weight', 'volume'=>'Volume'), esc_attr($measure)); ?>
+				<?php self::render_select(self::prefix . "measure[$list_id][]", "measure unlinked", array('weight'=>'Weight', 'volume'=>'Volume'), esc_attr($measure)); ?>
 			</td>
 		</tr>
 		<?php
@@ -722,7 +743,7 @@ class hrecipe_admin extends hrecipe_microformat
 	 * @uses $post To retrieve post meta data
 	 * @return void
 	 **/
-	function info_metabox()
+	function render_info_metabox()
 	{
 		global $post;
 
@@ -737,11 +758,11 @@ class hrecipe_admin extends hrecipe_microformat
 				echo '<p id="' . self::prefix . 'info_' . $key . '"><label><span class="field-label">' . $field['label'] . '</span>';
 				switch ($field['type']) {
 					case 'text':
-						self::text_html($field['key'], $value);
+						self::render_text($field['key'], $value);
 						break;
 					
 					case 'radio':
-						self::radio_html($field['key'], $field['options'], $field['option_descriptions'], $value);
+						self::render_radio($field['key'], $field['options'], $field['option_descriptions'], $value);
 						break;
 				}
 				if (isset($field['description'])) echo '<span class="field-description">' . $field['description'] . '</span>';
@@ -1067,7 +1088,7 @@ class hrecipe_admin extends hrecipe_microformat
 	 **/
 	function ingredients_table_page_options()
 	{
-		$screen = WP_Screen::get($this->ingredients_table_page);
+		$screen = WP_Screen::get($this->slug_ingredients_table_page);
 		
 		$screen->add_option(
 			'per_page',
@@ -1161,7 +1182,7 @@ class hrecipe_admin extends hrecipe_microformat
 	 * @uses $this->ingredients_table, WP_List_Table Object
 	 * @return void
 	 **/
-	function ingredients_table_page()
+	function render_ingredients_table_page()
 	{
 		global $plugin_page;
 		?>
@@ -1259,7 +1280,7 @@ class hrecipe_admin extends hrecipe_microformat
 	 * @uses $plugin_page, WP global defines plugin page name
 	 * @return void
 	 **/
-	function add_ingredient_page()
+	function render_add_ingredient_page()
 	{
 		global $plugin_page;
 		
@@ -1341,11 +1362,11 @@ class hrecipe_admin extends hrecipe_microformat
 					<input type="hidden" name="food_id" value="<?php echo $food_id; ?>" id="food_id">
 					<input type="hidden" name="NDB_No" value="<?php echo $row['NDB_No']; ?>" id="NDB_No">
 					<table border="0" cellspacing="5" cellpadding="5">
-						<tr><td>Ingredient</td><td><?php self::text_html('ingrd', $row['ingrd']); ?><a href="#TB_inline?width=600&height=550&inlineId=NDB_search_modal" class="thickbox add-new-h2" id="link-nutrition">Search USDA Nutrition Database</a></td></tr>
+						<tr><td>Ingredient</td><td><?php self::render_text('ingrd', $row['ingrd']); ?><a href="#TB_inline?width=600&height=550&inlineId=NDB_search_modal" class="thickbox add-new-h2" id="link-nutrition">Search USDA Nutrition Database</a></td></tr>
 						<tr><td>Measure</td><td><?php
-							self::radio_html('measure', array( 'volume' => 'Volume', 'weight' => 'Weight'), array(),$row['measure']);
+							self::render_radio('measure', array( 'volume' => 'Volume', 'weight' => 'Weight'), array(),$row['measure']);
 						?></td></tr>
-						<tr><td>Grams per Cup</td><td><?php self::text_html('gpcup', $row['gpcup'])?></td></tr>
+						<tr><td>Grams per Cup</td><td><?php self::render_text('gpcup', $row['gpcup'])?></td></tr>
 						<tr><td></td><td><a class="<?php echo $hide_unlink; ?>" id="unlink-nutrition">Unlink Nutrition Info</a></td></tr>
 					</table>
 					<input type="submit" name="submit" value="<?php echo $submit_type ?>">
@@ -1467,7 +1488,7 @@ class hrecipe_admin extends hrecipe_microformat
 	 *
 	 * @return void
 	 **/
-	function display_admin_notices()
+	function render_admin_notices()
 	{
 		/*
 			WP defines the following classes for display:
@@ -1493,37 +1514,157 @@ class hrecipe_admin extends hrecipe_microformat
 	}
 	
 	/**
+	 * Callback for handling database update requests via admin-post.php
+	 *
+	 * @return void
+	 */
+	function action_database_update()
+	{
+		if (!current_user_can('manage_options')) {
+			wp_die(__('You do not have sufficient permissions to access this page.'));
+		}
+		
+		if ( ! empty( $_POST ) && check_admin_referer( 'hrecipe-db-update' ) ) {
+			if (array_key_exists('hrecipe-nutrient-update', $_POST) && 'Update' === $_POST['hrecipe-nutrient-update']) {
+				if (! $this->nutrient_db->setup_nutrient_db($this->nutrient_db_path)) {
+					// There was a problem creating DB
+					$msg = "nutrient-db-update-fail";
+				} else {
+					$msg = "nutrient-db-updated";
+				}
+			}
+			
+			if (array_key_exists('hrecipe-ingrd-update', $_POST) && 'Update' === $_POST['hrecipe-ingrd-update']) {
+				if (! $this->ingrd_db->create_schema()) {
+					// There was a problem creating DB
+					$msg = "ingrd-db-update-fail";
+				} else {
+					$msg = "ingrd-db-updated";
+				}
+			}
+	   }
+	   
+	   $url = add_query_arg( 'msg', $msg, urldecode( $_POST['_wp_http_referer'] ) );
+	   wp_safe_redirect( $url );
+	}
+	
+	/**
 	 * Emit HTML to create the Plugin settings page
 	 *
 	 * @access public
 	 * @return void
 	 **/
-	public function options_page_html()
+	public function render_options_page()
 	{
+		$action = 'hrecipe-db-update';
+		
+		// If a database update was requested, strings will hold results
+		$nutrient_db_return = "";
+		$ingrd_db_return = "";
+		
 		if (!current_user_can('manage_options')) {
 			wp_die(__('You do not have sufficient permissions to access this page.'));
 		}
-		echo '<div class="wrap">';
-		echo '<h2>';
-		_e('hRecipe Microformat Plugin Settings',self::p);
-		echo '</h2>';
-		echo '<form method="post" action="options.php">';
-		settings_fields(self::settings_page);
-		do_settings_sections(self::settings_page);
-		echo '<p class=submit>';
-		echo '<input type="submit" class="button-primary" value="' . __('Save Changes') . '" />';
-		echo '</p>';
-		echo '</form>';
-		echo '</div>';
+
+		if (array_key_exists('msg', $_REQUEST)) {
+			switch ($_REQUEST['msg']) {
+				case 'nutrient-db-update-fail':
+					$nutrient_db_return = "Nutrient Database update request failed, please review server error logs.";
+					break;
+					
+				case 'nutrient-db-updated':
+					$nutrient_db_return = "Nutrient Database updated successfully";
+					break;
+				
+				case 'ingrd-db-update-fail':
+					$ingrd_db_return = "Ingredient Database update request failed, please review server error logs.";
+					break;
+				
+				case 'ingrd-db-updated':
+					$ingrd_db_return = "Ingredient Database updated successfully";
+					break;
+				
+				default:
+					// Unknown code - silently ignore
+					break;
+			}
+		}
+		
+		?>
+		<div class="wrap">
+			<h2>hRecipe Microformat Plugin Settings</h2>
+		
+			<!-- Render section for database maintenance -->
+		
+			<h3>Database Maintenance</h3>
+			<p>Manage plugin databases.</p>
+			<form method="POST" action="<?php echo admin_url( 'admin-post.php' ); ?>">
+				<input type="hidden" name="action" value="<?php echo $action; ?>">
+        		<?php wp_nonce_field($action); ?>
+				<table class="form-table">
+					<tbody>
+						<tr>
+							<th scope="row">Nutrient Database</th>
+							<td>
+								<?php
+								if ($nutrient_db_return) echo "<p>$nutrient_db_return</p>";
+								
+								if ($this->nutrient_db->update_needed()) {
+									?>
+									<p>
+										An updated Nutrition database is available.  Please update.
+									</p>
+									<?php
+									submit_button('Update', 'secondary', 'hrecipe-nutrient-update');
+								} else {
+ 									echo '<p>OK</p>';
+								}
+								?>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row">Ingredient Database</th>
+							<td>
+								<?php
+								if ($ingrd_db_return) echo "<p>$ingrd_db_return</p>";
+								
+								if ($this->ingrd_db->update_needed()) {
+									?>
+									<p>
+										The ingredient Database requires an update for proper function.
+									</p>
+									<?php
+									submit_button('Update', 'secondary', 'hrecipe-ingrd-update');
+								} else {
+									echo '<p>OK</p>';
+								}
+								?>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</form>
+		
+			<!-- Render sections for plugin settings -->
+		
+			<form method="post" action="options.php">
+				<?php
+				settings_fields(self::settings_page);
+				do_settings_sections(self::settings_page);
+				submit_button();			
+				?>
+			</form>
+		</div>
+		<?php
 	}
 	
 	/**
 	 * Emit HTML to create the Display section for the plugin in admin screen.
 	 **/
-	function display_section_html()
+	function render_settings_section_display()
 	{	
 		echo '<p>';
-			_e('Configure how Recipes are included in the blog and feeds', self::p);
+			_e('Configure how Recipes are included in the blog and feeds.', self::p);
 		echo '</p>';
 	}
 	
@@ -1532,9 +1673,9 @@ class hrecipe_admin extends hrecipe_microformat
 	 *
 	 * @return void
 	 **/
-	function display_in_home_html()
+	function render_display_in_home()
 	{
-		self::checkbox_html(self::settings . '[display_in_home]', $this->options['display_in_home']);
+		self::render_checkbox(self::settings . '[display_in_home]', $this->options['display_in_home']);
 		_e('Display Recipes on the home (blog) page.', self::p);
 	}
 	
@@ -1543,9 +1684,9 @@ class hrecipe_admin extends hrecipe_microformat
 	 *
 	 * @return void
 	 **/
-	function display_in_feed_html()
+	function render_display_in_feed()
 	{
-		self::checkbox_html(self::settings . '[display_in_feed]', $this->options['display_in_feed']);
+		self::render_checkbox(self::settings . '[display_in_feed]', $this->options['display_in_feed']);
 		_e('Include Recipes in the main feed.', self::p);
 		echo ' ';
 		_e('This change might not take effect for a client until a new post or recipe is added.', self::p);
@@ -1556,9 +1697,9 @@ class hrecipe_admin extends hrecipe_microformat
 	 *
 	 * @return void
 	 **/
-	function posts_per_page_html()
+	function render_posts_per_page()
 	{
-		self::integer_html( self::settings . '[posts_per_page]', $this->options['posts_per_page']);
+		self::render_integer( self::settings . '[posts_per_page]', $this->options['posts_per_page']);
 		_e('How many Recipes should be displayed on index pages', self::p);
 	}
 	
@@ -1567,7 +1708,7 @@ class hrecipe_admin extends hrecipe_microformat
 	 *
 	 * @return void
 	 **/
-	function head_foot_section_html()
+	function render_settings_section_head_foot()
 	{
 		$head_fields = explode(',', $this->options['recipe_head_fields']);
 		$footer_fields = explode(',', $this->options['recipe_footer_fields']);
@@ -1601,14 +1742,14 @@ class hrecipe_admin extends hrecipe_microformat
 		
 		echo '<div id="recipe_head_foot_fields">';
 
-		self::checkbox_html(self::settings . '[include_metadata]', $this->options['include_metadata']);
+		self::render_checkbox(self::settings . '[include_metadata]', $this->options['include_metadata']);
 		_e('Include Header and Footer Recipe Metadata in Content.', self::p);
 		
 		foreach ($sections as $row) {
 			// Emit the HTML for each section
 			echo '<div id="' . $row['field-name'] . '" class="recipe-fields">';
 			echo '<h4>' . $row['title'] . '</h4>';
-			self::input_hidden_html($row['field-name'], join(',', $row['list']));
+			self::render_input_hidden($row['field-name'], join(',', $row['list']));
 			echo '<ul>';
 			foreach ($row['list'] as $field) {
 				echo '<li class="menu-item-handle" name="' . $field . '">' . $this->recipe_field_map[$field]['label'] . '</li>';
@@ -1622,7 +1763,7 @@ class hrecipe_admin extends hrecipe_microformat
 	/**
 	 * Emit HTML to create the Debug section for the plugin in admin screen.
 	 **/
-	function debug_section_html()
+	function render_settings_section_debug()
 	{	
 		echo '<p>';
 			_e('Configure debug settings.', self::p);
@@ -1632,9 +1773,9 @@ class hrecipe_admin extends hrecipe_microformat
 	/**
 	 * Emit HTML to create form field used to enable/disable Debug Logging
 	 **/
-	function debug_log_enabled_html()
+	function render_debug_log_enabled()
 	{ 
-		self::checkbox_html(self::settings . '[debug_log_enabled]', $this->options['debug_log_enabled']);
+		self::render_checkbox(self::settings . '[debug_log_enabled]', $this->options['debug_log_enabled']);
 		_e('Enable Plugin Debug Logging. When enabled, log will display below.', self::p);
 		if ( $this->options['debug_log_enabled']) {
 			echo '<dl class=hmf-debug-log>';
@@ -1653,7 +1794,7 @@ class hrecipe_admin extends hrecipe_microformat
 	 * @param boolean $checked True if the checkbox should be checked
 	 * @return void
 	 **/
-	function checkbox_html($field, $checked)
+	function render_checkbox($field, $checked)
 	{
 		$checked = $checked ? " checked" : "";
 		echo '<input type="checkbox" name="' . $field . '" value="1"' . $checked . '>';
@@ -1666,7 +1807,7 @@ class hrecipe_admin extends hrecipe_microformat
 	 * @param string $value Default value for the input field
 	 * @return void
 	 **/
-	function text_html($field, $value)
+	function render_text($field, $value)
 	{
 		echo '<input type="text" name="' . $field . '" value="' . esc_attr($value) . '" id="' . $field . '" />';
 	}
@@ -1678,7 +1819,7 @@ class hrecipe_admin extends hrecipe_microformat
 	 * @param string $value Default value for the input field
 	 * @return void
 	 **/
-	function integer_html($field, $value)
+	function render_integer($field, $value)
 	{
 		echo '<input type="number" name="' . $field . '" value="' . esc_attr($value) . '" />';
 	}
@@ -1692,7 +1833,7 @@ class hrecipe_admin extends hrecipe_microformat
 	 * @param string $value Default value for selected radio button
 	 * @return void
 	 **/
-	function radio_html($field, $options, $option_descr, $value)
+	function render_radio($field, $options, $option_descr, $value)
 	{
 		foreach ($options as $key => $option) {
 			$checked = ($value == $key) ? ' checked' : '';
@@ -1710,7 +1851,7 @@ class hrecipe_admin extends hrecipe_microformat
 	 * @param array $value Default value for select
 	 * @return void
 	 **/
-	function select_html($field, $class, $options, $value)
+	function render_select($field, $class, $options, $value)
 	{
 		echo '<select name="'. $field . '" size="1" class="' . $class . '">';
 		foreach ($options as $key => $option) {
@@ -1725,7 +1866,7 @@ class hrecipe_admin extends hrecipe_microformat
 	 *
 	 * @return void
 	 **/
-	function input_hidden_html($field, $value)
+	function render_input_hidden($field, $value)
 	{
 		echo '<input type="hidden" name="' . self::settings . '[' . $field . ']" value="' . $value . '">';
 	}
@@ -1846,7 +1987,7 @@ class hrecipe_admin extends hrecipe_microformat
 	 *
 	 * @return void Emits HTML
 	 **/
-	function show_column_for_recipe_list($column_name, $post_id)
+	function render_show_column_for_recipe_list($column_name, $post_id)
 	{
 		global $typenow;
 		

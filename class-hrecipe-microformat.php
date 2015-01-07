@@ -1676,7 +1676,7 @@ class hrecipe_microformat {
 			'debug_log' => array(),
 		);
 
-		// Option types for sanitizing data.  debug_log is not included as it has special handling
+		// Option types for sanitizing data received from user. debug_log is not included as it has special handling below.
 		$options_type = array(
 			'display_in_home' => 'bool',
 			'display_in_feed' => 'bool',

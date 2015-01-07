@@ -53,7 +53,7 @@ class hrecipe_nutrient_db {
 	 * @var constant string
 	 * @access public
 	 **/
-	const db_release = 24;
+	const DB_RELEASE = 24;
 	
 	/**
 	 * Name of options used in WP table
@@ -76,13 +76,13 @@ class hrecipe_nutrient_db {
 	/**
 	 * Class Constructor 
 	 * - sets up prefix to use for tables in DB
+	 * - Load WP options for the class including DB release level installed
 	 *
 	 * @param $prefix, string, Prefix to use for name of DB tables
 	 * @return void
 	 **/
 	function __construct($prefix)
 	{
-		$this->options['table_prefix'] = $prefix . "sr_";
 		$this->options_name = get_class($this) . "_class_option";
 		
 		/*
@@ -97,6 +97,16 @@ class hrecipe_nutrient_db {
 	}
 	
 	/**
+	 * Checks if DB release is up to date
+	 *
+	 * @return FALSE if loaded database is current
+	 */
+	function update_needed()
+	{
+		return ! $this->options['db_version'] == self::DB_RELEASE;
+	}
+	
+	/**
 	 * Create the food DB using content from USDA National Nutrient Database for Standard Reference
 	 *
 	 * Table descriptions are taken from sr<version>_doc.pdf (contained in the documents downloaded from USDA)
@@ -107,10 +117,6 @@ class hrecipe_nutrient_db {
 	private function create_nutrient_schema()
 	{
 		global $charset_collate;
-		
-		// Record Version number in options
-		$this->options['db_version'] = self::db_release;
-		update_option($this->options_name, $this->options);
 		
 		// Prefix for table creation below
 		$prefix = $this->options['table_prefix'];
@@ -406,7 +412,7 @@ class hrecipe_nutrient_db {
 		global $wpdb;
 		
 		// If the loaded version matches what's delivered with this version of the plugin, no need to update tables
-		if ($this->options['db_version'] == self::db_release) return self::db_release;
+		if ($this->options['db_version'] == self::DB_RELEASE) return self::DB_RELEASE;
 		
 		// This can take some time so increase the execution time limit
 		set_time_limit(300);
@@ -524,8 +530,12 @@ class hrecipe_nutrient_db {
 		}		
 		unset($sr); // Trigger __destructor() for class		
 		
+		// Record Version number in options
+		$this->options['db_version'] = self::DB_RELEASE;
+		update_option($this->options_name, $this->options);
+		
 		// Return DB version loaded
-		return self::db_release;
+		return self::DB_RELEASE;
 	}
 	
 	/**

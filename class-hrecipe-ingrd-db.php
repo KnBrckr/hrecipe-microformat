@@ -25,7 +25,13 @@
 if (! class_exists('hrecipe_ingrd_db')) :
 class hrecipe_ingrd_db {
 	
-	// TODO Add a Database version for update management
+	/**
+	 * Version of ingredient database
+	 *
+	 * @var constant string
+	 * @access public
+	 **/
+	const DB_RELEASE = 1;
 	
 	/**
 	 * Table of defined foods for use in recipes
@@ -44,6 +50,23 @@ class hrecipe_ingrd_db {
 	private $recipe_ingrds_table;
 	
 	/**
+	 * Name of options variable in WP options table
+	 *
+	 * @var string
+	 * @access private
+	 */
+	private $options_name;
+	
+	/**
+	 * Class options retrieved from WP
+	 *   - db_version => version of database in use
+	 *
+	 * @var hash array
+	 * @access protected
+	 */
+	protected $options;
+	
+	/**
 	 * Construct new object
 	 *
 	 * @param $prefix string Prefix to use for database table
@@ -52,6 +75,27 @@ class hrecipe_ingrd_db {
 	function __construct($prefix) {
 		$this->foods_table = $prefix . 'foods';
 		$this->recipe_ingrds_table = $prefix . 'recipe_ingrds';
+		
+		$this->options_name = get_class($this) . "_class_option";
+		
+		/*
+		 * Retrieve Options for this DB class
+		 */
+		$options_defaults = array(
+			'db_version' => 0, // Default to 0 - No version loaded
+		);
+		
+		$this->options = (array) wp_parse_args(get_option($this->options_name), $options_defaults);
+	}
+	
+	/**
+	 * Checks if DB release is up to date
+	 *
+	 * @return FALSE if loaded database is current
+	 */
+	function update_needed()
+	{
+		return ! $this->options['db_version'] == self::DB_RELEASE;
 	}
 	
 	/**
@@ -121,6 +165,12 @@ class hrecipe_ingrd_db {
 
 		// Run SQL to create the table
 		dbDelta($sql);
+		
+		// Record Version number in options
+		$this->options['db_version'] = self::DB_RELEASE;
+		update_option($this->options_name, $this->options);
+		
+		return true;
 	}
 	
 	/**
@@ -134,6 +184,9 @@ class hrecipe_ingrd_db {
 		
 		$wpdb->query("DROP TABLE IF EXISTS " . $this->foods_table);
 		$wpdb->query("DROP TABLE IF EXISTS " . $this->recipe_ingrds_table);
+		
+		// Delete class options from WP database
+		delete_option($this->options_name);
 	}
 	
 	/**
