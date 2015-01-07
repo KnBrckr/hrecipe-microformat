@@ -1543,7 +1543,6 @@ class hrecipe_admin extends hrecipe_microformat
 				}
 			}
 	   }
-	   return;
 	   $url = add_query_arg( 'msg', $msg, urldecode( $_POST['_wp_http_referer'] ) );
 	   wp_safe_redirect( $url );
 	}
@@ -1613,6 +1612,9 @@ class hrecipe_admin extends hrecipe_microformat
 									?>
 									<p>
 										An updated Nutrition database is available.  Please update.
+									</p>
+									<p>
+										Note that the update may take a few minutes, please only press the button once.
 									</p>
 									<?php
 									submit_button('Update', 'secondary', 'hrecipe-nutrient-update');
