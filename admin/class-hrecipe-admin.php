@@ -132,7 +132,7 @@ class hrecipe_admin extends hrecipe_microformat
 		$this->hrecipe_importer = new hrecipe_importer(self::p, $this->recipe_category_taxonomy, $this->ingrd_db);
 		
 		// Setup path to the nutrient database files
-		$nutrient_db_path = WP_PLUGIN_DIR . '/' . self::p . '/db/';
+		$this->nutrient_db_path = WP_PLUGIN_DIR . '/' . self::p . '/db/';
 	}
 	
 	/**
@@ -1543,7 +1543,7 @@ class hrecipe_admin extends hrecipe_microformat
 				}
 			}
 	   }
-	   
+	   return;
 	   $url = add_query_arg( 'msg', $msg, urldecode( $_POST['_wp_http_referer'] ) );
 	   wp_safe_redirect( $url );
 	}
