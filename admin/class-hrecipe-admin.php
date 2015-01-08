@@ -1520,6 +1520,8 @@ class hrecipe_admin extends hrecipe_microformat
 	 */
 	function action_database_update()
 	{
+		$url = urldecode($_POST['_wp_http_referer']);
+		
 		if (!current_user_can('manage_options')) {
 			wp_die(__('You do not have sufficient permissions to access this page.'));
 		}
@@ -1542,8 +1544,11 @@ class hrecipe_admin extends hrecipe_microformat
 					$msg = "ingrd-db-updated";
 				}
 			}
+			
+			if (defined($msg))
+		 	   $url = add_query_arg( 'msg', $msg, urldecode( $_POST['_wp_http_referer'] ) );
 	   }
-	   $url = add_query_arg( 'msg', $msg, urldecode( $_POST['_wp_http_referer'] ) );
+
 	   wp_safe_redirect( $url );
 	}
 	
