@@ -933,12 +933,14 @@ class hrecipe_microformat {
 	 * @return string HTML
 	 **/
 	function sc_category_list($atts, $content='')
-	{		
-		$content = wp_list_categories( array(
+	{
+		$content = '<ul>';
+		$content .= wp_list_categories( array(
 			'echo' => false,
 			'taxonomy' => $this->recipe_category_taxonomy,
 			'title_li' => '',
-			) );
+		) );
+		$content .= '</ul>';
 		
 		return $content;
 	}
