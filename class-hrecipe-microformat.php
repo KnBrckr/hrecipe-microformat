@@ -283,7 +283,7 @@ class hrecipe_microformat {
 		wp_register_script(self::prefix . 'js', self::$url . 'js/hrecipe.js', array('jquery','jquery-ui-button'), false, true);
 		
 		// Register jQuery UI stylesheet - use googleapi version based on what version of core is running
-		wp_register_style(self::prefix . 'jquery-ui', "http://ajax.googleapis.com/ajax/libs/jqueryui/{$wp_scripts->registered['jquery-ui-core']->ver}/themes/smoothness/jquery-ui.min.css");
+		wp_register_style(self::prefix . 'jquery-ui', "//ajax.googleapis.com/ajax/libs/jqueryui/{$wp_scripts->registered['jquery-ui-core']->ver}/themes/smoothness/jquery-ui.min.css");
 		
 		// Register jQuery UI plugin for Ratings
 		// XXX Might need to upgrade to supported Star Rating plugin in the future
