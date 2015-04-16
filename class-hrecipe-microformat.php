@@ -271,10 +271,10 @@ class hrecipe_microformat {
 		$this->create_post_type();
 		
 		// Adjust WP Query to include recipe posts in post queries
-		add_filter('pre_get_posts', array($this, 'pre_get_posts_filter'));
+		add_filter('pre_get_posts', array($this, 'filter_pre_get_posts'));
 		
 		// Do template setup after posts have been loaded
-		add_action('wp', array(&$this, 'wp'));
+		add_action('wp', array(&$this, 'action_wp'));
 		
 		// Register Plugin CSS
 		wp_register_style(self::prefix . 'style', self::$url . 'hrecipe.css');
@@ -283,7 +283,7 @@ class hrecipe_microformat {
 		wp_register_script(self::prefix . 'js', self::$url . 'js/hrecipe.js', array('jquery','jquery-ui-button'), false, true);
 		
 		// Register jQuery UI stylesheet - use googleapi version based on what version of core is running
-		wp_register_style(self::prefix . 'jquery-ui', "http://ajax.googleapis.com/ajax/libs/jqueryui/{$wp_scripts->registered['jquery-ui-core']->ver}/themes/smoothness/jquery-ui.min.css");
+		wp_register_style(self::prefix . 'jquery-ui', "//ajax.googleapis.com/ajax/libs/jqueryui/{$wp_scripts->registered['jquery-ui-core']->ver}/themes/smoothness/jquery-ui.min.css");
 		
 		// Register jQuery UI plugin for Ratings
 		// XXX Might need to upgrade to supported Star Rating plugin in the future
@@ -310,34 +310,35 @@ class hrecipe_microformat {
 	 * @uses $post Post data
 	 * @return void
 	 **/
-	function wp()
+	function action_wp()
 	{
 		// Not needed on admin pages
 		if (is_admin()) return;
 		
+		// FIXME Should be able to remove template redirection
+		// provide default page templates from within the plugin
+		// add_filter('template_include', array($this, 'filter_template_include'),50);
+		
 		// Enqueue scripts and style sheets
-		add_action( 'wp_enqueue_scripts', array($this, 'plugin_enqueue_scripts') );
+		add_action('wp_enqueue_scripts', array($this, 'action_plugin_enqueue_scripts'));
 
 		// During handling of the header ...
-		add_action('wp_head', array($this, 'wp_head'));
+		add_action('wp_head', array($this, 'action_wp_head'));
 		
 		// Update classes applied to <body> element
-		add_filter('body_class', array ($this, 'body_class'),10,2);
+		add_filter('body_class', array($this, 'filter_body_class'), 10, 2);
 		
-		// provide default page templates from within the plugin
-		add_filter('template_include', array($this, 'template_include'),50);
-
 		// Hook into the post processing to localize elements needing access to $post
-		add_action( 'the_post', array($this, 'plugin_the_post') );
+		add_action('the_post', array($this, 'action_the_post'));
 		
 		// Must mark recipe titles with appropriate hrecipe microformat class
-		add_filter('the_title', array($this, 'the_title'), 10, 2); // priority 10 (WP default), 2 arguments
+		add_filter('the_title', array($this, 'filter_the_title'), 10, 2); // priority 10 (WP default), 2 arguments
 		
 		// Add recipe meta data to the post content
-		add_filter('the_content', array(&$this, 'the_content'));			
+		add_filter('the_content', array($this, 'the_content'));			
 
 		// During handling of footer in the body ...
-		add_action('wp_footer', array($this, 'wp_footer'));
+		add_action('wp_footer', array($this, 'action_wp_footer'));
 		
 		/*
 		 * Register plugin supported shortcodes
@@ -354,7 +355,7 @@ class hrecipe_microformat {
 	 *
 	 * @return void
 	 **/
-	function plugin_enqueue_scripts()
+	function action_plugin_enqueue_scripts()
 	{
 		// Include Ratings JS module
 		wp_enqueue_script('jquery.ui.stars');
@@ -378,7 +379,7 @@ class hrecipe_microformat {
 	 *
 	 * @return void
 	 **/
-	function wp_head()
+	function action_wp_head()
 	{
 		// Setup google font used in recipe ingredient lists
 		echo "<link href='http://fonts.googleapis.com/css?family=Annie+Use+Your+Telescope' rel='stylesheet' type='text/css'>";
@@ -395,7 +396,7 @@ class hrecipe_microformat {
 	 * @param string|array $class String or array of classes to be added to class array
 	 * @return array Updated class Array
 	 */
-	function body_class($classes, $class) {
+	function filter_body_class($classes, $class) {
 		if (! in_array('no-js', $classes)) {
 			// Add no-js to class list if not already there
 			$classes[] = "no-js";	
@@ -415,7 +416,7 @@ class hrecipe_microformat {
 	 *
 	 * @return string, template path
 	 **/
-	function template_include($template)
+	function filter_template_include($template)
 	{
 		global $post;
 		
@@ -437,8 +438,13 @@ class hrecipe_microformat {
 			return $new_template;
 		}
 		
-		// Return the plugin version of the template
-		return self::$dir . 'lib/template/' . $template_name;
+		// Return the plugin version of the template if available
+		$template_name = self::$dir . 'lib/template/' . $template_name;
+		if (is_readable($template_name)) {
+			return self::$dir . 'lib/template/' . $template_name;			
+		} else {
+			return $template;
+		}
 	}
 	
 	/**
@@ -446,7 +452,7 @@ class hrecipe_microformat {
 	 *
 	 * @return void
 	 **/
-	function plugin_the_post()
+	function action_the_post()
 	{
 		global $post;
 		
@@ -474,7 +480,7 @@ class hrecipe_microformat {
 	 *
 	 * @return void
 	 **/
-	function wp_footer()
+	function action_wp_footer()
 	{
 		?>
 		<script>
@@ -491,7 +497,7 @@ class hrecipe_microformat {
 	 * @param object $query WP query
 	 * @return object Updated WP query
 	 **/
-	function pre_get_posts_filter($query)
+	function filter_pre_get_posts($query)
 	{
 		// If not main query or on admin page, bail
 		if ( !$query->is_main_query() || is_admin() ) return $query;
@@ -527,7 +533,7 @@ class hrecipe_microformat {
 	 * @param integer $post_id Post ID
 	 * @return string Updated title string
 	 **/
-	function the_title($title, $post_id)
+	function filter_the_title($title, $post_id)
 	{
 		// Only do this for single recipe posts, must be in the main loop!
 		if ( !in_the_loop() || !is_single() || get_post_type($post_id) != self::post_type ) return $title;
@@ -1190,7 +1196,7 @@ class hrecipe_microformat {
 			
 			// Convert to US measure
 			// TODO Display volume measurements for US in addition to the weight when possible
-			if (array_key_exists($unit, $grams) && $gpcup) {
+			if (array_key_exists($unit, $grams) && $gpcup > 0) {
 				$us_qty_volume = $quantity * $grams[$unit] / $gpcup;
 				$us_unit_volume = 'cup';
 			}
