@@ -68,8 +68,8 @@
 	font-size: 130%;
 }
 
-.ingrd-list .col-interaction {
-	width: 8%;
+.ingrd-list .col-interaction ul {
+	width: 54px;
 }
 .ingrd-list .col-quantity {
 	width: 8%;

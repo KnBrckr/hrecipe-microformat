@@ -165,7 +165,7 @@ var hrecipe = {
 		insertIngrdRow : function() {
 			// Travel up DOM to find the containing TR and clone it
 			var row = jQuery(this).closest('tr');
-			var newRow = jQuery('.recipe-ingrd-row.prototype').clone().removeClass('prototype');
+			var newRow = row.siblings('.prototype').clone().removeClass('prototype');
 
 			// Setup UI elements for the new row elements
 			hrecipe.recipePage.setupIngrdRow(newRow);
