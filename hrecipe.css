@@ -160,22 +160,26 @@
 .ingredients header {
 	border-bottom: rgb(255, 19, 0) solid 2px;
 	background: inherit;
-	height: 2em;
+	height: 34px;
 }
 
-.ingredients-title {
+.ingredients .ingredients-title {
 	float: left;
-	font-size: 1.25em;
+	font-family: 'Annie Use Your Telescope', arial, serif;	
+	font-size: 30px;
+	margin: 0;
 }
 
 /* 
    Ingredients card header 
 */
-.ingredients-display-as {
+.ingredients .ingredients-display-as {
 	float: right;
 	display: inline-block;
 	padding: 0;
 	margin: 0;
+	display: none; 	/* TODO Enable recipe measure conversions - unhide when ready */
+
 }
 
 /* Push unit conversion tool to right side of ingredients title line */
@@ -186,15 +190,16 @@
 }
 
 /* Hide measures selection tools if javascript is not available */
-.no-js .ingredients-display-as {
+.no-js .ingredients .ingredients-display-as {
 	display: none;
 }
+
 .measure-button.ui-widget {
 	font-size: .6em;
 }
 
 /* Put list of ingredients below the header */
-ul.ingredients-list {
+.ingredients ul.ingredients-list {
 	list-style-type: none;
 	list-style-image: none;
 	clear: both;
@@ -202,12 +207,13 @@ ul.ingredients-list {
 	margin: 0 0 25px 0;
 }
 
-li.ingredient {
+ul.ingredients-list li.ingredient {
 	background: inherit;
 	border-bottom: rgb(99, 195, 251) solid 1px;
 	list-style-type: none;
 	list-style-image: none;
 	padding-left: 20px;
+	line-height: 1.5em;
 }
 
 /* Old Recipe Format did not have embedded separation between value and unit in the measures */

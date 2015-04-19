@@ -39,7 +39,7 @@ class hrecipe_microformat {
 	/**
 	 * Minimum version of WordPress required by plugin
 	 **/
-	const wp_version_required = '3.8';
+	const wp_version_required = '4.0';
 	
 	/**
 	 * Minimum version of PHP required by the plugin
@@ -247,7 +247,7 @@ class hrecipe_microformat {
 	 **/
 	function register_wp_callbacks()
 	{
-		add_action('init', array(&$this, 'wp_init'));
+		add_action('init', array(&$this, 'action_init'));
 
 		// If logging is enabled, setup save in the footers.
 		if ($this->options['debug_log_enabled']) {
@@ -261,7 +261,7 @@ class hrecipe_microformat {
 	 * @uses $wp_scripts, To retrieve version of jQuery for auto-loading of proper style sheets
 	 * @return void
 	 */
-	function wp_init() {
+	function action_init() {
 		global $wp_scripts;
 		
 		// Register custom taxonomies
@@ -315,17 +315,13 @@ class hrecipe_microformat {
 		// Not needed on admin pages
 		if (is_admin()) return;
 		
-		// FIXME Should be able to remove template redirection
-		// provide default page templates from within the plugin
-		// add_filter('template_include', array($this, 'filter_template_include'),50);
-		
 		// Enqueue scripts and style sheets
 		add_action('wp_enqueue_scripts', array($this, 'action_plugin_enqueue_scripts'));
 
 		// During handling of the header ...
 		add_action('wp_head', array($this, 'action_wp_head'));
 		
-		// Update classes applied to <body> element
+		// Update classes applied to body element
 		add_filter('body_class', array($this, 'filter_body_class'), 10, 2);
 		
 		// Hook into the post processing to localize elements needing access to $post
@@ -335,7 +331,7 @@ class hrecipe_microformat {
 		add_filter('the_title', array($this, 'filter_the_title'), 10, 2); // priority 10 (WP default), 2 arguments
 		
 		// Add recipe meta data to the post content
-		add_filter('the_content', array($this, 'the_content'));			
+		add_filter('the_content', array($this, 'filter_the_content'));			
 
 		// During handling of footer in the body ...
 		add_action('wp_footer', array($this, 'action_wp_footer'));
@@ -382,7 +378,7 @@ class hrecipe_microformat {
 	function action_wp_head()
 	{
 		// Setup google font used in recipe ingredient lists
-		echo "<link href='http://fonts.googleapis.com/css?family=Annie+Use+Your+Telescope' rel='stylesheet' type='text/css'>";
+		echo "<link href='//fonts.googleapis.com/css?family=Annie+Use+Your+Telescope' rel='stylesheet' type='text/css'>";
 		return;
 	}
 	
@@ -551,7 +547,7 @@ class hrecipe_microformat {
 	 * @param $content string post content
 	 * @return string Updated post content
 	 **/
-	function the_content($content)
+	function filter_the_content($content)
 	{
 		global $post;
 		
