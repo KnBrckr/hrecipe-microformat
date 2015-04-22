@@ -32,6 +32,7 @@
 				return 0;
         }
 */
+// TODO Include recipe ratings in archive formats
 
 if ( ! class_exists('hrecipe_microformat')) :
 

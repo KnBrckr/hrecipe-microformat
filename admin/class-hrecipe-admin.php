@@ -1143,7 +1143,7 @@ class hrecipe_admin extends hrecipe_microformat
 				wp_die('You are not allowed to manage ingredients');
 			}
 
-			$sendback = remove_query_arg(array('action', 'action2', '_wpnonce', '_wp_http_referer'), wp_get_referer());
+			$sendback = esc_url(remove_query_arg(array('action', 'action2', '_wpnonce', '_wp_http_referer'), wp_get_referer()));
 			
 			switch ($doaction) {
 				case 'delete':
@@ -1151,7 +1151,7 @@ class hrecipe_admin extends hrecipe_microformat
 						$this->ingrd_db->delete_ingrd($food_id);
 					}
 					
-					$sendback = remove_query_arg('wp_list_ingredient', $sendback);
+					$sendback = esc_url(remove_query_arg('wp_list_ingredient', $sendback));
 					$message = self::msg_ingredient_deleted;
 					break;
 				
@@ -1160,12 +1160,12 @@ class hrecipe_admin extends hrecipe_microformat
 					break;
 			}
 
-			$sendback = add_query_arg('message', $message, $sendback);
+			$sendback = esc_url(add_query_arg('message', $message, $sendback));
 			wp_redirect($sendback);
 			exit;
 		} elseif ( ! empty($_REQUEST['_wp_http_referer']) ) {
 			// Cleanup URL after a NULL submit action.
-			wp_redirect( remove_query_arg( array('_wp_http_referer', '_wpnonce'), stripslashes($_SERVER['REQUEST_URI']) ) );
+			wp_redirect(esc_url(remove_query_arg( array('_wp_http_referer', '_wpnonce'), stripslashes($_SERVER['REQUEST_URI']))));
 			exit;
 		}
 		
@@ -1219,7 +1219,7 @@ class hrecipe_admin extends hrecipe_microformat
 		if (isset($_REQUEST['submit']) && 
 		('Add' == $_REQUEST['submit'] || 'Update' == $_REQUEST['submit'])) {
 			// Prepare redirection URL
-			$sendback = remove_query_arg(array('food_id'), wp_get_referer());
+			$sendback = esc_url(remove_query_arg(array('food_id'), wp_get_referer()));
 		
 			// Is nonce valid?  check_admin_referer will die if invalid
 			if (!empty($_REQUEST) && check_admin_referer('add_ingredient', self::prefix . 'nonce')) {
@@ -1258,7 +1258,7 @@ class hrecipe_admin extends hrecipe_microformat
 			
 			
 				// Add result message to the query
-				$sendback = add_query_arg('message', $message, $sendback);
+				$sendback = esc_url(add_query_arg('message', $message, $sendback));
 			}			
 	
 			// After adding ingredient, reset form input and redirect to redisplay a clean form.
@@ -1546,7 +1546,7 @@ class hrecipe_admin extends hrecipe_microformat
 			}
 			
 			if (defined($msg))
-		 	   $url = add_query_arg( 'msg', $msg, urldecode( $_POST['_wp_http_referer'] ) );
+		 	   $url = esc_url(add_query_arg('msg', $msg, urldecode($_POST['_wp_http_referer'])));
 	   }
 
 	   wp_safe_redirect( $url );
