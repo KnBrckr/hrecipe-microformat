@@ -1,7 +1,7 @@
 === hRecipe Microformat ===
 Contributors: draca
 Donate link: http://action-a-day.com
-Tags: 
+Tags: recipe, hrecipe, food
 Requires at least: 4.0
 Tested up to: 4.0
 Stable tag: trunk
