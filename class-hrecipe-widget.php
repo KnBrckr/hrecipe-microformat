@@ -6,6 +6,13 @@
  *
  */
 
+// Protect from direct execution
+if (!defined('WP_PLUGIN_DIR')) {
+	header('Status: 403 Forbidden');
+  header('HTTP/1.1 403 Forbidden');
+  exit();
+}
+
 class hrecipe_widget extends WP_Widget {
 
 	/**
