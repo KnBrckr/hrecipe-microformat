@@ -153,7 +153,6 @@
 	margin: 5px 0px;
 	padding: 5px;
 	border: black solid 1px;
-	font-family: 'Annie Use Your Telescope', arial, serif;	
 	background: rgb(255,255,255);
 }
 
@@ -165,7 +164,6 @@
 
 .ingredients .ingredients-title {
 	float: left;
-	font-family: 'Annie Use Your Telescope', arial, serif;	
 	font-size: 30px;
 	margin: 0;
 }

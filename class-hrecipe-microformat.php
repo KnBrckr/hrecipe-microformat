@@ -326,9 +326,6 @@ class hrecipe_microformat {
 		// Enqueue scripts and style sheets
 		add_action('wp_enqueue_scripts', array($this, 'action_plugin_enqueue_scripts'));
 
-		// During handling of the header ...
-		add_action('wp_head', array($this, 'action_wp_head'));
-		
 		// Update classes applied to body element
 		add_filter('body_class', array($this, 'filter_body_class'), 10, 2);
 		
@@ -376,18 +373,6 @@ class hrecipe_microformat {
 		
 		// jQuery UI style
 		wp_enqueue_style( self::prefix . 'jquery-ui' );
-	}
-	
-	/**
-	 * Add bits to the header portion of the page
-	 *
-	 * @return void
-	 **/
-	function action_wp_head()
-	{
-		// Setup google font used in recipe ingredient lists
-		echo "<link href='//fonts.googleapis.com/css?family=Annie+Use+Your+Telescope' rel='stylesheet' type='text/css'>";
-		return;
 	}
 	
 	/**
