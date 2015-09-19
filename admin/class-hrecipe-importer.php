@@ -6,7 +6,7 @@
  *
  * @package hRecipe Microformat
  * @author Kenneth J. Brucker <ken@pumastudios.com>
- * @copyright 2012 Kenneth J. Brucker (email: ken@pumastudios.com)
+ * @copyright 2015 Kenneth J. Brucker (email: ken@pumastudios.com)
  * 
  * This file is part of hRecipe Microformat, a plugin for Wordpress.
  *
@@ -29,13 +29,17 @@
 // TODO Import hrecipe format
 // TODO Import PDF?
 
-// Only start including WP files when WP environment is setup.
-if (defined('WP_PLUGIN_DIR')) {
-	/**
-	 * Register the importer with Wordpress - must include the import module as it's not included by default
-	 */
-	include_once(ABSPATH . 'wp-admin/includes/import.php');
-}	
+// Protect from direct execution
+if (!defined('WP_PLUGIN_DIR')) {
+	header('Status: 403 Forbidden');
+	header('HTTP/1.1 403 Forbidden');
+	die( 'I don\'t think you should be here.' );
+}
+
+/**
+ * Register the importer with Wordpress - must include the import module as it's not included by default
+ */
+include_once(ABSPATH . 'wp-admin/includes/import.php');
 
 $required_libs = array('class-import-shopncook.php');
 foreach ($required_libs as $lib) {

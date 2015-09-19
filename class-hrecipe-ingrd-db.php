@@ -4,7 +4,7 @@
  *
  * @package hRecipe Microformat
  * @author Kenneth J. Brucker <ken@pumastudios.com>
- * @copyright 2013 Kenneth J. Brucker (email: ken@pumastudios.com)
+ * @copyright 2015 Kenneth J. Brucker (email: ken@pumastudios.com)
  * 
  * This file is part of hRecipe Microformat, a plugin for Wordpress.
  *
@@ -25,8 +25,8 @@
 // Protect from direct execution
 if (!defined('WP_PLUGIN_DIR')) {
 	header('Status: 403 Forbidden');
-  header('HTTP/1.1 403 Forbidden');
-  exit();
+	header('HTTP/1.1 403 Forbidden');
+	die( 'I don\'t think you should be here.' );
 }
 
 if (! class_exists('hrecipe_ingrd_db')) :

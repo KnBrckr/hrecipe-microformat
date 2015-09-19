@@ -1,5 +1,7 @@
 <?php
 /**
+ * hrecipe_nutrient_db class
+ *
  * Class to manipulate the foods database tables
  *
  * Nutritional data from USDA National Nutrient Database for Standard Reference
@@ -7,7 +9,7 @@
  *
  * @package hRecipe Microformat
  * @author Kenneth J. Brucker <ken@pumastudios.com>
- * @copyright 2012 Kenneth J. Brucker (email: ken@pumastudios.com)
+ * @copyright 2015 Kenneth J. Brucker (email: ken@pumastudios.com)
  * 
  * This file is part of hRecipe Microformat, a plugin for Wordpress.
  *
@@ -30,8 +32,8 @@
 // Protect from direct execution
 if (!defined('WP_PLUGIN_DIR')) {
 	header('Status: 403 Forbidden');
-  header('HTTP/1.1 403 Forbidden');
-  exit();
+	header('HTTP/1.1 403 Forbidden');
+	die( 'I don\'t think you should be here.' );
 }
 
 if (is_admin()) {
