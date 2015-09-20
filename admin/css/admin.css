@@ -204,6 +204,10 @@
 	display: none; // Class to hide objects by default
 }
 
-tr.prototype {
-	display: none; // Hide prototype rows used to build tables
+tr.template {
+	display: none; // Hide template rows used to build tables
+}
+
+.ingrd-list-template {
+	display: none; // Hide template ingredient list
 }

@@ -28,6 +28,7 @@
 // TODO Create admin widget for Recipe Categories - only allow one category to be selected
 // TODO Phone-home with error log
 // TODO Quick edit of recipe post_type does not update the list view without a screen refresh
+// TODO Move meta data recipe published date to use the Post published date - Data is redundant
 
 // Protect from direct execution
 if (!defined('WP_PLUGIN_DIR')) {
@@ -472,58 +473,82 @@ class hrecipe_admin extends hrecipe_microformat
 		 * For each ingredient list, output a table
 		 */
 		// RFE If Lists can be added/deleted/reordered, array indexes might get mucked up
-		foreach ($ingrd_list_title as $list_id => $list_title) {
-			$ingrds = $this->ingrd_db->get_ingrds_for_recipe($post->ID, $list_id);
-			?>
-			<div class="ingrd-list">
-				<p class="ingrd-list-title">
-					<label for="<?php echo self::prefix; ?>ingrd-list-name" class="field-label">List Title:</label>
-					<input type="text" name="<?php echo self::prefix; ?>ingrd-list-name[<?php echo $list_id; ?>]" value="<?php echo esc_attr($list_title) ?>" />
-					<!-- TODO Make copy-text highlightable for easy copy to clipboard (jquery.selectable?)-->
-					<span class="field-description">Use <span class="copy-text">[ingrd-list id="<?php echo $list_id; ?>"]</span> in recipe text to display this list.</span>
-				</p>
-				<table class="ingredients">
-					<thead>
-						<tr>
-							<th class="col-interaction"></th>
-							<th class="col-quantity">Amount</th>
-							<th class="col-unit">Unit</th>
-							<th class="col-ingrd">Ingredient</th>
-							<th class="col-comment">Comment</th>
-							<th class="col-status"></th>
-							<th class="col-gpcup">g/cup</th>
-							<th class="col-measure">preferred measure</th>
-						</tr>
-					</thead>
-					<tbody>
-						<?php
-						// Setup prototype ingredient row
-						$this->render_recipe_edit_ingrd_row($list_id, 'prototype', array());
-						
-						// Add rows for recipe ingredients
-						if (count($ingrds) == 0) {
-							// Setup a few empty rows in the edit screen for new posts
-							for ($i=0; $i < 4; $i++) { 
-								$this->render_recipe_edit_ingrd_row($list_id, '', array());
-							}
-						} else {
-							foreach ($ingrds as $d) {
-								$this->render_recipe_edit_ingrd_row($list_id, '', $d);
-							} // foreach $ingrds						
-						}
-						?>
-					</tbody>
-				</table>
-			</div>
+		?>
+		<div class="ingrd-list-container">
 			<?php
-		}
+			foreach ($ingrd_list_title as $list_id => $list_title) {
+				$ingrds = $this->ingrd_db->get_ingrds_for_recipe($post->ID, $list_id);
+				?>
+				<div class="ingrd-list">
+					<?php $this->render_recipe_ingrd_list($list_id, $ingrds); ?>
+				</div>
+				<?php
+			} // End foreach
+			?>
+		</div>
+		<div class="ingrd-list-template">
+			<?php $this->render_recipe_ingrd_list('template_id', array()); ?>
+		</div>
+		<span class="insert-ingrd-list">Add New Ingredient List</span>
+		<?php
+	}
+	
+	/**
+	 * Render HTML for an ingredient table on admin recipe edit screen
+	 *
+	 * @param $list_id, array index for list to generate
+	 * @param $ingrds, array of saved ingredients to include in list
+	 * @return void
+	 */
+	function render_recipe_ingrd_list($list_id, $ingrds)
+	{
+		?>
+		<p class="ingrd-list-title">
+			<label for="<?php echo self::prefix; ?>ingrd-list-name[<?php echo $list_id; ?>]" class="field-label">List Title:</label>
+			<input type="text" name="<?php echo self::prefix; ?>ingrd-list-name[<?php echo $list_id; ?>]" value="Ingredients" />
+			<!-- TODO Make copy-text highlightable for easy copy to clipboard (jquery.selectable?)-->
+			<span class="field-description">Use <span class="copy-text">[ingrd-list id="<?php echo $list_id; ?>"]</span> in recipe text to display this list.</span>
+		</p>
+		<table class="ingredients">
+			<thead>
+				<tr>
+					<th class="col-interaction"></th>
+					<th class="col-quantity">Amount</th>
+					<th class="col-unit">Unit</th>
+					<th class="col-ingrd">Ingredient</th>
+					<th class="col-comment">Comment</th>
+					<th class="col-status"></th>
+					<th class="col-gpcup">g/cup</th>
+					<th class="col-measure">preferred measure</th>
+				</tr>
+			</thead>
+			<tbody>
+				<?php
+				// Setup template ingredient row for addition of new rows via javascript
+				$this->render_recipe_edit_ingrd_row($list_id, 'template', array());
+			
+				// Add rows for recipe ingredients
+				if (count($ingrds) == 0) {
+					// Setup a few empty rows in the edit screen for new posts
+					for ($i=0; $i < 4; $i++) { 
+						$this->render_recipe_edit_ingrd_row($list_id, '', array());
+					}
+				} else {
+					foreach ($ingrds as $d) {
+						$this->render_recipe_edit_ingrd_row($list_id, '', $d);
+					} // foreach $ingrds						
+				}
+				?>
+			</tbody>
+		</table>
+		<?php
 	}
 	
 	/**
 	 * Emit HTML for a row in the ingredients table on admin recipe edit screen
 	 *
 	 * @param $list_id, int, Containing recipe list ID for this ingredient
-	 * @param $prototype, boolean, true if creating a prototype row
+	 * @param $class, string additional classes (space separated) to add to row
 	 * @param $data, associative array, ingredient information
 	 * @return void
 	 **/
@@ -837,6 +862,8 @@ class hrecipe_admin extends hrecipe_microformat
 		$ingrd_list_titles = array();
 		// TODO Need some error checking to make sure the various items are really present in $_POST before using them
 		foreach ($_POST[self::prefix . 'ingrd-list-name'] as $list_id => $title) {
+			if (! is_numeric($list_id)) continue; // Non-numeric list id implies values are for the template list
+			
 			// Save list title to add to Post Meta Data
 			$ingrd_list_titles[$list_id] = $title;
 			

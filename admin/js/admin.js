@@ -3,7 +3,7 @@
  *
  * @package hRecipe Microformat
  * @author Kenneth J. Brucker <ken@pumastudios.com>
- * @copyright 2013 Kenneth J. Brucker (email: ken@pumastudios.com)
+ * @copyright 2015 Kenneth J. Brucker (email: ken@pumastudios.com)
  * 
  * This file is part of hRecipe Microformat, a plugin for Wordpress.
  *
@@ -21,6 +21,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  **/
 
+// TODO Refactor table and row initialization
+
 var hrecipe = {
 	pagination : {
 		'page' : 1,
@@ -35,23 +37,25 @@ var hrecipe = {
 		*/
 		
 		// Make the recipe field sections sortable to configure head and footer contents
-		$('.recipe-fields').sortable(
-			{
-				items: '.menu-item-handle',
-				connectWith: '.recipe-fields', 
-				update: function(event, ui) {
-					// On update, fixup the hidden input tracking contents of head and footer
-					$('.recipe-fields').each(function() {
-						var n = jQuery(this);
-						var new_list = n.find('li').map(function(){return this.attributes['name'].value;}).get().join();
-						n.find('input').attr('value', new_list);
-					});
-				}
-			});
+		$('.recipe-fields').sortable({
+			items: '.menu-item-handle',
+			connectWith: '.recipe-fields', 
+			update: function(event, ui) {
+				// On update, fixup the hidden input tracking contents of head and footer
+				$('.recipe-fields').each(function() {
+					var n = jQuery(this);
+					var new_list = n.find('li').map(function(){return this.attributes['name'].value;}).get().join();
+					n.find('input').attr('value', new_list);
+				});
+			}
+		});
 		
 		/*
 			Add tools to Recipe Ingredient list section
 		*/
+			
+		// Enable button to create new Ingredient tables
+		$('.insert-ingrd-list').on('click', '', hrecipe.recipePage.insertIngrdTable);
 
 		// Enable manipulation of rows in ingredients table
 		var ingrdsTable = $('.ingredients');
@@ -160,12 +164,57 @@ var hrecipe = {
 			'teaspoon',
 			'tsp'
 		],
+		
+		// Add Ingredient table
+		insertIngrdTable : function() {
+			// Find the ingredient table template and clone
+			var newIndex = jQuery('.ingrd-list').length + 1;
+			var newTable = jQuery('.ingrd-list-template').clone().removeClass('ingrd-list-template').addClass('ingrd-list');
+			var regexName = /^(.*)template_id(.*)$/;
+			var regexQuote = /^(\[.*")template_id("\])$/;
+			newTable.find('*').each(function(){
+				// Fixup name field
+				var element = this.name || "";
+				var match = element.match(regexName) || [];
+				if (match.length==3) {
+					this.name = match[1] + newIndex + match[2];
+					return;
+				}
+				
+				// Fixup labels for field
+				var element = this.htmlFor || "";
+				var match=element.match(regexName) || [];
+				if (match.length == 3) {
+					this.htmlFor = match[1] + newIndex + match[2];
+					return;
+				}
+				
+				// Fixup html text
+				var element = this.innerText || "";
+				var match = element.match(regexQuote) || [];
+				if (match.length==3) {
+					this.innerText = match[1] + newIndex + match[2];
+				} 
+			});
+			
+			// Make new table sortable and setup special functions on each row
+			newTable.find('.ingredients').sortable({ items: 'tbody tr' }).each(function(index,row){
+				hrecipe.recipePage.setupIngrdRow(row);
+			});
+			
+			// Setup Insert and Delete Row functions at table level
+			newTable.on('click', '.insert', hrecipe.recipePage.insertIngrdRow);
+			newTable.on('click', '.delete', hrecipe.recipePage.deleteIngrdRow);
+			newTable.on('click', '.ingrd-locked', hrecipe.recipePage.unlinkIngrd);
+			
+			jQuery('.ingrd-list-container').append(newTable);
+		},
 
 		// Insert an ingredient row
 		insertIngrdRow : function() {
 			// Travel up DOM to find the containing TR and clone it
 			var row = jQuery(this).closest('tr');
-			var newRow = row.siblings('.prototype').clone().removeClass('prototype');
+			var newRow = row.siblings('.template').clone().removeClass('template');
 
 			// Setup UI elements for the new row elements
 			hrecipe.recipePage.setupIngrdRow(newRow);
