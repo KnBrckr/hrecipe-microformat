@@ -472,7 +472,7 @@ class hrecipe_admin extends hrecipe_microformat
 		/**
 		 * For each ingredient list, output a table
 		 */
-		// RFE If Lists can be added/deleted/reordered, array indexes might get mucked up
+		// RFE If Lists can be deleted/reordered, array indexes might get mucked up
 		?>
 		<div class="ingrd-list-container">
 			<?php
@@ -480,14 +480,14 @@ class hrecipe_admin extends hrecipe_microformat
 				$ingrds = $this->ingrd_db->get_ingrds_for_recipe($post->ID, $list_id);
 				?>
 				<div class="ingrd-list">
-					<?php $this->render_recipe_ingrd_list($list_id, $ingrds); ?>
+					<?php $this->render_recipe_ingrd_list($list_id, $list_title, $ingrds); ?>
 				</div>
 				<?php
 			} // End foreach
 			?>
 		</div>
 		<div class="ingrd-list-template">
-			<?php $this->render_recipe_ingrd_list('template_id', array()); ?>
+			<?php $this->render_recipe_ingrd_list('template_id', 'Ingredients', array()); ?>
 		</div>
 		<span class="insert-ingrd-list">Add New Ingredient List</span>
 		<?php
@@ -497,15 +497,16 @@ class hrecipe_admin extends hrecipe_microformat
 	 * Render HTML for an ingredient table on admin recipe edit screen
 	 *
 	 * @param $list_id, array index for list to generate
+	 * @param $title, string List title
 	 * @param $ingrds, array of saved ingredients to include in list
 	 * @return void
 	 */
-	function render_recipe_ingrd_list($list_id, $ingrds)
+	function render_recipe_ingrd_list($list_id, $title, $ingrds)
 	{
 		?>
 		<p class="ingrd-list-title">
 			<label for="<?php echo self::prefix; ?>ingrd-list-name[<?php echo $list_id; ?>]" class="field-label">List Title:</label>
-			<input type="text" name="<?php echo self::prefix; ?>ingrd-list-name[<?php echo $list_id; ?>]" value="Ingredients" />
+			<input type="text" name="<?php echo self::prefix; ?>ingrd-list-name[<?php echo $list_id; ?>]" value="<?php echo $title; ?>" />
 			<!-- TODO Make copy-text highlightable for easy copy to clipboard (jquery.selectable?)-->
 			<span class="field-description">Use <span class="copy-text">[ingrd-list id="<?php echo $list_id; ?>"]</span> in recipe text to display this list.</span>
 		</p>
