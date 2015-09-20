@@ -251,7 +251,6 @@ class hrecipe_ingrd_db {
 	 **/
 	function get_ingrds($orderby, $order, $perpage, $paged, $search)
 	{
-		// TODO mysql_real_escape_string is deprecated in PHP 5.5.
 		global $wpdb;
 		
 		/**
@@ -263,14 +262,14 @@ class hrecipe_ingrd_db {
 		 * Add where clause if search string provided
 		 */
 		if (!empty($search)) {
-			$query .= ' WHERE ingrd LIKE "%' . mysql_real_escape_string($search) . '%"';
+			$query .= ' WHERE ingrd LIKE "%' . esc_sql($search) . '%"';
 		}
 
 		/**
 		 * Add ordering parameters
 		 */		
-	    $orderby = !empty($orderby) ? mysql_real_escape_string($orderby) : 'ingrd';
-	    $order = !empty($order) ? mysql_real_escape_string($order) : 'ASC';
+	    $orderby = !empty($orderby) ? esc_sql($orderby) : 'ingrd';
+	    $order = !empty($order) ? esc_sql($order) : 'ASC';
 	    if(!empty($orderby) & !empty($order)) { $query.=' ORDER BY '.$orderby.' '.$order; }
 		
 		/**
@@ -279,7 +278,7 @@ class hrecipe_ingrd_db {
         // Number of elements in table?
         $totalitems = $wpdb->query($query); //return the total number of affected rows
         //Which page is this?
-        $paged = !empty($paged) ? mysql_real_escape_string($paged) : '';
+        $paged = !empty($paged) ? esc_sql($paged) : '';
         //Page Number
         if(empty($paged) || !is_numeric($paged) || $paged<=0 ){ $paged=1; }
         //adjust the query to take pagination into account
