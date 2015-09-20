@@ -155,17 +155,17 @@ class hrecipe_admin extends hrecipe_microformat
 		add_filter('set-screen-option', array($this, 'filter_set_screen_option'), 10, 3 );
 		
 		// Add menu item for plugin options page
-		add_action('admin_menu', array(&$this, 'admin_menu'));
+		add_action('admin_menu', array($this, 'admin_menu'));
 
 		// Register for admin_init
-		add_action('admin_init', array( &$this, 'admin_init'));
+		add_action('admin_init', array( $this, 'admin_init'));
 
 		// If logging is enabled, setup save in the footer.
 		if ($this->options['debug_log_enabled']) {
 			// If logging is enabled, warn admin as it affects DB performance
 			$this->log_admin_notice("red", sprintf(__('%s logging is enabled.  If left enabled, this can affect database performance.', self::p),'<a href="options-general.php?page=' . self::settings_page . '">' . self::p . '</a>'));
 
-			add_action('admin_footer', array( &$this, 'save_debug_log'));
+			add_action('admin_footer', array( $this, 'save_debug_log'));
 		}
 		
 		// Check DB versions that are loaded and report error on mismatch
@@ -293,7 +293,7 @@ class hrecipe_admin extends hrecipe_microformat
 			__('hRecipe Microformat', self::p), 
 			'manage_options', 
 			self::settings_page, 
-			array(&$this, 'render_options_page')
+			array($this, 'render_options_page')
 		);
 
 		// Add style sheet and scripts needed in the options page
@@ -307,7 +307,7 @@ class hrecipe_admin extends hrecipe_microformat
 		add_settings_section( 
 			$settings_section, 
 			__('Recipe Display Settings', self::p), 
-			array( &$this, 'render_settings_section_display'), 
+			array( $this, 'render_settings_section_display'), 
 			self::settings_page 
 		);
 
@@ -315,7 +315,7 @@ class hrecipe_admin extends hrecipe_microformat
 		add_settings_field( 
 			self::settings . '[display_in_home]', 
 			__('Display In Home', self::p), 
-			array( &$this, 'render_display_in_home' ), 
+			array( $this, 'render_display_in_home' ), 
 			self::settings_page, 
 			$settings_section 
 		);
@@ -324,7 +324,7 @@ class hrecipe_admin extends hrecipe_microformat
 		add_settings_field( 
 			self::settings . '[display_in_feed]', 
 			__('Display In Feed', self::p), 
-			array( &$this, 'render_display_in_feed' ), 
+			array( $this, 'render_display_in_feed' ), 
 			self::settings_page, 
 			$settings_section 
 		);
@@ -345,7 +345,7 @@ class hrecipe_admin extends hrecipe_microformat
 		add_settings_section(
 			$settings_section,
 			__('Recipe Header and Footer Contents', self::p),
-			array(&$this, 'render_settings_section_head_foot'),
+			array($this, 'render_settings_section_head_foot'),
 			self::settings_page
 		);
 
@@ -356,7 +356,7 @@ class hrecipe_admin extends hrecipe_microformat
 		add_settings_section(
 			$settings_section,
 			__('Debug Logging', self::p),
-			array(&$this, 'render_settings_section_debug'),
+			array($this, 'render_settings_section_debug'),
 			self::settings_page
 		);
 		
@@ -364,7 +364,7 @@ class hrecipe_admin extends hrecipe_microformat
 		add_settings_field( 
 			self::settings . '[debug_log_enabled]', 
 			__('Enable Debug Log', self::p), 
-			array( &$this, 'render_debug_log_enabled'), 
+			array( $this, 'render_debug_log_enabled'), 
 			self::settings_page, 
 			$settings_section 
 		);
@@ -382,21 +382,21 @@ class hrecipe_admin extends hrecipe_microformat
 		add_action('admin_notices', array( $this, 'render_admin_notices'));
 		
 		// Add plugin admin style
-		add_action( 'admin_print_styles-post.php', array(&$this, 'enqueue_admin_styles'), 1000 );
-		add_action( 'admin_print_styles-post-new.php', array(&$this, 'enqueue_admin_styles'), 1000 );
+		add_action( 'admin_print_styles-post.php', array($this, 'enqueue_admin_styles'), 1000 );
+		add_action( 'admin_print_styles-post-new.php', array($this, 'enqueue_admin_styles'), 1000 );
 		
 		// Add plugin admin scripts
-		add_action( 'admin_print_scripts-post.php', array(&$this, 'enqueue_admin_scripts'), 1000 );
-		add_action( 'admin_print_scripts-post-new.php', array(&$this, 'enqueue_admin_scripts'), 1000 );
+		add_action( 'admin_print_scripts-post.php', array($this, 'enqueue_admin_scripts'), 1000 );
+		add_action( 'admin_print_scripts-post-new.php', array($this, 'enqueue_admin_scripts'), 1000 );
 
 		// Register actions to use the receipe category in admin list view
-		add_action('restrict_manage_posts', array(&$this, 'restrict_recipes_by_category'));
-		add_action('parse_query', array(&$this, 'parse_recipe_category_query'));
-		add_action('manage_' . self::post_type . '_posts_columns', array(&$this, 'add_recipe_category_to_recipe_list'));
-		add_action('manage_posts_custom_column', array(&$this, 'render_show_column_for_recipe_list'),10,2);
+		add_action('restrict_manage_posts', array($this, 'restrict_recipes_by_category'));
+		add_action('parse_query', array($this, 'parse_recipe_category_query'));
+		add_action('manage_' . self::post_type . '_posts_columns', array($this, 'add_recipe_category_to_recipe_list'));
+		add_action('manage_posts_custom_column', array($this, 'render_show_column_for_recipe_list'),10,2);
 		
 		// Register the settings name
-		register_setting( self::settings_page, self::settings, array (&$this, 'sanitize_settings') );
+		register_setting( self::settings_page, self::settings, array ($this, 'sanitize_settings') );
 		
 		// Register admin style sheet
 		wp_register_style(self::prefix . 'admin', self::$url . 'admin/css/admin.css');
@@ -409,8 +409,8 @@ class hrecipe_admin extends hrecipe_microformat
 			Setup the Recipe Post Editing page
 		*/
 		add_filter('default_content', array($this, 'filter_default_content'), 10, 2);
-		add_action('add_meta_boxes_' . self::post_type, array(&$this, 'configure_tinymce')); // TODO Best place for this?
-		add_action('add_meta_boxes_' . self::post_type, array(&$this, 'setup_meta_boxes'));  // Setup plugin metaboxes
+		add_action('add_meta_boxes_' . self::post_type, array($this, 'configure_tinymce')); // TODO Best place for this?
+		add_action('add_meta_boxes_' . self::post_type, array($this, 'setup_meta_boxes'));  // Setup plugin metaboxes
 		add_action('save_post_' . self::post_type , array($this, 'action_save_post_hrecipe'), 10, 3); // Save post metadata
 		add_action('save_post_revision', array($this, 'action_save_post_revision'), 10, 3); // Save metadata for revisions
 		add_action('wp_restore_post_revision', array($this, 'action_wp_restore_post_revision'), 10, 2);
@@ -438,13 +438,13 @@ class hrecipe_admin extends hrecipe_microformat
 		 * Add Recipe Ingredients metabox
 		 */
 		add_meta_box(self::prefix . 'ingredients', __('Recipe Ingredients', self::p), 
-			array(&$this, 'render_metabox_ingrd'), self::post_type, 'normal', 'high', null);	
+			array($this, 'render_metabox_ingrd'), self::post_type, 'normal', 'high', null);	
 
 		/**
 		 * Add metabox for the Recipe Metadata
 		 */ 
 		add_meta_box(self::prefix . 'info', __('Additional Recipe Information', self::p), 
-			array(&$this, 'render_info_metabox'), self::post_type, 'normal', 'high', null);	
+			array($this, 'render_info_metabox'), self::post_type, 'normal', 'high', null);	
 	}
 	
 	/**
@@ -1468,11 +1468,11 @@ class hrecipe_admin extends hrecipe_microformat
 			return;
 
 		// Add editor stylesheet
-		add_filter( 'mce_css', array( &$this, 'add_tinymce_css' ) );
+		add_filter( 'mce_css', array( $this, 'add_tinymce_css' ) );
 		
 		// Add custom styles
 		// FIXME tiny_mce_before_init changed in WP 4.0
-		add_filter( 'tiny_mce_before_init', array(&$this, 'tinymce_init_array'));
+		add_filter( 'tiny_mce_before_init', array($this, 'tinymce_init_array'));
 	}
 	
 	/**

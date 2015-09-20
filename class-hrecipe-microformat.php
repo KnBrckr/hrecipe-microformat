@@ -255,11 +255,11 @@ class hrecipe_microformat {
 	 **/
 	function register_wp_callbacks()
 	{
-		add_action('init', array(&$this, 'action_init'));
+		add_action('init', array($this, 'action_init'));
 
 		// If logging is enabled, setup save in the footers.
 		if ($this->options['debug_log_enabled']) {
-			add_action('wp_footer', array( &$this, 'save_debug_log'));				
+			add_action('wp_footer', array( $this, 'save_debug_log'));				
 		}
 	}
 	
@@ -282,7 +282,7 @@ class hrecipe_microformat {
 		add_filter('pre_get_posts', array($this, 'filter_pre_get_posts'));
 		
 		// Do template setup after posts have been loaded
-		add_action('wp', array(&$this, 'action_wp'));
+		add_action('wp', array($this, 'action_wp'));
 		
 		// Register Plugin CSS
 		wp_register_style(self::prefix . 'style', self::$url . 'hrecipe.css');
