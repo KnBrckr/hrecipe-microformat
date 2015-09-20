@@ -52,7 +52,9 @@ $required_libs = array(
 	'class-hrecipe-microformat.php', 
 	'class-hrecipe-nutrient-db.php',
 	'class-hrecipe-ingrd-db.php',
-	'class-hrecipe-widget.php');
+	'class-hrecipe-info-widget.php',
+	'class-hrecipe-recipes-widget.php'
+);
 if (is_admin()) {
 	// For admin pages, setup the extended admin class
 	$required_libs[] = 'admin/class-hrecipe-admin.php';

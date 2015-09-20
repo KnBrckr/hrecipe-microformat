@@ -1,8 +1,8 @@
 <?php
 /**
- * hrecipe_widget class
+ * hrecipe_info_widget class
  *
- * WP_Widget Class extension to create Widget for Recipe data
+ * WP_Widget Class extension to create Widget for Recipe infomation
  *
  * The widget is only of use when a single recipe page is being displayed
  *
@@ -33,14 +33,14 @@ if (!defined('WP_PLUGIN_DIR')) {
 	die( 'I don\'t think you should be here.' );
 }
 
-class hrecipe_widget extends WP_Widget {
+class hrecipe_info_widget extends WP_Widget {
 
 	/**
 	 * Register Widget with Wordpress
 	 */
 	public function __construct() {
 		parent::__construct(
-	 		'hrecipe_widget', // Base ID
+	 		'hrecipe_info_widget', // Base ID
 			'Recipe Info', // Name
 			array( 'description' => 'Use this widget on Recipe Pages to display information about the recipe', ) // Args
 		);
@@ -69,7 +69,7 @@ class hrecipe_widget extends WP_Widget {
 		$instance = wp_parse_args( (array) $instance, $defaults );
 		?>
 		<p>
-			<label for="<?php echo $this->get_field_id( 'title' ); ?>"><?php _e( 'Title:' ); ?></label> 
+			<label for="<?php echo esc_attr($this->get_field_id( 'title' )); ?>"><?php _e( 'Title:' ); ?></label> 
 			<input class="widefat" id="<?php echo $this->get_field_id( 'title' ); ?>" name="<?php echo $this->get_field_name( 'title' ); ?>" type="text" value="<?php echo esc_attr( $instance['title'] ); ?>" />
 		</p>
 		<p>
@@ -77,8 +77,8 @@ class hrecipe_widget extends WP_Widget {
 			// For each Recipe field, setup a checkbox to include that item in the instance of the widget
 			foreach ($fields as $key => $label) {
 				?>
-				<input class="checkbox" type="checkbox" <?php checked($instance[$key], true) ?> id="<?php echo $this->get_field_id($key); ?>" name="<?php echo $this->get_field_name($key); ?>" />
-				<label for="<?php echo $this->get_field_id($key); ?>"><?php echo $label; ?></label><br />
+				<input class="checkbox" type="checkbox" <?php checked($instance[$key], true) ?> id="<?php echo $this->get_field_id($key); ?>" name="<?php echo esc_attr($this->get_field_name($key)); ?>" />
+				<label for="<?php echo esc_attr($this->get_field_id($key)); ?>"><?php echo esc_attr($label); ?></label><br />
 				<?php
 			}
 			?>
@@ -132,11 +132,12 @@ class hrecipe_widget extends WP_Widget {
 		
 		$post_id = $hrecipe_microformat->get_post_id();
 		
-		$title = apply_filters('widget_title', empty( $instance['title'] ) ? 'Recipe Info' : $instance['title'], $instance, $this->id_base);
+		$title = apply_filters('widget_title', empty( $instance['title'] ) ? $this->name : $instance['title'], $instance, $this->id_base);
 		
 		$fields = $hrecipe_microformat->get_recipe_fields();
 		$out = '';
 		foreach ($fields as $key => $label) {
+			if ('' <> $out) $out .= '<br>';
 			if ( isset($instance[$key]) && $instance[$key] ) {
 				$out .= $hrecipe_microformat->get_recipe_field_html($key, $post_id);
 			}
@@ -151,5 +152,5 @@ class hrecipe_widget extends WP_Widget {
 	}
 }
 
-add_action( 'widgets_init', create_function( '', 'register_widget( "hrecipe_widget" );' ) );
+add_action( 'widgets_init', create_function( '', 'register_widget( "hrecipe_info_widget" );' ) );
 ?>

@@ -24,11 +24,12 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  **/
 
+// TODO Move meta data recipe published date to use the Post published date - Data is redundant
+// TODO Add rating and last modified date to recipe list 
 // TODO Add cuisine types - mexican, spanish, indian, etc.
 // TODO Create admin widget for Recipe Categories - only allow one category to be selected
 // TODO Phone-home with error log
 // TODO Quick edit of recipe post_type does not update the list view without a screen refresh
-// TODO Move meta data recipe published date to use the Post published date - Data is redundant
 
 // Protect from direct execution
 if (!defined('WP_PLUGIN_DIR')) {
