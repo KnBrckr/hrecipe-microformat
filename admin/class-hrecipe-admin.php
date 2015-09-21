@@ -2033,7 +2033,7 @@ class hrecipe_admin extends hrecipe_microformat
 		
 		if ('listing' == $typenow) {
 			$taxonomy = $this->recipe_category_taxonomy;
-			error_log("taxonomy=$taxonomy column_name=$column_name");
+
 			switch ($column_name) {
 			/**
 			 * Recipe Category Taxonomy Column
