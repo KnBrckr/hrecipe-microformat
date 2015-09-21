@@ -25,7 +25,7 @@
  **/
 
 // TODO Move meta data recipe published date to use the Post published date - Data is redundant
-// TODO Add rating and last modified date to recipe list 
+// TODO Add last modified date to recipe list screen
 // TODO Add cuisine types - mexican, spanish, indian, etc.
 // TODO Create admin widget for Recipe Categories - only allow one category to be selected
 // TODO Phone-home with error log
@@ -392,7 +392,7 @@ class hrecipe_admin extends hrecipe_microformat
 		// Register actions to use the receipe category in admin list view
 		add_action('restrict_manage_posts', array($this, 'restrict_recipes_by_category'));
 		add_action('parse_query', array($this, 'parse_recipe_category_query'));
-		add_action('manage_' . self::post_type . '_posts_columns', array($this, 'add_recipe_category_to_recipe_list'));
+		add_action('manage_' . self::post_type . '_posts_columns', array($this, 'action_manage_posts_columns'));
 		add_action('manage_posts_custom_column', array($this, 'render_show_column_for_recipe_list'),10,2);
 		
 		// Register the settings name
@@ -1997,12 +1997,12 @@ class hrecipe_admin extends hrecipe_microformat
 	}
 	
 	/**
-	 * Add the recipe category column to the Admin screen post listings
+	 * Add the recipe columns to the Admin screen post listings
 	 *
 	 * @param array $list_columns Array of columns for listing
 	 * @return array Updated array of columns
 	 **/
-	function add_recipe_category_to_recipe_list($list_columns)
+	function action_manage_posts_columns($list_columns)
 	{
 		$taxonomy = $this->recipe_category_taxonomy;
 		if (!isset($list_columns['author'])) {
@@ -2016,7 +2016,9 @@ class hrecipe_admin extends hrecipe_microformat
 				$new_list_columns[$key] = $list_column;
 			}			
 		}
-		$new_list_columns[$taxonomy] = _x('Recipe Type', 'taxonomy singular name', self::p);
+		
+		$new_list_columns[self::prefix . 'rating'] = _x('Rating', 'Recipe Rating', self::p);
+		$new_list_columns[$taxonomy] = _x('Recipe Category', 'taxonomy singular name', self::p);
 		return $new_list_columns;
 	}
 	
@@ -2031,17 +2033,28 @@ class hrecipe_admin extends hrecipe_microformat
 		
 		if ('listing' == $typenow) {
 			$taxonomy = $this->recipe_category_taxonomy;
+			error_log("taxonomy=$taxonomy column_name=$column_name");
 			switch ($column_name) {
+			/**
+			 * Recipe Category Taxonomy Column
+			 */
 			case $taxonomy:
 				$categories = get_the_terms($post_id, $taxonomy);
 				if (is_array($categories)) {
 					foreach ($categories as $key => $category) {
 						$edit_link = get_term_link($category, $taxonomy);
-						$categories[$key] = '<a href="'. $edit_link . '">' . $category->name . '</a>';
+						$categories[$key] = '<a href="'. $edit_link . '">' . esc_attr($category->name) . '</a>';
 					}
 					echo implode (' | ', $categories);
 				}
-				break; // End of 
+				break; // End of Category Taxonomy
+				
+				/**
+				 * Recipe Rating
+				 */
+			case self::prefix . 'rating':
+				echo $this->get_recipe_rating_html($post_id);
+				break; // End of Recipe Rating
 			}
 		}
 	}

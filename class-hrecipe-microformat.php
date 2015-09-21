@@ -789,11 +789,11 @@ class hrecipe_microformat {
 	/**
 	 * Generate HTML for recipe rating and provide method for user to vote
 	 *
-	 * @access private
+	 * @access protected
 	 * @param $post_id Post ID
 	 * @return string HTML
 	 **/
-	private function get_recipe_rating_html($post_id)
+	protected function get_recipe_rating_html($post_id)
 	{
 		// Get rating votes from meta data if available
 		$ratings = get_post_meta($post_id, self::prefix . 'ratings', true);
@@ -823,7 +823,9 @@ class hrecipe_microformat {
 		$content .= '</div>'; // End <div class="recipe-avg-rating">
 		
 		// In the event the recipe is unrated...
-		$content .= sprintf('<div class="recipe-unrated">%s</div>', __("Unrated", self::p));
+		if (! $avg['avg'] > 0) {
+			$content .= sprintf('<div class="recipe-unrated">%s</div>', __("Unrated", self::p));
+		}
 		
 		if (is_single()) {
 			// Give user a way to rate the recipe		
