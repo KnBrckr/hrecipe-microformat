@@ -201,13 +201,13 @@
 /* ==================================== */
 
 .hidden {
-	display: none; // Class to hide objects by default
+	display: none; /* Class to hide objects by default */
 }
 
 tr.template {
-	display: none; // Hide template rows used to build tables
+	display: none; /* Hide template rows used to build tables */
 }
 
 .ingrd-list-template {
-	display: none; // Hide template ingredient list
+	display: none; /* Hide template ingredient list */
 }
