@@ -1,0 +1,12 @@
+TODO hrecipe importer - use is_uploaded_file() to ensure file was uploaded before processing
+TODO Convert lookup tables to global tables for network installs
+TODO Avoid activation hooks? Try using an upgrade routine via admin_init action per site
+TODO Implement javascript unit tests with QUnit
+    1
+    wp_enqueue_script( "qunit", path_join(WP_PLUGIN_URL, basename( dirname( __FILE__ ) )."/lib/qunit.js"), array( 'jquery' ) );
+    2
+    wp_enqueue_script( "edcal-test", path_join(WP_PLUGIN_URL, basename( dirname( __FILE__ ) )."/edcal_test.js"), array( 'jquery' ) );
+
+    From http://coding.smashingmagazine.com/2012/03/07/writing-unit-tests-for-wordpress-plugins/
+TODO Confirm revisions are working for recipe posts
+TODO Delete meta_key="hrecipe_fn" from postmeta on no-shortcuts.com
