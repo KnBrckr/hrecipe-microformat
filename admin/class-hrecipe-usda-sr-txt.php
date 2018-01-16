@@ -72,19 +72,13 @@ class hrecipe_usda_sr_txt {
 	 **/
 	function next()
 	{
-		static $count = 0;
-
 		if (! ($line = fgets($this->fh, 4096)) ) {
 			return NULL;
 		}
 
-		$count++;
-
 		// Split records on '^', strings are quoted by '~', last column might contain '\r' and/or '\n'
 		$cols = preg_replace('/^~(.*)~[\r\n]*$/','$1', explode("^", $line));
 
-		if ($count < 10)
-			error_log(var_export($cols, true));
 		return $cols;
 	}
 }
