@@ -3,8 +3,8 @@ Contributors: draca
 Donate link: http://action-a-day.com
 Tags: recipe, hrecipe, food
 Requires at least: 4.0
-Tested up to: 4.0
-Stable tag: trunk
+Tested up to: 4.9.1
+Stable tag: 0.3.1
 
 Adds post type Recipe to support the hRecipe microformat
 
@@ -37,6 +37,10 @@ the directory of the stable readme.txt, so in this case, `/tags/4.3/screenshot-1
 
 == Changelog ==
 
+= 0.3.1 =
+* FIX: Recipes displaying multiple times when searching
+* FIX: DB load failure due to deprecation of split() in PHP7
+
 = 0.1 =
 * Initial version
 
@@ -53,7 +57,7 @@ You want this plugin to edit recipes in your blog!
 
 = hRecipe Supported Fields =
 
-This plugin is designed to follow the [ziplist](http://www.ziplist.com/recipe_microformat) extensions to 
+This plugin is designed to follow the [ziplist](http://www.ziplist.com/recipe_microformat) extensions to
 [hrecipe](http://microformats.org/wiki/hrecipe).
 
 * hrecipe. required.  Container for recipe

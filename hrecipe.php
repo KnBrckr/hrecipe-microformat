@@ -3,7 +3,7 @@
 Plugin Name: hRecipe Microformat
 Plugin URI: http://action-a-day.com/hrecipe-microformat
 Description: Add Post type Recipe for hRecipe Microformat
-Version: 0.3
+Version: 0.3.1
 Author: Kenneth J. Brucker
 Author URI: http://action-a-day.com
 License: GPL2
@@ -11,7 +11,7 @@ License: GPL2
     Copyright 2015 Kenneth J. Brucker  (email : ken.brucker@action-a-day.com)
 
     This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License, version 2, as 
+    it under the terms of the GNU General Public License, version 2, as
     published by the Free Software Foundation.
 
     This program is distributed in the hope that it will be useful,
@@ -35,7 +35,7 @@ global $hrecipe_microformat;
 
 function hrecipe_microformat_plugin_activation() {
 	global $hrecipe_microformat;
-		
+
 	$hrecipe_microformat->plugin_activation();
 }
 
@@ -47,9 +47,9 @@ function hrecipe_microformat_plugin_deactivation() {
 
 /**
  * Load the required libraries
- **/		
+ **/
 $required_libs = array(
-	'class-hrecipe-microformat.php', 
+	'class-hrecipe-microformat.php',
 	'class-hrecipe-nutrient-db.php',
 	'class-hrecipe-ingrd-db.php',
 	'class-hrecipe-info-widget.php',
