@@ -8,11 +8,11 @@
  * @package hRecipe Microformat
  * @author Kenneth J. Brucker <ken@pumastudios.com>
  * @copyright 2015 Kenneth J. Brucker (email: ken@pumastudios.com)
- * 
+ *
  * This file is part of hRecipe Microformat, a plugin for Wordpress.
  *
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License, version 2, as 
+ * it under the terms of the GNU General Public License, version 2, as
  * published by the Free Software Foundation.
  *
  * This program is distributed in the hope that it will be useful,
@@ -38,7 +38,7 @@ class hrecipe_usda_sr_txt {
 	 * @var object file handle
 	 **/
 	private $fh;
-	
+
 	/**
 	 * Constructor Function: open target SR file for processing
 	 *
@@ -49,12 +49,12 @@ class hrecipe_usda_sr_txt {
 		if (! is_readable($sr_txt)) {
 			throw new Exception ("Required SR file is not readable: $sr_txt");
 		}
-		
+
 		if (! ($this->fh = fopen($sr_txt, "r"))) {
 			throw new Exception ("Unable to open $sr_txt");
 		}
 	}
-	
+
 	/**
 	 * Destructor function
 	 *
@@ -64,7 +64,7 @@ class hrecipe_usda_sr_txt {
 	{
 		fclose($this->fh);
 	}
-	
+
 	/**
 	 * Retrieve next record from SR file
 	 *
@@ -72,12 +72,19 @@ class hrecipe_usda_sr_txt {
 	 **/
 	function next()
 	{
+		static $count = 0;
+
 		if (! ($line = fgets($this->fh, 4096)) ) {
 			return NULL;
 		}
-		
+
+		$count++;
+
 		// Split records on '^', strings are quoted by '~', last column might contain '\r' and/or '\n'
-		$cols = preg_replace('/^~(.*)~[\r\n]*$/','$1', split('\^', $line));
+		$cols = preg_replace('/^~(.*)~[\r\n]*$/','$1', explode("^", $line));
+
+		if ($count < 10)
+			error_log(var_export($cols, true));
 		return $cols;
 	}
 }
