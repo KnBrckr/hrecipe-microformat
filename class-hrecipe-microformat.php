@@ -798,6 +798,13 @@ class hrecipe_microformat {
 				$value = '';
 		}
 
+		/**
+		 * Do not display field if the value is empty
+		 */
+		if ( '' == $value ) {
+		    return '';
+        }
+
 		$content = '<div class="' . self::post_type . '-field ' . self::prefix . $field . '">';
 		$content .= $this->recipe_field_map[ $field ]['label'] . ': <span class="' . $field . '">' . $value . '</span>';
 		$content .= '</div>';
@@ -817,6 +824,13 @@ class hrecipe_microformat {
 	private function get_recipe_difficulty_html( $post_id ) {
 		$difficulty  = get_post_meta( $post_id, self::prefix . 'difficulty', true ) || 0;
 		$description = $this->recipe_field_map['difficulty']['option_descriptions'][ $difficulty ] || '';
+
+		/**
+		 * Nothing to display if difficulty is not set
+		 */
+		if ( $difficulty == 0 ) {
+		    return '';
+        }
 
 		// Microformat encoding of difficulty (x out of 5)
 		$content = '<span class="value-title" title="' . $difficulty . '/5"></span>';
