@@ -9,7 +9,7 @@
  *
  * @package hRecipe Microformat
  * @author Kenneth J. Brucker <ken@pumastudios.com>
- * @copyright 2015 Kenneth J. Brucker (email: ken@pumastudios.com)
+ * @copyright 2015 Kenneth J. Brucker (ken@pumastudios.com)
  *
  * This file is part of hRecipe Microformat, a plugin for Wordpress.
  *
@@ -50,17 +50,13 @@ if (is_admin()) {
 
 class hrecipe_nutrient_db {
 	/**
-	 * Version of Nutrient Database Standard Reference loaded with plugin
-	 *
-	 * @var constant string
+	 * @var number DB_RELEASE Version of Nutrient Database Standard Reference loaded with plugin
 	 * @access public
 	 **/
 	const DB_RELEASE = 24;
 
 	/**
-	 * Name of options used in WP table
-	 *
-	 * @var string
+	 * @var string $options_name Name of options used in WP table
 	 * @access protected
 	 **/
 	protected $options_name;
@@ -70,7 +66,7 @@ class hrecipe_nutrient_db {
 	 *  'db_version' => USDA Nutrition DB version loaded in DB
 	 *  'table_prefix' => WP WB table prefix for Food DB tables
 	 *
-	 * @var hash array
+	 * @var array $options Saved options for nutrient DB
 	 * @access protected
 	 **/
 	protected $options;
@@ -80,7 +76,7 @@ class hrecipe_nutrient_db {
 	 * - sets up prefix to use for tables in DB
 	 * - Load WP options for the class including DB release level installed
 	 *
-	 * @param $prefix, string, Prefix to use for name of DB tables
+	 * @param string $prefix Prefix to use for name of DB tables
 	 * @return void
 	 **/
 	function __construct($prefix)
@@ -407,7 +403,7 @@ class hrecipe_nutrient_db {
 	 * Setup USDA Standard Reference into the DB
 	 *
 	 * @param string $db_path Path to Standard Reference files
-	 * @return version of the DB table loaded
+	 * @return number|boolean version of the DB table loaded
 	 **/
 	function setup_nutrient_db($db_path)
 	{

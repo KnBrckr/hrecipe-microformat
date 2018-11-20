@@ -101,15 +101,16 @@ class hrecipe_microformat {
 	 *	'debug_log_enabled' : True if logging plugin debug messages
 	 *	'debug_log' : Array of debug messages when debug_log_enabled is true
 	 *
-	 * @var hash of option values
+     * @access protected
+	 * @var array hash of option values
 	 **/
 	protected $options;
 	
 	/**
 	 * Array of taxonomy names registered by the plugin
 	 *
-	 * @var Array
 	 * @access protected
+	 * @var array $taxonomies
 	 **/
 	protected $taxonomies;
 	
@@ -117,7 +118,7 @@ class hrecipe_microformat {
 	 * Name of recipe category taxonomy
 	 *
 	 * @access protected
-	 * @var string
+	 * @var string $recipe_category_taxonomy
 	 **/
 	protected $recipe_category_taxonomy;
 	
@@ -125,7 +126,7 @@ class hrecipe_microformat {
 	 * Container for government database of food nutritional information
 	 *
 	 * @access protected
-	 * @var instance of class hrecipe_nutrient_db
+	 * @var hrecipe_nutrient_db instance
 	 **/
 	var $nutrient_db;
 	
@@ -134,7 +135,7 @@ class hrecipe_microformat {
 	 *
 	 * Used to access full list of defined ingredients and ingredients associated with each recipe
 	 *
-	 * @var instance of class hrecipe_ingrd_db
+	 * @var hrecipe_ingrd_db instance
 	 **/
 	var $ingrd_db;
 	
@@ -385,7 +386,7 @@ class hrecipe_microformat {
 	 * @param string|array $class String or array of classes to be added to class array
 	 * @return array Updated class Array
 	 */
-	function filter_body_class($classes, $class) {
+	function filter_body_class($classes,  /* @noinspection PhpUnusedParameterInspection */ $class) {
 		if (! in_array('no-js', $classes)) {
 			// Add no-js to class list if not already there
 			$classes[] = "no-js";	
@@ -714,8 +715,8 @@ class hrecipe_microformat {
 	 * Provide HTML for a named recipe field
 	 *
 	 * @access public
-	 * @param $field recipe meta data field name
-	 * @param $post_id Post ID
+	 * @param string $field recipe meta data field name
+	 * @param int $post_id Post ID
 	 * @return string HTML
 	 **/
 	public function get_recipe_field_html($field, $post_id)
@@ -768,13 +769,13 @@ class hrecipe_microformat {
 	 * Format Recipe Difficulty
 	 *
 	 * @access private
-	 * @param $post_id Post ID
-	 * @return HTML
+	 * @param int $post_id Post ID
+	 * @return string HTML
 	 **/
 	private function get_recipe_difficulty_html($post_id)
 	{
-		$difficulty = get_post_meta($post_id, self::prefix . 'difficulty', true) | 0;
-		$description = $this->recipe_field_map['difficulty']['option_descriptions'][$difficulty] | '';
+		$difficulty = get_post_meta($post_id, self::prefix . 'difficulty', true) || 0;
+		$description = $this->recipe_field_map['difficulty']['option_descriptions'][$difficulty] || '';
 		
 		// Microformat encoding of difficulty (x out of 5)
 		$content = '<span class="value-title" title="' . $difficulty . '/5"></span>';
@@ -790,7 +791,7 @@ class hrecipe_microformat {
 	 * Generate HTML for recipe rating and provide method for user to vote
 	 *
 	 * @access protected
-	 * @param $post_id Post ID
+	 * @param int $post_id Post ID
 	 * @return string HTML
 	 **/
 	protected function get_recipe_rating_html($post_id)
@@ -846,23 +847,19 @@ class hrecipe_microformat {
 	/**
 	 * Retrieve the user rating for a recipe from cookies
 	 *
-	 * Must be used in context of The Loop
-	 *
-	 * @uses $post
+	 * @param int $post_id
 	 * @return int rating value 0-5
 	 **/
-	function user_rating()
+	function user_rating($post_id)
 	{
-		global $post;
-		
-		$index = 'recipe-rating-' . $post->ID;
+		$index = 'recipe-rating-' . $post_id;
 		return isset($_COOKIE[$index]) ? $_COOKIE[$index] : 0;
 	}
 	
 	/**
 	 * Calculate a rating average from array of rating counts
 	 *
-	 * @return real Rating Average
+	 * @return array hash array with members 'avg' and 'cnt'
 	 **/
 	function rating_avg($ratings)
 	{
@@ -880,7 +877,7 @@ class hrecipe_microformat {
 	 * Generate HTML for recipe nutrition block
 	 *
 	 * @access private
-	 * @param $post_id Post ID
+	 * @param int $post_id Post ID
 	 * @return string HTML
 	 **/
 	private function get_nutrition_html($post_id)
@@ -901,7 +898,7 @@ class hrecipe_microformat {
 	 * @param string $content shortcode contents
 	 * @return string HTML
 	 **/
-	function sc_instructions($atts, $content = '')
+	function sc_instructions( /** @noinspection PhpUnusedParameterInspection */ $atts, $content = '')
 	{
 		$content = '<div class="instructions">' . do_shortcode($content) . '</div>';
 		return $content;
@@ -915,7 +912,7 @@ class hrecipe_microformat {
 	 * @param string $content shortcode contents
 	 * @return string HTML
 	 **/
-	function sc_step($atts, $content = '')
+	function sc_step( /** @noinspection PhpUnusedParameterInspection */ $atts, $content = '')
 	{
 		return '<div class="step">' . do_shortcode($content) . '</div>';
 	}
@@ -929,7 +926,7 @@ class hrecipe_microformat {
 	 * @param string $content shortcode contents
 	 * @return string HTML
 	 **/
-	function sc_category_list($atts, $content='')
+	function sc_category_list( /** @noinspection PhpUnusedParameterInspection */ $atts, $content='')
 	{
 		$content = '<ul>';
 		$content .= wp_list_categories( array(
@@ -963,7 +960,7 @@ class hrecipe_microformat {
 	 * @uses $post
 	 * @return string HTML
 	 **/
-	function sc_ingrd_list($atts, $content='')
+	function sc_ingrd_list($atts,  /** @noinspection PhpUnusedParameterInspection */ $content='')
 	{
 		global $post;
 		
@@ -977,7 +974,10 @@ class hrecipe_microformat {
 		}
 		
 		$text = ''; // Init Output HTML text
-		
+
+        /**
+         * @var int $id
+         */
 		extract( shortcode_atts( array(
 			'id' => 1,
 		), $atts ) );
@@ -1117,7 +1117,7 @@ class hrecipe_microformat {
 		
 		/*
 		 * Conversion table to cups
-		 * TODO Should tbs, tsp be converted to ml?
+		 * TODO Should tbs, tsp be converted to ml? No!! Don't convert
 		 */
 		static $per_cup = array(
 			'cup' => 1,
@@ -1143,7 +1143,12 @@ class hrecipe_microformat {
 			'kilograms' => 1000
 		);
 		
-		$text = '';      // Starting HTML content
+		/**
+		 * @var string $unit
+         * @var string $quantity
+         * @var int $gpcup
+         * @var string $measure
+		 */
 		extract($ingrd); // Pull associative array into symbol table ($quantity = $ingrd['quantity'], ...)
 
 		// If both quantity and unit are blank, bail out now
@@ -1273,8 +1278,8 @@ class hrecipe_microformat {
 	 *     3/4 = .75
 	 *     7/8 = .875
 	 *
-	 * @param $value Decimal value to convert
-	 * @param $unit Unit type being converted
+	 * @param int $value value to convert
+	 * @param string $unit Unit type being converted
 	 * @return string Fractional string 
 	 */
 	function decimal_to_fraction($value, $unit) {
@@ -1388,8 +1393,9 @@ class hrecipe_microformat {
 	 * TODO If cookies can't be saved, don't allow voting by the user - test for WP test cookie presence
 	 * TODO Make cookie storage more efficient - store all votes in one cookie
 	 *
+	 * Note: This function terminates either by calling die() or exit()
+	 *
 	 * @internal Ballot box stuffing is possible since the presence of a vote is saved in the user's browser
-	 * @return calls exit
 	 **/
 	function ajax_recipe_rating()
 	{
@@ -1441,9 +1447,10 @@ class hrecipe_microformat {
 	/**
 	 * Handle AJAX request for auto-completion information for an ingredient name
 	 *
+	 * Note: This function terminates by calling exit()
+	 *
 	 * @uses $_REQUEST['name_contains'] string, substring for lookup
 	 * @uses $_REQUEST['maxRows'] int, maximum rows to return
-	 * @return calls exit
 	 **/
 	function ajax_ingrd_auto_complete()
 	{
@@ -1473,10 +1480,11 @@ class hrecipe_microformat {
 	/**
 	 * Handle AJAX request for food definitions in USDA Nutrition DB
 	 *
+	 * Note: This function terminates by calling exit()
+	 *
 	 * @uses $_REQUEST['name_contains'] string, substring for lookup
 	 * @uses $_REQUEST['maxRows'] int, maximum rows to return
 	 * @uses $_REQUEST['pageNum'] int, page number for request - determines starting row for lookup
-	 * @return calls exit
 	 **/
 	function ajax_NDB_search()
 	{
@@ -1507,8 +1515,9 @@ class hrecipe_microformat {
 	/**
 	 * Handle AJAX request to retrieve measures for a food from USDA Nutrition DB
 	 *
+	 * Note: This function terminates by calling exit()
+	 *
 	 * @uses $_REQUEST['NDB_No'] string, Unique food ID from the Nutrition DB
-	 * @return calls exit
 	 **/
 	function ajax_NDB_measures()
 	{
@@ -1626,7 +1635,7 @@ class hrecipe_microformat {
 		// Register the Recipe post type
 		register_post_type(self::post_type,
 			array(
-				'description' => __('Post Type for publishing of Recipes', self::p),
+				// 'description' => __('Post Type for publishing of Recipes', self::p),
 				'labels' => array (
 					'name' => _x('Recipes', 'post type general name', self::p),
 					'singular_name' => _x('Recipe', 'post type singular name', self::p),
@@ -1657,7 +1666,7 @@ class hrecipe_microformat {
 	/**
 	 * Sanitize the Plugin Options received from the user
 	 *
-	 * @return hash Sanitized hash of plugin options
+	 * @return array Sanitized hash of plugin options
 	 **/
 	function sanitize_settings($options)
 	{
@@ -1703,9 +1712,9 @@ class hrecipe_microformat {
 	/**
 	 * Sanitize an option based on field type
 	 *
-	 * @param $val Value of option to clean
-	 * @param $type Option type (text, bool, etc.)
-	 * @return sanitized option value
+	 * @param int $val Value of option to clean
+	 * @param string $type Option type (text, bool, etc.)
+	 * @return string sanitized option value
 	 **/
 	function sanitize_an_option($val, $type)
 	{
@@ -1719,6 +1728,8 @@ class hrecipe_microformat {
 			case 'int' :
 				return intval($val);
 		}
+
+		return $val;
 	}
 }
 

@@ -61,7 +61,7 @@ class hrecipe_parse_xml {
 	/**
 	 * Recursively parse XML data to build array representation
 	 *
-	 * @param $node_xml DOMDocument element
+	 * @param DOMDocument $node_xml element
 	 * @return array representing XML data
 	 **/
 	private function xml_to_array($node_xml) {

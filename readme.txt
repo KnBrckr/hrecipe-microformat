@@ -1,6 +1,6 @@
 === hRecipe Microformat ===
 Contributors: draca
-Donate link: http://action-a-day.com
+Donate link: http://pumastudios.com
 Tags: recipe, hrecipe, food
 Requires at least: 4.0
 Tested up to: 4.9.1
@@ -21,14 +21,6 @@ Assumes plugin can locate wp-admin directory by popping up the directory stack
 
 == Frequently Asked Questions ==
 
-= A question that someone might have =
-
-An answer to that question.
-
-= What about foo bar? =
-
-Answer to foo bar dilemma.
-
 == Screenshots ==
 
 1. This screen shot description corresponds to screenshot-1.(png|jpg|jpeg|gif). Note that the screenshot is taken from
@@ -36,6 +28,9 @@ the directory of the stable readme.txt, so in this case, `/tags/4.3/screenshot-1
 2. This is the second screen shot
 
 == Changelog ==
+
+= 0.4 =
+* FIX: Correct Misc warnings and errors reported by PhpStorm
 
 = 0.3.1 =
 * FIX: Recipes displaying multiple times when searching

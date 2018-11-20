@@ -42,6 +42,8 @@ class hrecipe_usda_sr_txt {
 	/**
 	 * Constructor Function: open target SR file for processing
 	 *
+	 * @throws Exception if file is not readable or can't be opened
+	 * @param string $sr_txt path to file
 	 * @return void, throws exception on open failure
 	 **/
 	function __construct($sr_txt)
@@ -82,4 +84,3 @@ class hrecipe_usda_sr_txt {
 		return $cols;
 	}
 }
-?>

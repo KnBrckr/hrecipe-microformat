@@ -68,8 +68,6 @@ class hrecipe_recipes_widget extends WP_Widget {
 	 */
  	public function form( $instance ) {
 		// Establish defaults if not already set in input 
-		global $hrecipe_microformat;
-		
 		$defaults = array(
 			'title' => '', 
 			'num_recipes' => self::DEFAULT_NUM_RECIPES,
@@ -110,8 +108,6 @@ class hrecipe_recipes_widget extends WP_Widget {
 	 * @return array Updated safe values to be saved.
 	 */
 	public function update( $new_instance, $old_instance ) {
-		global $hrecipe_microformat;
-		
 		$new_instance = (array) $new_instance;
 		
 		$instance = array();
@@ -136,8 +132,12 @@ class hrecipe_recipes_widget extends WP_Widget {
 	 * @param array $instance Saved values from database.
 	 */
 	public function widget( $args, $instance ) {
-		global $hrecipe_microformat;
-		
+		/**
+		 * @var string $before_widget HTML to display before widget
+         * @var string $after_widget HTML to display after widget
+         * @var string $before_title HTML to display before title
+         * @var string $after_title HTMN to display after title
+		 */
 		extract( $args );
 
 		$title = apply_filters('widget_title', empty( $instance['title'] ) ? $this->name : $instance['title'], $instance, $this->id_base);

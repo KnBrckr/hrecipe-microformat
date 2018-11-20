@@ -1,14 +1,14 @@
 <?php
 /*
 Plugin Name: hRecipe Microformat
-Plugin URI: http://action-a-day.com/hrecipe-microformat
+Plugin URI: http://pumastudios.com/hrecipe-microformat
 Description: Add Post type Recipe for hRecipe Microformat
 Version: 0.3.1
-Author: Kenneth J. Brucker
-Author URI: http://action-a-day.com
+Author: Kenneth J. Brucker <ken@pumastudios.com>
+Author URI: http://pumastudios.com
 License: GPL2
 
-    Copyright 2015 Kenneth J. Brucker  (email : ken.brucker@action-a-day.com)
+    Copyright 2018 Kenneth J. Brucker  (email : ken@pumastudios.com)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License, version 2, as
@@ -31,6 +31,9 @@ if (!defined('WP_PLUGIN_DIR')) {
 	die( 'I don\'t think you should be here.' );
 }
 
+/**
+ * @var hrecipe_microformat $hrecipe_microformat
+ */
 global $hrecipe_microformat;
 
 function hrecipe_microformat_plugin_activation() {
@@ -79,5 +82,3 @@ register_activation_hook( __FILE__, 'hrecipe_microformat_plugin_activation');
 
 // Setup plugin de-activation function to cleanup rewrite rules
 register_deactivation_hook(__FILE__, 'hrecipe_microformat_plugin_deactivation');
-
-?>

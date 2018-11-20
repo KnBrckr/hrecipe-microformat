@@ -54,9 +54,7 @@ class import_shopncook {
 	/**
 	 * Parse a shopncook SCX file containing one or more exported recipes
 	 *
-	 * @param string $fname XML file
 	 * @access public
-	 * @return array Normalized array of imported recipe data
 	 */
 	public function __construct() {
 		/**
@@ -70,8 +68,8 @@ class import_shopncook {
 	/**
 	 * import a ShopNCook SCX format file
 	 *
-	 * @param $fname string Filename to be parsed
-	 * @return array of normalized recipes
+	 * @param string $fname Filename to be parsed
+	 * @return array|false of normalized recipes
 	 **/
 	function normalize_all($fname)
 	{
@@ -114,7 +112,7 @@ class import_shopncook {
 	 * Parse single recipe entry resulting from evaluation of ShopNCook XML file
 	 *
 	 * @access private
-	 * @param string $scx Single recipe entry from evaluated ShopNCook XML data
+	 * @param array $scx Single recipe entry from evaluated ShopNCook XML data
 	 * @return array Normalized recipe information
 	 */
 	private function parse_recipe($scx) {
@@ -263,4 +261,3 @@ class import_shopncook {
 		return $ingrd_norm;
 	}	
 } // End class import_shopncook
-?>

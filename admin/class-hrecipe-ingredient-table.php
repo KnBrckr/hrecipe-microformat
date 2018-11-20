@@ -152,7 +152,7 @@ class hrecipe_ingredients_Table extends WP_List_Table {
 	 **/
 	function prepare_items()
 	{
-		$screen = get_current_screen();
+		// $screen = get_current_screen();
 			
 	    $orderby = !empty($_REQUEST["orderby"]) ? $_REQUEST["orderby"] : '';
 	    $order = !empty($_REQUEST["order"]) ? $_REQUEST["order"] : '';

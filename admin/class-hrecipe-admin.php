@@ -64,17 +64,17 @@ class hrecipe_admin extends hrecipe_microformat
 	const msg_ingredient_blank = 5;
 
 	/**
-	 * Errors and warnings to display on admin screens
-	 *
-	 * @var array
+	 * @var array $admin_notices Warnings to display on admin screens - Update level (Yellow)
 	 **/
-	protected $admin_notices;  // Update level (Yellow)
-	protected $admin_notice_errors;  // Error messages (Red)
+	protected $admin_notices;
 
 	/**
-	 * Description text for each level of recipe difficulty
-	 *
-	 * @var array of strings
+	 * @var array $admin_notice_errors Errors to display on admin screens - Error messages (Red)
+	 **/
+	protected $admin_notice_errors;
+
+	/**
+	 * @var array $difficulty_description Description text for each level of recipe difficulty
 	 **/
 	protected $difficulty_description;
 
@@ -87,31 +87,39 @@ class hrecipe_admin extends hrecipe_microformat
 	private $hrecipe_importer;
 
 	/**
-	 * Array of admin screen options defined by plugin
-	 *
-	 * @var array
+	 * @var array $screen_options Array of admin screen options defined by plugin
 	 **/
 	private $screen_options;
 
 	/**
-	 * Slug for the admin screen ingredients table page
-	 *
-	 * @var string
+	 * @var string $slug_ingredients_table_page Slug for the admin screen ingredients table page
 	 **/
 	private $slug_ingredients_table_page;
 
 	/**
-	 * Default number of ingredients to display per page
+	 * @var int ingredients_per_page Default number of ingredients to display per page
 	 */
 	const ingredients_per_page = 20;
 
 	/**
-	 * Path to nutrient DB files
+	 * @var string $nutrient_db_path Path to nutrient DB files
 	 */
 	private $nutrient_db_path;
 
 	/**
+	 * @var hrecipe_ingredients_Table $ingredients_table
+	 */
+	private $ingredients_table;
+
+	/**
+	 * @var array $message Array of messages to be displayed on admin screen
+	 */
+	private $message;
+
+	/**
 	 * Setup plugin defaults and register with WordPress for use in Admin screens
+     *
+     * @return void
 	 **/
 	function __construct()
 	{
@@ -643,9 +651,9 @@ class hrecipe_admin extends hrecipe_microformat
 	 *   ... Repeat <tr> as needed
 	 *  </tbody>
 	 *
-	 * @param $post_content, Post content being edited
-	 * @param $post_id, Post ID
-	 * @return modified $post_content
+	 * @param string $post_content Post content being edited
+	 * @param int $post_id Post ID
+	 * @return string modified $post_content
 	 **/
 	function upgrade_recipe_ingrds_table($post_content, $post_id)
 	{
@@ -822,7 +830,7 @@ class hrecipe_admin extends hrecipe_microformat
 	 * Hook this function using add_action(save_post_<post_type>) so it only gets called for recipe posts
 	 *
 	 * @param int     $post_id  The Post id
-	 * @param object  $post     Post Object
+	 * @param WP_Post  $post     Post Object
 	 * @param boolean $update   false => this is a new post, true => post is being updated
 	 * @return void
 	 **/
@@ -850,13 +858,13 @@ class hrecipe_admin extends hrecipe_microformat
 	 *
 	 * Called either to save a parent recipe or to perform save for a preview (using a child post ID)
 	 *
-	 * @uses  array   $_POST    Submitted data being saved
-	 * @param int     $post_id  The Post id (can be either child or parent post)
-	 * @param object  $post     Post Object
-	 * @param boolean $update   false => this is a new post, true => post is being updated
+	 * @uses  array    $_POST    Submitted data being saved
+	 * @param int      $post_id  The Post id (can be either child or parent post)
+	 * @param WP_Post  $post     Post Object
+	 * @param boolean  $update   false => this is a new post, true => post is being updated
 	 * @return void
 	 **/
-	private function _action_save_post($post_id, $post, $update)
+	private function _action_save_post($post_id, /* @noinspection PhpUnusedParameterInspection */ $post, /* @noinspection PhpUnusedParameterInspection */ $update)
 	{
 		/**
 		 * Save Ingredient List Titles and ingredients
@@ -878,7 +886,6 @@ class hrecipe_admin extends hrecipe_microformat
 			$_POST[self::prefix . 'food_id'] = stripslashes_deep($_POST[self::prefix . 'food_id']);
 
 			$ingrds = array();
-			$measures = array();
 			// Ingredient lists stored in Ingredient Database
 			for ($ingrd_row = 0 ; isset($_POST[self::prefix . 'quantity'][$list_id][$ingrd_row]) ; $ingrd_row++) {
 				// Only add row to list if it has content
@@ -972,7 +979,7 @@ class hrecipe_admin extends hrecipe_microformat
 	 *
 	 * @uses $action            wordpress action, set to 'preview' when a post preview has been requested
 	 * @param int     $post_id  The Post id revision being saved
-	 * @param object  $post     Post Object
+	 * @param WP_Post  $post     Post Object
 	 * @param boolean $update   false => this is a new post, true => post is being updated
 	 * @return void
 	 **/
@@ -1136,7 +1143,7 @@ class hrecipe_admin extends hrecipe_microformat
 	 *
 	 * If the option is one that has been defined by plugin, return the value
 	 *
-	 * @return value
+	 * @return string
 	 **/
 	function filter_set_screen_option($status, $option, $value)
 	{
@@ -1152,13 +1159,10 @@ class hrecipe_admin extends hrecipe_microformat
 	 *
 	 * Actions are separated out so that they can be done before admin notices are displayed
 	 *
-	 * @uses $plugin_page, WP global defines plugin page name
 	 * @return void
 	 **/
 	function action_ingredients_table_page()
 	{
-		global $plugin_page;
-
 		$this->ingredients_table = new hrecipe_ingredients_Table(
 			$this->ingrd_db, self::post_type, self::prefix . 'add-ingredient');
 		$doaction = $this->ingredients_table->current_action();
@@ -1886,7 +1890,7 @@ class hrecipe_admin extends hrecipe_microformat
 	 * @param string $field Name of field
 	 * @param string $class Class(es) to apply to select field
 	 * @param array $options array of value->label pairs for select options
-	 * @param array $value Default value for select
+	 * @param string $value Default value for select
 	 * @return void
 	 **/
 	function render_select($field, $class, $options, $value)
@@ -1912,7 +1916,7 @@ class hrecipe_admin extends hrecipe_microformat
 	/**
 	 * Add plugin CSS to tinymce
 	 *
-	 * @return updated list of css files
+	 * @return string updated list of css files
 	 **/
 	function add_tinymce_css($mce_css){
 		if (! empty($mce_css)) $mce_css .= ',';

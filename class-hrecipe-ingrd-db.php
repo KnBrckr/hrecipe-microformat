@@ -33,33 +33,25 @@ if (! class_exists('hrecipe_ingrd_db')) :
 class hrecipe_ingrd_db {
 	
 	/**
-	 * Version of ingredient database
-	 *
-	 * @var constant string
+	 * @var string DB_RELEASE Version of ingredient database
 	 * @access public
 	 **/
 	const DB_RELEASE = 1;
 	
 	/**
-	 * Table of defined foods for use in recipes
-	 *
-	 * @var string
+	 * @var string $foods_table Table of defined foods for use in recipes
 	 * @access private
 	 **/
 	private $foods_table;
 	
 	/**
-	 * Table of ingredients used in a recipe
-	 *
-	 * @var string
+	 * @var string $recipe_ingrds_table Table of ingredients used in a recipe
 	 * @access private
 	 **/
 	private $recipe_ingrds_table;
 	
 	/**
-	 * Name of options variable in WP options table
-	 *
-	 * @var string
+	 * @var string $options_name Name of options variable in WP options table
 	 * @access private
 	 */
 	private $options_name;
@@ -68,7 +60,7 @@ class hrecipe_ingrd_db {
 	 * Class options retrieved from WP
 	 *   - db_version => version of database in use
 	 *
-	 * @var hash array
+	 * @var array $options hash array of options
 	 * @access protected
 	 */
 	protected $options;
@@ -130,12 +122,11 @@ class hrecipe_ingrd_db {
 	 * 8   comment     longtext  Y     comments on use of ingredient in recipe
 	 * * Marks Primary keys
 	 *
-	 * @return void
+	 * @return boolean
 	 **/
 	function create_schema() {
 		global $charset_collate;
-		global $wpdb;
-		
+
 		/**
 		 * Create Food Table
 		 */
@@ -201,7 +192,7 @@ class hrecipe_ingrd_db {
 	 *
 	 * @uses $wpdb
 	 * @param $ingrd array of key/value pairs: ingrd, measure, gpcup
-	 * @return result of $wpdb->replace(), >0 on success.
+	 * @return array|false result of $wpdb->replace(), >0 on success.
 	 **/
 	function insert_ingrd($ingrd)
 	{
@@ -222,7 +213,7 @@ class hrecipe_ingrd_db {
 	/**
 	 * Delete an ingredient from database
 	 *
-	 * @return result of $wpdb->query
+	 * @return array|false result of $wpdb->query
 	 **/
 	function delete_ingrd($food_id)
 	{
@@ -247,7 +238,7 @@ class hrecipe_ingrd_db {
 	 * @param $perpage, int, Number of rows per page
 	 * @param $paged, int, page number (1-n)
 	 * @param $search, string, search string for query
-	 * @return hash array: ['totalitems']=count of all matches, ['ingrds'] = object database query with food items
+	 * @return array hash array: ['totalitems']=count of all matches, ['ingrds'] = object database query with food items
 	 **/
 	function get_ingrds($orderby, $order, $perpage, $paged, $search)
 	{
@@ -345,7 +336,7 @@ class hrecipe_ingrd_db {
 	 * @param $post_id
 	 * @param $ingrd_list_id
 	 * @param $ingrd_list array of rows of key/value pairs: NDB_No, quantity, unit, ingredient name and comment 
-	 * @return void
+	 * @return boolean
 	 **/
 	function insert_ingrds_for_recipe($post_id, $ingrd_list_id, $ingrd_list)
 	{
@@ -389,6 +380,8 @@ class hrecipe_ingrd_db {
 			$insert_ingrd['comment'] = $row['comment'];
 			$wpdb->insert($this->recipe_ingrds_table, $insert_ingrd);
 		}
+
+		return true;
 	}
 	
 	/**
@@ -397,8 +390,8 @@ class hrecipe_ingrd_db {
 	 * Each Row returned includes key values for: food_id, quantity, unit, ingrd, comment, NDB_No, measure, gpcup
 	 *
 	 * @uses $wpdb
-	 * @param $post_id Retrieve ingredients for post_id
-	 * @param $ingrd_list_id Which ingredient list in post to get
+	 * @param number $post_id Retrieve ingredients for post_id
+	 * @param number $ingrd_list_id Which ingredient list in post to get
 	 * @return array of associative arrays, representing ingredient rows
 	 **/
 	function get_ingrds_for_recipe($post_id,$ingrd_list_id)
@@ -414,7 +407,7 @@ class hrecipe_ingrd_db {
 	/**
 	 * Delete an ingredient list from a post
 	 *
-	 * @return result of $wpdb->query()
+	 * @return array|false result of $wpdb->query()
 	 **/
 	function delete_ingrds_for_recipe($post_id, $ingrd_list_id)
 	{
@@ -428,8 +421,8 @@ class hrecipe_ingrd_db {
 	 * Delete all ingredients associated with a post
 	 *
 	 * @uses $wpdb
-	 * @param $post_id Delete all ingredients for indicated post
-	 * @return result of $wpdb->query()
+	 * @param int $post_id Delete all ingredients for indicated post
+	 * @return array|false result of $wpdb->query()
 	 **/
 	function delete_all_ingrds_for_recipe($post_id)
 	{

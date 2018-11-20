@@ -55,37 +55,42 @@ class hrecipe_importer {
 	public $desc;
 	
 	/**
-	 * Translation domain
-	 *
-	 * @var string
+	 * @var string $domain Translation domain
 	 */
 	private $domain;
 	
 	/**
-	 * Name of Recipe Category Taxonomy
-	 *
+	 * @var string $category_taxonomy Name of Recipe Category Taxonomy
 	 * @access private
-	 * @var string
 	 **/
 	private $category_taxonomy;
 	
 	/**
-	 * Transient ID used in multi-step form handling to save recipe data
-	 *
-	 * @var string
+	 * @var string $transient_id Transient ID used in multi-step form handling to save recipe data
 	 **/
 	private $transient_id;
 	
 	/**
-	 * Attributes of an ingredient that should be treated as comments, not part of the ingredient name
-	 *
-	 * @var array of strings
+	 * @var array $ingrd_attributes Attributes of an ingredient that should be treated as comments, not part of the ingredient name
 	 **/
 	private $ingrd_attributes;
-	
+
+	/**
+	 * @var hrecipe_ingrd_db $ingrd_db
+	 */
+	private $ingrd_db;
+
+	/**
+	 * @var string $error_msg Error message to display on admin screen refresh
+	 */
+    private $error_msg;
+
 	/**
 	 * Class Constructor
 	 *
+     * @param string $domain
+     * @param string $category
+     * @param hrecipe_ingrd_db $ingrd_db
 	 */
 	function __construct($domain, $category, $ingrd_db) {
 		$this->id = $domain . '-importer';
@@ -543,9 +548,12 @@ class hrecipe_importer {
 	 *	$recipe['difficulty']    Recipe difficulty rating  [0-5]
 	 * @param array $unknown_category maps unknown categories to known elements
 	 * @uses $this->error_msg string Error message on failure
-	 * @return recipe id (post id) on success, NULL on failure
+	 * @return int recipe id (post id) on success, NULL on failure
 	 **/
 	private function add_recipe_post($post_status, $recipe, $unknown_category)	{
+		/**
+		 * @var hrecipe_admin $hrecipe_microformat
+		 */
 		global $hrecipe_microformat;
 		
 		/**
@@ -679,7 +687,7 @@ class hrecipe_importer {
 	 * @access private
 	 * @param array $content
 	 *    Each index element is sub-array containing ['type'] and ['data']
-	 * @return text
+	 * @return string HTML
 	 **/
 	private function build_post_content($content)
 	{
@@ -718,7 +726,7 @@ class hrecipe_importer {
 	 *
 	 * @param array $categories Array of recipe categories from imported data
 	 * @param array $unknown_category Array mapping unknown category to term_id to use on add
-	 * @return array of categories to be used as tax_input for post creation or false if category list is empty
+	 * @return array|false Categories to be used as tax_input for post creation or false if category list is empty
 	 **/
 	function set_recipe_categories($categories, $unknown_category)
 	{
@@ -752,14 +760,12 @@ class hrecipe_importer {
 	/**
 	 * Normalize an ingredient name by moving common qualifiers to comments
 	 *
-	 * @param $ingrd, string, Ingredient text from recipe
-	 * @uses $hrecipe_microformat hrecipe_microformat object
-	 * @return hash array with keys ingrd, comment and food_id - food_id NULL if no match in database
+	 * @param string $ingrd string Ingredient text from recipe
+	 * @uses hrecipe_microformat $hrecipe_microformat
+	 * @return array hash array with keys ingrd, comment and food_id - food_id NULL if no match in database
 	 **/
 	function normalize_ingrd($ingrd)
 	{
-		$orig_ingrd = $ingrd;
-		
 		// Trim adjectives from the ingredient name
 		$found = array();
 		$matches = array();

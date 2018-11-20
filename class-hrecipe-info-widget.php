@@ -56,9 +56,12 @@ class hrecipe_info_widget extends WP_Widget {
 	 * @param array $instance Previously saved values from database
 	 */
  	public function form( $instance ) {
-		// Establish defaults if not already set in input 
+	    /**
+		 * @var hrecipe_microformat $hrecipe_microformat
+		 */
 		global $hrecipe_microformat;
-		
+
+	    // Establish defaults if not already set in input
 		$defaults = array('title' => '');
 
 		$fields = $hrecipe_microformat->get_recipe_fields();
@@ -97,6 +100,9 @@ class hrecipe_info_widget extends WP_Widget {
 	 * @return array Updated safe values to be saved.
 	 */
 	public function update( $new_instance, $old_instance ) {
+		/**
+		 * @var hrecipe_microformat $hrecipe_microformat
+		 */
 		global $hrecipe_microformat;
 		
 		$new_instance = (array) $new_instance;
@@ -121,13 +127,22 @@ class hrecipe_info_widget extends WP_Widget {
 	 * @param array $instance Saved values from database.
 	 */
 	public function widget( $args, $instance ) {
+		/**
+		 * @var hrecipe_microformat $hrecipe_microformat
+		 */
 		global $hrecipe_microformat;
 		
 		// This widget only works when displaying a single recipe post
 		if ( ! is_singular($hrecipe_microformat->get_post_type() ) ) {
 			return;
 		}
-		
+
+		/**
+		 * @var string $before_widget
+         * @var string $after_widget
+         * @var string $before_title
+         * @var string $after_title
+		 */
 		extract( $args );
 		
 		$post_id = $hrecipe_microformat->get_post_id();
