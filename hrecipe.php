@@ -25,9 +25,9 @@ License: GPL2
 */
 
 // Protect from direct execution
-if (!defined('WP_PLUGIN_DIR')) {
-	header('Status: 403 Forbidden');
-	header('HTTP/1.1 403 Forbidden');
+if ( ! defined( 'WP_PLUGIN_DIR' ) ) {
+	header( 'Status: 403 Forbidden' );
+	header( 'HTTP/1.1 403 Forbidden' );
 	die( 'I don\'t think you should be here.' );
 }
 
@@ -58,17 +58,17 @@ $required_libs = array(
 	'class-hrecipe-info-widget.php',
 	'class-hrecipe-recipes-widget.php'
 );
-if (is_admin()) {
+if ( is_admin() ) {
 	// For admin pages, setup the extended admin class
 	$required_libs[] = 'admin/class-hrecipe-admin.php';
 }
-foreach ($required_libs as $lib) {
-	if (!include_once($lib)) {
-		die('Unable to load required library:  "' . $lib . '"');
+foreach ( $required_libs as $lib ) {
+	if ( ! include_once( $lib ) ) {
+		die( 'Unable to load required library:  "' . $lib . '"' );
 	}
 }
 
-if (is_admin()) {
+if ( is_admin() ) {
 	$hrecipe_microformat = new hrecipe_admin();
 } else {
 	$hrecipe_microformat = new hrecipe_microformat();
@@ -78,7 +78,7 @@ if (is_admin()) {
 $hrecipe_microformat->register_wp_callbacks();
 
 // Setup plugin activation function to populate the taxonomies
-register_activation_hook( __FILE__, 'hrecipe_microformat_plugin_activation');
+register_activation_hook( __FILE__, 'hrecipe_microformat_plugin_activation' );
 
 // Setup plugin de-activation function to cleanup rewrite rules
-register_deactivation_hook(__FILE__, 'hrecipe_microformat_plugin_deactivation');
+register_deactivation_hook( __FILE__, 'hrecipe_microformat_plugin_deactivation' );

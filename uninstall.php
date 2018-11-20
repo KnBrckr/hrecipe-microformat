@@ -7,11 +7,11 @@
  * @package hRecipe Microformat
  * @author Kenneth J. Brucker <ken@pumastudios.com>
  * @copyright 2012-2015 Kenneth J. Brucker (email: ken@pumastudios.com)
- * 
+ *
  * This file is part of hRecipe Microformat, a plugin for Wordpress.
  *
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License, version 2, as 
+ * it under the terms of the GNU General Public License, version 2, as
  * published by the Free Software Foundation.
  *
  * This program is distributed in the hope that it will be useful,
@@ -25,22 +25,20 @@
  **/
 
 // Make sure this is being called in the context of a real uninstall request
-if (!defined('WP_UNINSTALL_PLUGIN')) {
-	header('Status: 403 Forbidden');
-	header('HTTP/1.1 403 Forbidden');
+if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
+	header( 'Status: 403 Forbidden' );
+	header( 'HTTP/1.1 403 Forbidden' );
 	die( 'I don\'t think you should be here.' );
 }
 
 // RFE Uninstall is borked
 
-if (is_admin() && current_user_can('manage_options') && current_user_can('install_plugins')) {
-	require_once(WP_PLUGIN_DIR . '/hrecipe-microformat/admin/options-class.php');
-	
+if ( is_admin() && current_user_can( 'manage_options' ) && current_user_can( 'install_plugins' ) ) {
+	require_once( WP_PLUGIN_DIR . '/hrecipe-microformat/admin/options-class.php' );
+
 	$options = new hrecipe_microformat_options();
 	$options->uninstall();
-	unset($options);
+	unset( $options );
 } else {
-	wp_die(__('You do not have authorization to run the uninstall script for this plugin.', 'hrecipe-recipe'));
+	wp_die( __( 'You do not have authorization to run the uninstall script for this plugin.', 'hrecipe-recipe' ) );
 }
-
-?>

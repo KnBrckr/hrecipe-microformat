@@ -5,11 +5,11 @@
  * @package hRecipe Microformat
  * @author Kenneth J. Brucker <ken@pumastudios.com>
  * @copyright 2015 Kenneth J. Brucker (email: ken@pumastudios.com)
- * 
+ *
  * This file is part of hRecipe Microformat, a plugin for Wordpress.
  *
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License, version 2, as 
+ * it under the terms of the GNU General Public License, version 2, as
  * published by the Free Software Foundation.
  *
  * This program is distributed in the hope that it will be useful,
@@ -23,141 +23,143 @@
  **/
 
 // Protect from direct execution
-if (!defined('WP_PLUGIN_DIR')) {
-	header('Status: 403 Forbidden');
-	header('HTTP/1.1 403 Forbidden');
+if ( ! defined( 'WP_PLUGIN_DIR' ) ) {
+	header( 'Status: 403 Forbidden' );
+	header( 'HTTP/1.1 403 Forbidden' );
 	die( 'I don\'t think you should be here.' );
 }
 
 class hrecipe_parse_xml {
-	public  $error_msg;
+	public $error_msg;
 	private $tags;
 
 	function __construct() {
 	}
-	
+
 	/*
 	 * Establish set of alternate names for tags
 	 */
 	function set_tags( $tags ) {
 		$this->tags = $tags;
 	}
-	
+
 	/*
 	 * Parse an XML file
 	 */
 	function parse( $path ) {
-		$doc = new DOMDocument();
+		$doc                     = new DOMDocument();
 		$doc->preserveWhiteSpace = false;
 
-		if (!$doc->load($path)) {
+		if ( ! $doc->load( $path ) ) {
 			$this->error_msg = "Cannot open XML data file: '$path'";
-			return NULL;
+
+			return null;
 		}
 
-		return $this->xml_to_array($doc->documentElement);
+		return $this->xml_to_array( $doc->documentElement );
 	}
 
 	/**
 	 * Recursively parse XML data to build array representation
 	 *
 	 * @param DOMDocument $node_xml element
+	 *
 	 * @return array representing XML data
 	 **/
-	private function xml_to_array($node_xml) {
+	private function xml_to_array( $node_xml ) {
 		$node_array = array();
 		$hits_array = array();
-		
+
 		/**
 		 * For each sibling node get associated contents and attributes
 		 */
-		while ($node_xml != NULL) {
+		while ( $node_xml != null ) {
 			/**
 			 * Map tag names to alternates provided, save the old value for later
 			 */
-			$tag = strtoupper($node_xml->nodeName);
-			$saved_tag = NULL;
-			if (isset($this->tags) && array_key_exists($tag, $this->tags)) {
+			$tag       = strtoupper( $node_xml->nodeName );
+			$saved_tag = null;
+			if ( isset( $this->tags ) && array_key_exists( $tag, $this->tags ) ) {
 				$saved_tag = $tag;
-				$tag = $this->tags[$tag];
+				$tag       = $this->tags[ $tag ];
 			}
-			
+
 			/**
 			 * Text nodes are end of chain, just get their value
 			 */
-			if (XML_TEXT_NODE == $node_xml->nodeType) {
+			if ( XML_TEXT_NODE == $node_xml->nodeType ) {
 				$node_val = $node_xml->nodeValue;
 			} else {
 				/**
 				 * Assume this is XML_ELEMENT_NODE type
 				 * Recurse on children of this node, result will be an array as long as child is not only a single text node
 				 */
-				$node_val = $this->xml_to_array($node_xml->firstChild);
-				
+				$node_val = $this->xml_to_array( $node_xml->firstChild );
+
 				/**
 				 * If tag was remapped, save the original as an attribute
 				 */
-				if ($saved_tag) {
-					$cur_val = $node_val;
-					$node_val = array( '@orig_tag' => $saved_tag, '@value' => $cur_val);
+				if ( $saved_tag ) {
+					$cur_val  = $node_val;
+					$node_val = array( '@orig_tag' => $saved_tag, '@value' => $cur_val );
 				}
 
 				/**
 				 * Collect node attributes
 				 */
-				if ($node_xml->hasAttributes()) {
+				if ( $node_xml->hasAttributes() ) {
 					/**
 					 * If we don't have an array, there is a problem
 					 */
-					if (! is_array($node_val)) {
+					if ( ! is_array( $node_val ) ) {
 						$this->error_msg = "XML format error: Found tag <$tag>, a text node masquerading as an element node";
-						return NULL;
+
+						return null;
 					}
-				
+
 					$attr_array = array();
-				
-					foreach ($node_xml->attributes as $attrib) {
-						$attr_array[strtoupper($attrib->nodeName)] = $attrib->nodeValue;
+
+					foreach ( $node_xml->attributes as $attrib ) {
+						$attr_array[ strtoupper( $attrib->nodeName ) ] = $attrib->nodeValue;
 					}
 					$node_val['@attrib'] = $attr_array;
 				}
 			}
-			
+
 			/**
 			 * If hitting tag again, value is saved in an array
 			 */
-			if (array_key_exists($tag, $node_array)) {
+			if ( array_key_exists( $tag, $node_array ) ) {
 				/**
 				 * If seeing the key for the 2nd time, convert to an array
 				 */
-				if (1 == $hits_array[$tag]) {
-					$curr_val = $node_array[$tag];
-					$node_array[$tag] = array($curr_val);
-					$hits_array[$tag]++;
+				if ( 1 == $hits_array[ $tag ] ) {
+					$curr_val           = $node_array[ $tag ];
+					$node_array[ $tag ] = array( $curr_val );
+					$hits_array[ $tag ] ++;
 				}
-				$node_array[$tag][] = $node_val;
+				$node_array[ $tag ][] = $node_val;
 			} else {
-				$node_array[$tag] = $node_val;
-				$hits_array[$tag] = 1;
+				$node_array[ $tag ] = $node_val;
+				$hits_array[ $tag ] = 1;
 			}
-			
+
 			/**
 			 * Go to next sibling
 			 */
 			$node_xml = $node_xml->nextSibling;
 		}
-		
+
 		/**
 		 * If result is an empty array, return NULL
 		 * If result is an array with a single text node, collapse the array and just return the text
 		 */
-		if (count($node_array) == 0) {
-			return NULL;
-		} elseif (count($node_array) == 1 && array_key_exists('#TEXT', $node_array)) {
+		if ( count( $node_array ) == 0 ) {
+			return null;
+		} elseif ( count( $node_array ) == 1 && array_key_exists( '#TEXT', $node_array ) ) {
 			return $node_array['#TEXT'];
 		} else {
 			return $node_array;
 		}
 	}
 } // end of class parse_xml
-?>

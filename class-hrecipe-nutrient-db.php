@@ -30,19 +30,19 @@
 // TODO Remove tables that are not needed
 
 // Protect from direct execution
-if (!defined('WP_PLUGIN_DIR')) {
-	header('Status: 403 Forbidden');
-	header('HTTP/1.1 403 Forbidden');
+if ( ! defined( 'WP_PLUGIN_DIR' ) ) {
+	header( 'Status: 403 Forbidden' );
+	header( 'HTTP/1.1 403 Forbidden' );
 	die( 'I don\'t think you should be here.' );
 }
 
-if (is_admin()) {
-	require_once(ABSPATH . 'wp-admin/includes/upgrade.php'); // Need dbDelta to manipulate DB Tables
+if ( is_admin() ) {
+	require_once( ABSPATH . 'wp-admin/includes/upgrade.php' ); // Need dbDelta to manipulate DB Tables
 
 	// Load plugin libs that are needed
-	$required_libs = array('admin/class-hrecipe-usda-sr-txt.php');
-	foreach ($required_libs as $lib) {
-		if (!include_once($lib)) {
+	$required_libs = array( 'admin/class-hrecipe-usda-sr-txt.php' );
+	foreach ( $required_libs as $lib ) {
+		if ( ! include_once( $lib ) ) {
 			return false;
 		}
 	}
@@ -77,21 +77,21 @@ class hrecipe_nutrient_db {
 	 * - Load WP options for the class including DB release level installed
 	 *
 	 * @param string $prefix Prefix to use for name of DB tables
+	 *
 	 * @return void
 	 **/
-	function __construct($prefix)
-	{
-		$this->options_name = get_class($this) . "_class_option";
+	function __construct( $prefix ) {
+		$this->options_name = get_class( $this ) . "_class_option";
 
 		/*
 		 * Retrieve Options for this DB class
 		 */
 		$options_defaults = array(
-			'db_version' => 0, // Default to 0 - No version loaded
+			'db_version'   => 0, // Default to 0 - No version loaded
 			'table_prefix' => $prefix . "sr_",
 		);
 
-		$this->options = (array) wp_parse_args(get_option($this->options_name), $options_defaults);
+		$this->options = (array) wp_parse_args( get_option( $this->options_name ), $options_defaults );
 	}
 
 	/**
@@ -99,8 +99,7 @@ class hrecipe_nutrient_db {
 	 *
 	 * @return FALSE if loaded database is current
 	 */
-	function update_needed()
-	{
+	function update_needed() {
 		return ! $this->options['db_version'] == self::DB_RELEASE;
 	}
 
@@ -112,8 +111,7 @@ class hrecipe_nutrient_db {
 	 * @access private
 	 * @return void
 	 **/
-	private function create_nutrient_schema()
-	{
+	private function create_nutrient_schema() {
 		global $charset_collate;
 
 		// Prefix for table creation below
@@ -378,7 +376,7 @@ class hrecipe_nutrient_db {
 		) $charset_collate;";
 
 		// Create the required databases
-    	dbDelta($sql);
+		dbDelta( $sql );
 	}
 
 	/**
@@ -386,34 +384,35 @@ class hrecipe_nutrient_db {
 	 *
 	 * @return void
 	 **/
-	function drop_nutrient_schema()
-	{
+	function drop_nutrient_schema() {
 		global $wpdb;
 
-		$tables = array('abbrev', 'fd_group', 'food_des', 'langdesc', 'langual', 'weight');
-		foreach ($tables as $table) {
-			$wpdb->query("DROP TABLE IF EXISTS " . $this->options['table_prefix'] . $table);
+		$tables = array( 'abbrev', 'fd_group', 'food_des', 'langdesc', 'langual', 'weight' );
+		foreach ( $tables as $table ) {
+			$wpdb->query( "DROP TABLE IF EXISTS " . $this->options['table_prefix'] . $table );
 		}
 
 		// Delete class options from WP database
-		delete_option($this->options_name);
+		delete_option( $this->options_name );
 	}
 
 	/**
 	 * Setup USDA Standard Reference into the DB
 	 *
 	 * @param string $db_path Path to Standard Reference files
+	 *
 	 * @return number|boolean version of the DB table loaded
 	 **/
-	function setup_nutrient_db($db_path)
-	{
+	function setup_nutrient_db( $db_path ) {
 		global $wpdb;
 
 		// If the loaded version matches what's delivered with this version of the plugin, no need to update tables
-		if ($this->options['db_version'] == self::DB_RELEASE) return self::DB_RELEASE;
+		if ( $this->options['db_version'] == self::DB_RELEASE ) {
+			return self::DB_RELEASE;
+		}
 
 		// This can take some time so increase the execution time limit
-		set_time_limit(300);
+		set_time_limit( 300 );
 
 		// Drop tables that already exist - New versions will be loaded
 		$this->drop_nutrient_schema();
@@ -428,7 +427,7 @@ class hrecipe_nutrient_db {
 		/**
 		 * Table FOOD_DES
 		 */
-		$sr = new hrecipe_usda_sr_txt($db_path . 'FOOD_DES.txt');
+		$sr = new hrecipe_usda_sr_txt( $db_path . 'FOOD_DES.txt' );
 
 		// Food Groups that aren't needed in the ingredients table:
 		//  ~0300~^~Baby Foods~
@@ -436,154 +435,225 @@ class hrecipe_nutrient_db {
 		//  ~2200~^~Meals, Entrees, and Sidedishes~
 		//  ~3500~^~Ethnic Foods~
 		//  ~3600~^~Restaurant Foods~
-		$skip_food_groups = array('0300','2100','2200','3500','3600');
+		$skip_food_groups = array( '0300', '2100', '2200', '3500', '3600' );
 
 		$rows_affected = 0;
-		while ($row = $sr->next()) {
-			if ( count( $row ) < 10 ) continue;
+		while ( $row = $sr->next() ) {
+			if ( count( $row ) < 10 ) {
+				continue;
+			}
 
 			// Skip rows for some food groups
-			if ( in_array( $row[1], $skip_food_groups ) ) continue;
+			if ( in_array( $row[1], $skip_food_groups ) ) {
+				continue;
+			}
 
 			// Insert $row into the table
 			$rows_affected += $wpdb->insert( $this->options['table_prefix'] . 'food_des',
 				array(
-					'NDB_No' => $row[0],
-					'FdGrp_Cd' => $row[1],
-					'Long_Desc' => $row[2],
-					'Shrt_Desc' => $row[3],
-					'ComName' => $row[4],
+					'NDB_No'      => $row[0],
+					'FdGrp_Cd'    => $row[1],
+					'Long_Desc'   => $row[2],
+					'Shrt_Desc'   => $row[3],
+					'ComName'     => $row[4],
 					'ManufacName' => $row[5],
-					'SciName' => $row[9]
-				));
+					'SciName'     => $row[9]
+				) );
 		}
-		unset($sr); // Trigger __destructor() for class
+		unset( $sr ); // Trigger __destructor() for class
 
 		if ( $rows_affected == 0 ) {
-			error_log("No contents added for FOOD_DES.txt!  Setup Failed.");
+			error_log( "No contents added for FOOD_DES.txt!  Setup Failed." );
+
 			return false;
 		}
 
 		/**
 		 * Table fd_group
 		 */
-		$sr = new hrecipe_usda_sr_txt($db_path . 'FD_GROUP.txt');
+		$sr = new hrecipe_usda_sr_txt( $db_path . 'FD_GROUP.txt' );
 
 		$rows_affected = 0;
-		while ($row = $sr->next()) {
-			if ( count ( $row ) < 2 ) continue;
+		while ( $row = $sr->next() ) {
+			if ( count( $row ) < 2 ) {
+				continue;
+			}
 
 			// Insert $row into the table
-			$rows_affected += $wpdb->insert( $this->options['table_prefix'] . 'fd_group', array( 'FdGrp_Cd' => $row[0], 'FdGrp_Desc' => $row[1] ) );
+			$rows_affected += $wpdb->insert( $this->options['table_prefix'] . 'fd_group', array(
+				'FdGrp_Cd'   => $row[0],
+				'FdGrp_Desc' => $row[1]
+			) );
 		}
-		unset($sr); // Trigger __destructor() for class
+		unset( $sr ); // Trigger __destructor() for class
 
 		if ( $rows_affected == 0 ) {
-			error_log("No contents added for FD_GROUP.txt!  Setup Failed.");
+			error_log( "No contents added for FD_GROUP.txt!  Setup Failed." );
+
 			return false;
 		}
 
 		/**
 		 *  Table langual
 		 */
-		$sr = new hrecipe_usda_sr_txt($db_path . 'LANGUAL.txt');
+		$sr = new hrecipe_usda_sr_txt( $db_path . 'LANGUAL.txt' );
 
 		$rows_affected = 0;
-		while ($row = $sr->next()) {
-			if ( count ( $row ) < 2 ) continue;
+		while ( $row = $sr->next() ) {
+			if ( count( $row ) < 2 ) {
+				continue;
+			}
 
 			// Skip any where NDB_No is not in food_des table (added above)
-			if (! $this->ndb_no_defined($row[0])) continue;
+			if ( ! $this->ndb_no_defined( $row[0] ) ) {
+				continue;
+			}
 
 			// Insert $row into the table
-			$rows_affected += $wpdb->insert( $this->options['table_prefix'] . 'langual', array( 'NDB_No' => $row[0], 'Factor_Code' => $row[1] ) );
+			$rows_affected += $wpdb->insert( $this->options['table_prefix'] . 'langual', array(
+				'NDB_No'      => $row[0],
+				'Factor_Code' => $row[1]
+			) );
 		}
-		unset($sr); // Trigger __destructor() for class
+		unset( $sr ); // Trigger __destructor() for class
 
 		if ( $rows_affected == 0 ) {
-			error_log("No contents added for LANGUAL.txt!  Setup Failed.");
+			error_log( "No contents added for LANGUAL.txt!  Setup Failed." );
+
 			return false;
 		}
 
 		/**
 		 *  Table langdesc
 		 */
-		$sr = new hrecipe_usda_sr_txt($db_path . 'LANGDESC.txt');
+		$sr = new hrecipe_usda_sr_txt( $db_path . 'LANGDESC.txt' );
 
 		$rows_affected = 0;
-		while ($row = $sr->next()) {
-			if ( count ( $row ) < 2 ) continue;
+		while ( $row = $sr->next() ) {
+			if ( count( $row ) < 2 ) {
+				continue;
+			}
 
 			// Insert $row into the table
-			$rows_affected += $wpdb->insert( $this->options['table_prefix'] . 'langdesc', array( 'Factor_Code' => $row[0], 'Description' => $row[1] ) );
+			$rows_affected += $wpdb->insert( $this->options['table_prefix'] . 'langdesc', array(
+				'Factor_Code' => $row[0],
+				'Description' => $row[1]
+			) );
 		}
-		unset($sr); // Trigger __destructor() for class
+		unset( $sr ); // Trigger __destructor() for class
 
 		if ( $rows_affected == 0 ) {
-			error_log("No contents added for LANGDESC.txt!  Setup Failed.");
+			error_log( "No contents added for LANGDESC.txt!  Setup Failed." );
+
 			return false;
 		}
 
 		/**
 		 *  Table weight
 		 */
-		$sr = new hrecipe_usda_sr_txt($db_path . 'WEIGHT.txt');
+		$sr = new hrecipe_usda_sr_txt( $db_path . 'WEIGHT.txt' );
 
 		$rows_affected = 0;
-		while ($row = $sr->next()) {
-			if ( count ( $row ) < 5 ) continue;
+		while ( $row = $sr->next() ) {
+			if ( count( $row ) < 5 ) {
+				continue;
+			}
 			// Skip any where NDB_No is not in food_des table (added above)
-			if (! $this->ndb_no_defined($row[0])) continue;
+			if ( ! $this->ndb_no_defined( $row[0] ) ) {
+				continue;
+			}
 
 			// Insert $row into the table
 			$rows_affected += $wpdb->insert( $this->options['table_prefix'] . 'weight',
 				array(
-					'NDB_No' => $row[0],
-					'Seq' => $row[1],
-					'Amount' => $row[2],
+					'NDB_No'    => $row[0],
+					'Seq'       => $row[1],
+					'Amount'    => $row[2],
 					'Msre_Desc' => $row[3],
-					'Gm_Wgt' => $row[4]
+					'Gm_Wgt'    => $row[4]
 				) );
 		}
-		unset($sr); // Trigger __destructor() for class
+		unset( $sr ); // Trigger __destructor() for class
 
 		if ( $rows_affected == 0 ) {
-			error_log("No contents added for WEIGHT.txt!  Setup Failed.");
+			error_log( "No contents added for WEIGHT.txt!  Setup Failed." );
+
 			return false;
 		}
 
 		/**
 		 *  Table abbrev
 		 */
-		$sr = new hrecipe_usda_sr_txt($db_path . 'ABBREV.txt');
+		$sr = new hrecipe_usda_sr_txt( $db_path . 'ABBREV.txt' );
 
 		$rows_affected = 0;
-		while ($row = $sr->next()) {
-			if ( count( $row ) < 48 ) continue;
+		while ( $row = $sr->next() ) {
+			if ( count( $row ) < 48 ) {
+				continue;
+			}
 
 			// Skip any where NDB_No is not in food_des table (added above)
-			if (! $this->ndb_no_defined($row[0])) continue;
+			if ( ! $this->ndb_no_defined( $row[0] ) ) {
+				continue;
+			}
 
 			// Insert $row into the table
 			$rows_affected += $wpdb->insert( $this->options['table_prefix'] . 'abbrev',
 				array(
-					'NDB_No' => $row[0],'Water' => $row[2],'Energ_Kcal' => $row[3],'Protein' => $row[4],'Lipid_Tot' => $row[5],
-				  'Carbohydrt' => $row[7],'Fiber_TD' => $row[8],'Sugar_Tot' => $row[9],'Calcium' => $row[10],
-				  'Iron' => $row[11],'Magnesium' => $row[12],'Phosphorus' => $row[13],'Potassium' => $row[14],'Sodium' => $row[15],
-				  'Zinc' => $row[16],'Copper' => $row[17],'Manganese' => $row[18],'Selenium' => $row[19],'Vit_C' => $row[20],
-				  'Thiamin' => $row[21],'Riboflavin' => $row[22],'Niacin' => $row[23],'Panto_acid' => $row[24],'Vit_B6' => $row[25],
-				  'Folate_Tot' => $row[26],'Folic_acid' => $row[27],'Food_Folate' => $row[28],'Folate_DFE' => $row[29],
-				  'Choline_Tot' => $row[30],'Vit_B12' => $row[31],'Vit_A_IU' => $row[32],'Vit_A_RAE' => $row[33],'Retinol' => $row[34],
-				  'Alpha_Carot' => $row[35],'Beta_Carot' => $row[36],'Beta_Crypt' => $row[37],'Lycopene' => $row[38],
-				  'LutZea' => $row[39],'Vit_E' => $row[40],'Vit_D_mcg' => $row[41],'Vit_D_IU' => $row[42],'Vit_K' => $row[43],
-				  'FA_Sat' => $row[44],'FA_Mono' => $row[45],'FA_Poly' => $row[46],'Cholestrl' => $row[47]
+					'NDB_No'      => $row[0],
+					'Water'       => $row[2],
+					'Energ_Kcal'  => $row[3],
+					'Protein'     => $row[4],
+					'Lipid_Tot'   => $row[5],
+					'Carbohydrt'  => $row[7],
+					'Fiber_TD'    => $row[8],
+					'Sugar_Tot'   => $row[9],
+					'Calcium'     => $row[10],
+					'Iron'        => $row[11],
+					'Magnesium'   => $row[12],
+					'Phosphorus'  => $row[13],
+					'Potassium'   => $row[14],
+					'Sodium'      => $row[15],
+					'Zinc'        => $row[16],
+					'Copper'      => $row[17],
+					'Manganese'   => $row[18],
+					'Selenium'    => $row[19],
+					'Vit_C'       => $row[20],
+					'Thiamin'     => $row[21],
+					'Riboflavin'  => $row[22],
+					'Niacin'      => $row[23],
+					'Panto_acid'  => $row[24],
+					'Vit_B6'      => $row[25],
+					'Folate_Tot'  => $row[26],
+					'Folic_acid'  => $row[27],
+					'Food_Folate' => $row[28],
+					'Folate_DFE'  => $row[29],
+					'Choline_Tot' => $row[30],
+					'Vit_B12'     => $row[31],
+					'Vit_A_IU'    => $row[32],
+					'Vit_A_RAE'   => $row[33],
+					'Retinol'     => $row[34],
+					'Alpha_Carot' => $row[35],
+					'Beta_Carot'  => $row[36],
+					'Beta_Crypt'  => $row[37],
+					'Lycopene'    => $row[38],
+					'LutZea'      => $row[39],
+					'Vit_E'       => $row[40],
+					'Vit_D_mcg'   => $row[41],
+					'Vit_D_IU'    => $row[42],
+					'Vit_K'       => $row[43],
+					'FA_Sat'      => $row[44],
+					'FA_Mono'     => $row[45],
+					'FA_Poly'     => $row[46],
+					'Cholestrl'   => $row[47]
 				)
 			);
 		}
-		unset($sr); // Trigger __destructor() for class
+		unset( $sr ); // Trigger __destructor() for class
 
 		if ( $rows_affected == 0 ) {
-			error_log("No contents added for ABBREV.txt!  Setup Failed.");
+			error_log( "No contents added for ABBREV.txt!  Setup Failed." );
+
 			return false;
 		}
 
@@ -591,7 +661,7 @@ class hrecipe_nutrient_db {
 		 *  Record Version number in options
 		 */
 		$this->options['db_version'] = self::DB_RELEASE;
-		update_option($this->options_name, $this->options);
+		update_option( $this->options_name, $this->options );
 
 		// Return DB version loaded
 		return self::DB_RELEASE;
@@ -601,69 +671,71 @@ class hrecipe_nutrient_db {
 	 * Perform lookup in food_des table for given NDB_No
 	 *
 	 * @param $ndb_no string
+	 *
 	 * @return integer count of matching records (0 or 1)
 	 * @access private
 	 **/
-	private function ndb_no_defined($ndb_no)
-	{
+	private function ndb_no_defined( $ndb_no ) {
 		global $wpdb;
 
 		$db_name = $this->options['table_prefix'] . 'food_des';
-		return $wpdb->get_var( "SELECT COUNT(*) FROM ${db_name} WHERE NDB_No LIKE '${ndb_no}'");
+
+		return $wpdb->get_var( "SELECT COUNT(*) FROM ${db_name} WHERE NDB_No LIKE '${ndb_no}'" );
 	}
 
 	/**
 	 * Retrieve matching food names, split input names on spaces to search for presence of each anywhere
 	 *
 	 * @uses $wpdb
+	 *
 	 * @param $name_contains string - String to match for food name
 	 * @param $per_page int - maximum number of rows to return
-	 * @param $paged, int - page number for group of rows to return
+	 * @param $paged , int - page number for group of rows to return
+	 *
 	 * @return array: ['paged']=this page number, ['pages']=total # pages, ['rows'] = DB rows of names retrieved
 	 **/
-	function get_name($name_contains, $per_page, $paged)
-	{
+	function get_name( $name_contains, $per_page, $paged ) {
 		global $wpdb;
 
 		$db_name = $this->options['table_prefix'] . 'food_des';
-		$terms = array();
-		foreach (explode(' ', $name_contains) as $word) {
-			$word = trim($word);
-			if ( ! empty($word) ) {
+		$terms   = array();
+		foreach ( explode( ' ', $name_contains ) as $word ) {
+			$word = trim( $word );
+			if ( ! empty( $word ) ) {
 				// TODO Allow use of '-' prefix to add NOT LIKE to search
-				$terms[] = $wpdb->prepare("Long_Desc LIKE %s", '%' . $word . '%');
+				$terms[] = $wpdb->prepare( "Long_Desc LIKE %s", '%' . $word . '%' );
 			}
 		}
-		$query = "SELECT NDB_No,Long_Desc FROM ${db_name} WHERE " . implode(' AND ', $terms);
+		$query = "SELECT NDB_No,Long_Desc FROM ${db_name} WHERE " . implode( ' AND ', $terms );
 
 		/**
 		 * Pagination of table elements
 		 */
-		$per_page = max(5, (int)$per_page);  // Do at least 5 per page
-		$totalrows = $wpdb->query($query); // Number of total rows matching name
-		$pages = max(1, ceil($totalrows/$per_page));  // make sure pages is at least 1
+		$per_page  = max( 5, (int) $per_page );  // Do at least 5 per page
+		$totalrows = $wpdb->query( $query ); // Number of total rows matching name
+		$pages     = max( 1, ceil( $totalrows / $per_page ) );  // make sure pages is at least 1
 
-        // 1 <= paged <= pages
-		if ($paged < 1) {
+		// 1 <= paged <= pages
+		if ( $paged < 1 ) {
 			$paged = 1;
-		} elseif ($paged > $pages) {
+		} elseif ( $paged > $pages ) {
 			$paged = $pages;
 		}
 
-        // Adjust the query to take pagination into account
-	    $offset = ($paged-1) * $per_page;
-		$query .= ' LIMIT '.(int)$offset.','.(int)$per_page;
+		// Adjust the query to take pagination into account
+		$offset = ( $paged - 1 ) * $per_page;
+		$query  .= ' LIMIT ' . (int) $offset . ',' . (int) $per_page;
 
 		/**
 		 * Get results
 		 */
-		$rows = $wpdb->get_results($query);
+		$rows = $wpdb->get_results( $query );
 
 		return array(
-			'page' => $paged,
-			'pages' => $pages,
+			'page'      => $paged,
+			'pages'     => $pages,
 			'totalrows' => $totalrows,
-			'rows' => $rows
+			'rows'      => $rows
 		);
 	}
 
@@ -671,15 +743,17 @@ class hrecipe_nutrient_db {
 	 * Retrieve food name for given NDB_No
 	 *
 	 * @uses wpdb
+	 *
 	 * @param $NDB_No string NDB Database Index
+	 *
 	 * @return string
 	 **/
-	function get_name_by_NDB_No($NDB_No)
-	{
+	function get_name_by_NDB_No( $NDB_No ) {
 		global $wpdb;
 
 		$db_name = $this->options['table_prefix'] . 'food_des';
-		return $wpdb->get_var( "SELECT Long_Desc FROM ${db_name} WHERE `NDB_No` = '${NDB_No}'");
+
+		return $wpdb->get_var( "SELECT Long_Desc FROM ${db_name} WHERE `NDB_No` = '${NDB_No}'" );
 	}
 
 	/**
@@ -687,14 +761,12 @@ class hrecipe_nutrient_db {
 	 *
 	 * @return array of rows
 	 **/
-	function get_measures_by_NDB_No($NDB_No)
-	{
+	function get_measures_by_NDB_No( $NDB_No ) {
 		global $wpdb;
 
-		$query = $wpdb->prepare("SELECT t1.`NDB_No`, t1.`Long_Desc`, t2.`Amount`, t2.`Msre_Desc`, t2.`Gm_Wgt`, t2.`Seq` FROM `ps_hrecipe_sr_food_des` as t1 natural join `ps_hrecipe_sr_weight` AS t2 WHERE `NDB_No` = %s", $NDB_No);
-		$rows = $wpdb->get_results($query);
+		$query = $wpdb->prepare( "SELECT t1.`NDB_No`, t1.`Long_Desc`, t2.`Amount`, t2.`Msre_Desc`, t2.`Gm_Wgt`, t2.`Seq` FROM `ps_hrecipe_sr_food_des` as t1 natural join `ps_hrecipe_sr_weight` AS t2 WHERE `NDB_No` = %s", $NDB_No );
+		$rows  = $wpdb->get_results( $query );
 
 		return $rows;
 	}
-} // End class hrecipe_nutrient_db
-?>
+}

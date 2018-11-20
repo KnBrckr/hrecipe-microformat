@@ -26,11 +26,12 @@
  **/
 
 // Protect from direct execution
-if (!defined('WP_PLUGIN_DIR')) {
-	header('Status: 403 Forbidden');
-	header('HTTP/1.1 403 Forbidden');
+if ( ! defined( 'WP_PLUGIN_DIR' ) ) {
+	header( 'Status: 403 Forbidden' );
+	header( 'HTTP/1.1 403 Forbidden' );
 	die( 'I don\'t think you should be here.' );
 }
+
 class hrecipe_usda_sr_txt {
 	/**
 	 * File Handle to SR Text File
@@ -43,17 +44,18 @@ class hrecipe_usda_sr_txt {
 	 * Constructor Function: open target SR file for processing
 	 *
 	 * @throws Exception if file is not readable or can't be opened
+	 *
 	 * @param string $sr_txt path to file
+	 *
 	 * @return void, throws exception on open failure
 	 **/
-	function __construct($sr_txt)
-	{
-		if (! is_readable($sr_txt)) {
-			throw new Exception ("Required SR file is not readable: $sr_txt");
+	function __construct( $sr_txt ) {
+		if ( ! is_readable( $sr_txt ) ) {
+			throw new Exception ( "Required SR file is not readable: $sr_txt" );
 		}
 
-		if (! ($this->fh = fopen($sr_txt, "r"))) {
-			throw new Exception ("Unable to open $sr_txt");
+		if ( ! ( $this->fh = fopen( $sr_txt, "r" ) ) ) {
+			throw new Exception ( "Unable to open $sr_txt" );
 		}
 	}
 
@@ -62,9 +64,8 @@ class hrecipe_usda_sr_txt {
 	 *
 	 * @return void
 	 **/
-	function __destruct()
-	{
-		fclose($this->fh);
+	function __destruct() {
+		fclose( $this->fh );
 	}
 
 	/**
@@ -72,14 +73,13 @@ class hrecipe_usda_sr_txt {
 	 *
 	 * @return array of elements from SR file record
 	 **/
-	function next()
-	{
-		if (! ($line = fgets($this->fh, 4096)) ) {
-			return NULL;
+	function next() {
+		if ( ! ( $line = fgets( $this->fh, 4096 ) ) ) {
+			return null;
 		}
 
 		// Split records on '^', strings are quoted by '~', last column might contain '\r' and/or '\n'
-		$cols = preg_replace('/^~(.*)~[\r\n]*$/','$1', explode("^", $line));
+		$cols = preg_replace( '/^~(.*)~[\r\n]*$/', '$1', explode( "^", $line ) );
 
 		return $cols;
 	}
