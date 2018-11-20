@@ -221,5 +221,4 @@ class hrecipe_recipes_widget extends WP_Widget {
 	}
 }
 
-// FIXME create_function() is deprecated
-add_action( 'widgets_init', create_function( '', 'register_widget( "hrecipe_recipes_widget" );' ) );
+add_action( 'widgets_init', function () { register_widget( "hrecipe_recipes_widget" ) ; } );
