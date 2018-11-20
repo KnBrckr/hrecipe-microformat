@@ -504,7 +504,7 @@ class hrecipe_microformat {
 		?>
         <script>
             // If javascript can run, remove the no-js class from the body
-            var el = document.getElementsByTagName('body')[0];
+            let el = document.getElementsByTagName('body')[0];
             el.className = el.className.replace('no-js', '');
         </script>
 		<?php
@@ -786,9 +786,10 @@ class hrecipe_microformat {
 				$value = $this->get_recipe_difficulty_html( $post_id );
 				break;
 
-			case 'rating': // Recipe rating based on reader response
-				$value = $this->get_recipe_rating_html( $post_id );
-				break;
+//			FIXME Recipe Rating is not working reliably
+//			case 'rating': // Recipe rating based on reader response
+//				$value = $this->get_recipe_rating_html( $post_id );
+//				break;
 
 			case 'nutrition': // Recipe nutrition as calculated from ingredients
 				$value = $this->get_nutrition_html( $post_id );

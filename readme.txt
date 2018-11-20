@@ -33,6 +33,7 @@ the directory of the stable readme.txt, so in this case, `/tags/4.3/screenshot-1
 * FIX: Correct Misc warnings and errors reported by PhpStorm
 * FIX: Only display recipe meta fields if data is available
 * FIX: create_function() is deprecated
+* DISABLE: Recipe rating function unreliable
 
 = 0.3.1 =
 * FIX: Recipes displaying multiple times when searching
@@ -43,7 +44,7 @@ the directory of the stable readme.txt, so in this case, `/tags/4.3/screenshot-1
 
 == Upgrade Notice ==
 
-= 0.1 =
+= 0.4 =
 You want this plugin to edit recipes in your blog!
 
 == Design notes ==
