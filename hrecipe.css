@@ -22,11 +22,11 @@
  **/
 
 .float-left {
-	float: left;
+    float: left;
 }
 
 .float-right {
-	float: right;
+    float: right;
 }
 
 /* ================ */
@@ -34,12 +34,12 @@
 /* ================ */
 
 .hrecipe-list {
-	list-style-type: square;
-	/* TODO Make index card graphic to use for recipe list bullet */
+    list-style-type: square;
+    /* TODO Make index card graphic to use for recipe list bullet */
 }
 
 .hrecipe-list .post-edit-link {
-	font-size: 80%;
+    font-size: 80%;
 }
 
 /* ================================ */
@@ -66,34 +66,40 @@
 /* ===================== */
 
 .recipe-difficulty-on, .recipe-difficulty-off {
-	position: relative;
-	height: 24px;
-	width: 120px; /* 5 x width of icon*/
-	background: url(images/icons.png) repeat-x;
-}
-.recipe-difficulty-on {
-	background-position: 0 -24px;
-	position: absolute;
-}
-.recipe-difficulty-0 {
-	width: 0px;
-}
-.recipe-difficulty-1 {
-	width: 24px;
-}
-.recipe-difficulty-2 {
-	width: 48px;
-}
-.recipe-difficulty-3 {
-	width: 72px;
-}
-.recipe-difficulty-4 {
-	width: 96px;
-}
-.recipe-difficulty-5 {
-	width: 120px;
+    position: relative;
+    height: 24px;
+    width: 120px; /* 5 x width of icon*/
+    background: url(images/icons.png) repeat-x;
 }
 
+.recipe-difficulty-on {
+    background-position: 0 -24px;
+    position: absolute;
+}
+
+.recipe-difficulty-0 {
+    width: 0;
+}
+
+.recipe-difficulty-1 {
+    width: 24px;
+}
+
+.recipe-difficulty-2 {
+    width: 48px;
+}
+
+.recipe-difficulty-3 {
+    width: 72px;
+}
+
+.recipe-difficulty-4 {
+    width: 96px;
+}
+
+.recipe-difficulty-5 {
+    width: 120px;
+}
 
 /* ================= */
 /* = Recipe Rating = */
@@ -101,46 +107,49 @@
 
 /* Hide the stars select - stars displayed via javascript */
 .recipe-stars select {
-	display: none;
+    display: none;
 }
 
 /* If javascript not available, can't vote on recipe rating */
 .no-js .recipe-user-rating {
-	display: none;
+    display: none;
 }
 
 /* Rated Recipe */
 .recipe-stars-off,
 .recipe-stars-on {
-	position: relative;
-	height: 16px;
-	width: 80px;
-	background: url(lib/jquery.ui.stars-3.0/jquery.ui.stars.gif) repeat-x 0 -32px;
+    position: relative;
+    height: 16px;
+    width: 80px;
+    background: url(lib/jquery.ui.stars-3.0/jquery.ui.stars.gif) repeat-x 0 -32px;
 }
+
 .recipe-stars-on {
     position: absolute;
     background-position: 0 -48px;
 }
+
 .recipe-stars .recipe-avg-rating {
-	display: inherit;
+    display: inherit;
 }
 
 .recipe-unrated {
-	display:none;
+    display: none;
 }
 
 .recipe-stars .thank-you {
-	display: none;
-	position: absolute;
-	background: #ffffff;
+    display: none;
+    position: absolute;
+    background: #ffffff;
 }
 
 /* Unrated Recipe */
 .recipe-stars.unrated .recipe-avg-rating {
-	display: none;
+    display: none;
 }
+
 .recipe-stars.unrated .recipe-unrated {
-	display: inherit;
+    display: inherit;
 }
 
 /* =================================== */
@@ -149,139 +158,137 @@
 
 /* Style the ingredients card */
 .ingredients {
-	clear: both;
-	margin: 5px 0px;
-	padding: 5px;
-	border: black solid 1px;
-	background: rgb(255,255,255);
+    clear: both;
+    margin: 5px 0;
+    padding: 5px;
+    border: black solid 1px;
+    background: rgb(255, 255, 255);
 }
 
+/*
+   Ingredients card header
+*/
 .ingredients header {
-	border-bottom: rgb(255, 19, 0) solid 2px;
-	background: inherit;
-	height: 34px;
+    border-bottom: rgb(255, 19, 0) solid 2px;
+    background: inherit;
+    padding-bottom: 5pt
 }
 
 .ingredients .ingredients-title {
-	float: left;
-	font-size: 30px;
-	margin: 0;
+    float: left;
+    font-size: 1.2em;
+    margin: 0 0.5em;
 }
 
-/* 
-   Ingredients card header 
-*/
 .ingredients .ingredients-display-as {
-	float: right;
-	display: inline-block;
-	padding: 0;
-	margin: 0;
-	display: none; 	/* TODO Enable recipe measure conversions - unhide when ready */
-
+    float: right;
+    display: none; /* TODO  inline-block - Enable recipe measure conversions - unhide when ready */
+    padding: 0;
+    margin: 0;
 }
 
 /* Push unit conversion tool to right side of ingredients title line */
 .ingredients-display-as li {
-	list-style-type: none;
-	list-style-image: none;
-	float: left;
+    list-style-type: none;
+    list-style-image: none;
+    float: left;
 }
 
 /* Hide measures selection tools if javascript is not available */
 .no-js .ingredients .ingredients-display-as {
-	display: none;
+    display: none;
 }
 
 .measure-button.ui-widget {
-	font-size: .6em;
+    font-size: .6em;
 }
 
 /* Put list of ingredients below the header */
 .ingredients ul.ingredients-list {
-	list-style-type: none;
-	list-style-image: none;
-	clear: both;
-	padding: 0;
-	margin: 0 0 25px 0;
+    list-style-type: none;
+    list-style-image: none;
+    clear: both;
+    padding: 0;
+    margin: 1em 0;
 }
 
 ul.ingredients-list li.ingredient {
-	background: inherit;
-	border-bottom: rgb(99, 195, 251) solid 1px;
-	list-style-type: none;
-	list-style-image: none;
-	padding-left: 20px;
-	line-height: 1.5em;
+    background: inherit;
+    border-bottom: rgb(99, 195, 251) solid 1px;
+    padding: 0 1em;
+    line-height: 1.5em;
 }
 
 /* Old Recipe Format did not have embedded separation between value and unit in the measures */
 .ingredient td .value {
-	padding-right: .5em ;
+    padding-right: .5em;
 }
+
 .ingredient td .comment:before {
-	content: ' \2014  ';
+    content: ' \2014  ';
 }
 
 /* New Recipe Measure format */
 
 .measure {
-	display: inline-block;
+    display: inline-block;
 }
 
 .measure ul {
-	list-style-type: none;
-	margin: 0;
-	padding: 0;
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
 }
 
 /* Only the selected measures (quantity + unit) are displayed */
 .measure-equivalent {
-	display: none;
+    display: none;
 }
+
 .measure-equivalent.selected-measure {
-	display: inline-block;
+    display: inline-block;
 }
 
 /* Flag measurements that have been converted from original units */
 .converted-measure {
-	/* TODO Highlight converted measurements in display? */
+    /* TODO Highlight converted measurements in display? */
 }
 
 /* Format an ingredient in an ingredient list */
 .ingredient .comment {
-	font-style: italic;
+    font-style: italic;
 }
 
 /* ================ */
 /* = Instructions = */
 /* ================ */
 .step {
-	clear: both;
-	margin: 0 0 1.5em;
+    clear: both;
+    margin: 0 0 1.5em;
 }
 
 /* ================ */
 /* = Recipe Hints = */
 /* ================ */
 .hrecipe-hint:before {
-	font-family: Impact, Charcoal, sans-serif;
-	font-style: normal;
-	content: "Hint";
-	font-size: 1.4em;
-	position: absolute;
-	top: -.1em;
-	left: 7px;
-	padding: 0 5px;
+    font-family: Impact, Charcoal, sans-serif;
+    font-style: normal;
+    content: "Hint";
+    font-size: 1.4em;
+    position: absolute;
+    top: -.1em;
+    left: 7px;
+    padding: 0 5px;
 }
 
 .hrecipe-hint {
-	display: block;
-	clear: both;
-	padding: 1.5em 10px 10px 20px;
-	margin-bottom: 20px;
-	border: 1px solid #381b42;
-	font-style: italic;
-	position: relative;
+    display: block;
+    clear: both;
+    padding: 1.5em 10px 10px 20px;
+    margin-bottom: 20px;
+    border: 1px solid #381b42;
+    font-style: italic;
+    position: relative;
 }
 
 /* ========== */
@@ -289,5 +296,5 @@ ul.ingredients-list li.ingredient {
 /* ========== */
 
 .hrecipe img {
-	padding: 5px;
+    padding: 5px;
 }
