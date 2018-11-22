@@ -4,7 +4,7 @@ Donate link: http://pumastudios.com
 Tags: recipe, hrecipe, food
 Requires at least: 4.0
 Tested up to: 4.9.1
-Stable tag: 0.4
+Stable tag: 0.4.1
 
 Adds post type Recipe to support the hRecipe microformat
 
@@ -28,6 +28,9 @@ the directory of the stable readme.txt, so in this case, `/tags/4.3/screenshot-1
 2. This is the second screen shot
 
 == Changelog ==
+
+= 0.4.1 =
+* FIX: Using WP version instead of plugin version for provided style and javascript files
 
 = 0.4 =
 * FIX: Correct Misc warnings and errors reported by PhpStorm

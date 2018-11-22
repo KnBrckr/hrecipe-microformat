@@ -6,7 +6,7 @@
  *
  * @package hRecipe Microformat
  * @author Kenneth J. Brucker <ken@pumastudios.com>
- * @copyright 2015 Kenneth J. Brucker (email: ken@pumastudios.com)
+ * @copyright 2018 Kenneth J. Brucker (ken@pumastudios.com)
  *
  * This file is part of hRecipe Microformat, a plugin for Wordpress.
  *
@@ -408,11 +408,11 @@ class hrecipe_admin extends hrecipe_microformat {
 		register_setting( self::settings_page, self::settings, array( $this, 'sanitize_settings' ) );
 
 		// Register admin style sheet
-		wp_register_style( self::prefix . 'admin', self::$url . 'admin/css/admin.css' );
+		wp_register_style( self::prefix . 'admin', self::$url . 'admin/css/admin.css', [], HRECIPE_PLUGIN_VER );
 
 		// Register admin javascript, place in footer so it can be localized as needed
 		wp_register_script( self::prefix . 'admin', self::$url . 'admin/js/admin.js',
-			array( 'jquery-ui-autocomplete', 'jquery-ui-sortable', 'jquery-ui-button' ), false, true );
+			array( 'jquery-ui-autocomplete', 'jquery-ui-sortable', 'jquery-ui-button' ), HRECIPE_PLUGIN_VER, true );
 
 		/*
 			Setup the Recipe Post Editing page

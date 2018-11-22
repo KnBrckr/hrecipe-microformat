@@ -4,7 +4,7 @@
  *
  * @package hRecipe Microformat
  * @author Kenneth J. Brucker <ken@pumastudios.com>
- * @copyright 2015 Kenneth J. Brucker (email: ken@pumastudios.com)
+ * @copyright 2018 Kenneth J. Brucker (email: ken@pumastudios.com)
  *
  * This file is part of hRecipe Microformat, a plugin for Wordpress.
  *
@@ -304,13 +304,13 @@ class hrecipe_microformat {
 		add_action( 'wp', array( $this, 'action_wp' ) );
 
 		// Register Plugin CSS
-		wp_register_style( self::prefix . 'style', self::$url . 'hrecipe.css' );
+		wp_register_style( self::prefix . 'style', self::$url . 'hrecipe.css', [],HRECIPE_PLUGIN_VER );
 
 		// Register Plugin javascript, but put it in the footer so that it can be localized if needed
 		wp_register_script( self::prefix . 'js', self::$url . 'js/hrecipe.js', array(
 			'jquery',
 			'jquery-ui-button'
-		), false, true );
+		), HRECIPE_PLUGIN_VER, true );
 
 		// Register jQuery UI stylesheet - use googleapi version based on what version of core is running
 		wp_register_style( self::prefix . 'jquery-ui', "//ajax.googleapis.com/ajax/libs/jqueryui/{$wp_scripts->registered['jquery-ui-core']->ver}/themes/smoothness/jquery-ui.min.css" );
