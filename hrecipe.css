@@ -42,17 +42,30 @@
     font-size: 80%;
 }
 
-/* ================================ */
-/* = Recipe Header/Footer content = */
-/* ================================ */
+/* ================================== */
+/* = Recipe Header/Footer & Content = */
+/* ================================== */
+
+.hrecipe-head {
+    background: white;
+    border: black solid 1px;
+    padding: 3px;
+    margin: 0;
+    clear: both;
+}
+
+.hrecipe .instructions {
+}
+
 /*
-	TODO - This don't appear to be used
-.hrecipe-head, .hrecipe-footer {
+.hrecipe-footer {
 	border: 1px solid ;
 	padding: 3px;
 	margin: 5px 0;
 	clear: both;
 }
+*/
+/*
 .hrecipe-field {
 	display: inline-block;
 	width: 30%;
@@ -158,13 +171,12 @@
 
 /* Style the ingredients card */
 .ingredients {
+    border: black solid 1px;
+    background: rgb(255, 255, 255);
     clear: both;
     margin: 5px 0;
     padding: 5px;
-    border: black solid 1px;
-    background: rgb(255, 255, 255);
 }
-
 /*
    Ingredients card header
 */
@@ -214,9 +226,9 @@
 
 ul.ingredients-list li.ingredient {
     background: inherit;
-    border-bottom: rgb(99, 195, 251) solid 1px;
     padding: 0 1em;
     line-height: 1.5em;
+    border-bottom: rgb(99, 195, 251) solid 1px;
 }
 
 /* Old Recipe Format did not have embedded separation between value and unit in the measures */
@@ -297,4 +309,35 @@ ul.ingredients-list li.ingredient {
 
 .hrecipe img {
     padding: 5px;
+}
+
+/**
+ * Simplify formating for printing
+ */
+@media print {
+    .hrecipe-head {
+        border: none;
+    }
+
+    .ingredients {
+        border: none;
+    }
+
+    .ingredients header {
+        border: none;
+    }
+
+    .ingredients .ingredients-display-as {
+        display: none;
+    }
+
+    .ingredients ul.ingredients-list {
+        padding-left: 3em;
+    }
+
+    ul.ingredients-list li.ingredient {
+        margin-bottom: 5px;
+        border: none;
+        list-style: circle;
+    }
 }

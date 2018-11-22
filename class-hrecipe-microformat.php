@@ -415,10 +415,21 @@ class hrecipe_microformat {
 		$classes, /* @noinspection PhpUnusedParameterInspection */
 		$class
 	) {
+		/**
+		 * Add no-js to class list if not already there
+		 */
 		if ( ! in_array( 'no-js', $classes ) ) {
-			// Add no-js to class list if not already there
 			$classes[] = "no-js";
 		}
+
+		/**
+		 * If displaying a single recipe, add recipe class
+		 */
+		if ( is_singular( self::post_type ) ) {
+		    if ( ! in_array( self::post_type, $classes ) ) {
+		        $classes[] = self::post_type;
+            }
+        }
 
 		return $classes;
 	}
