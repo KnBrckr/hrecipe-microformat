@@ -4,7 +4,7 @@ Donate link: http://pumastudios.com
 Tags: recipe, hrecipe, food
 Requires at least: 4.0
 Tested up to: 4.9.1
-Stable tag: 0.3.1
+Stable tag: 0.4
 
 Adds post type Recipe to support the hRecipe microformat
 

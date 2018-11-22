@@ -3,7 +3,7 @@
 Plugin Name: hRecipe Microformat
 Plugin URI: http://pumastudios.com/hrecipe-microformat
 Description: Add Post type Recipe for hRecipe Microformat
-Version: 0.3.1
+Version: 0.4
 Author: Kenneth J. Brucker <ken@pumastudios.com>
 Author URI: http://pumastudios.com
 License: GPL2
