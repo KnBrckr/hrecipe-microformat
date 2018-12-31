@@ -1,20 +1,52 @@
 {
-	"name": "pumastudios/hrecipe-microformat",
-	"description": "Add Post type Recipe for hRecipe Microformat",
-	"keywords": ["wordpress",
-		"plugin", "recipe", "microformat"],
-	"homepage": "https://pumastudios.com",
-	"license": "GPL2",
-	"authors": [
-		{
-			"name": "Kenneth J. Brucker",
-			"email": "ken@pumastudios.com",
-			"homepage": "https://pumastudios.com"
-		}
-	],
-	"type": "wordpress-plugin",
-	"require": {
-		"php": ">=7.0",
-		"composer/installers": "^1.0"
-	}
+  "name": "pumastudios/hrecipe-microformat",
+  "description": "Add Post type Recipe for hRecipe Microformat",
+  "keywords": [
+    "wordpress",
+    "plugin",
+    "recipe",
+    "microformat"
+  ],
+  "homepage": "https://pumastudios.com",
+  "license": "GPL2",
+  "authors": [
+    {
+      "name": "Kenneth J. Brucker",
+      "email": "ken@pumastudios.com",
+      "homepage": "https://pumastudios.com"
+    }
+  ],
+  "type": "wordpress-plugin",
+  "require": {
+    "pumastudios/wp-library": "~1.0",
+    "php": ">=7.0",
+    "composer/installers": "^1.0"
+  },
+  "repositories": [
+    {
+      "type": "vcs",
+      "url": "https://github.com/KnBrckr/wp-library.git"
+    }
+  ],
+  "extra": {
+    "installer-paths": {
+      "lib/{$name}": [
+        "pumastudios/wp-library"
+      ]
+    }
+  },
+  "autoload": {
+    "psr-4": {
+      "PumaStudios\\": [
+        "classes"
+      ]
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "": [
+        "tests/factory"
+      ]
+    }
+  }
 }
